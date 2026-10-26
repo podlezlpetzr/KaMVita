@@ -216,6 +216,11 @@ int main(int argc, char* argv[])
     Unit units[MAX_UNITS] = {};
     int unitCount = 0;
 
+    // Zlomkova cast School training kroku.
+    // Cely progress je ulozen v Building::schoolTrainingStep
+    // a Building::schoolIdleStep.
+    float schoolStepTimers[MAX_BUILDINGS] = {};
+
     bool gameLoaded =
         loadGame(buildings, &buildingCount);
 
@@ -293,7 +298,12 @@ int main(int argc, char* argv[])
 
         buildings[1].schoolTrainingStep = 0;
         buildings[1].schoolIdleStep = 0;
-        buildings[1].schoolGold = 0;
+
+        // Docasny development bootstrap.
+        // Ekonomika a doprava Gold zatim nejsou implementovane.
+        buildings[1].schoolGold =
+            SCHOOL_QUEUE_SIZE * SCHOOL_GOLD_COST;
+
         buildings[1].schoolTrainingActive = false;
         buildings[1].schoolFinishingTraining = false;
     }
@@ -1522,6 +1532,124 @@ int main(int argc, char* argv[])
             renderer,
             SDL_BLENDMODE_NONE
         );
+
+        // -------------------------------------------------
+        // SCHOOL TRAINING UPDATE
+        // -------------------------------------------------
+        // Jeden logicky krok prozatim trva 0,1 sekundy.
+        // Presna herni rychlost se muze pozdeji doladit
+        // bez zmeny ulozeneho progressu.
+        constexpr float SCHOOL_STEP_SECONDS = 0.1f;
+
+        for (
+            int schoolIndex = 0;
+            schoolIndex < buildingCount;
+            ++schoolIndex
+        ) {
+            Building& school =
+                buildings[schoolIndex];
+
+            if (
+                !school.active ||
+                school.type != BuildingType::School ||
+                !isBuildingComplete(school)
+            ) {
+                schoolStepTimers[schoolIndex] = 0.0f;
+                continue;
+            }
+
+            int profession = school.schoolQueue[0];
+
+            bool validProfession =
+                profession >= 0 &&
+                profession < SCHOOL_PROFESSION_COUNT;
+
+            if (!validProfession) {
+                school.schoolTrainingActive = false;
+                school.schoolFinishingTraining = false;
+                school.schoolTrainingStep = 0;
+                school.schoolIdleStep = 0;
+                schoolStepTimers[schoolIndex] = 0.0f;
+                continue;
+            }
+
+            // Hotova jednotka ceka na dalsi rez:
+            // vytvoreni Unit a LeavingBuilding.
+            if (school.schoolFinishingTraining) {
+                schoolStepTimers[schoolIndex] = 0.0f;
+                continue;
+            }
+
+            // Bez Gold zustava objednavka ve fronte.
+            if (
+                !school.schoolTrainingActive &&
+                school.schoolGold < SCHOOL_GOLD_COST
+            ) {
+                schoolStepTimers[schoolIndex] = 0.0f;
+                continue;
+            }
+
+            if (!school.schoolTrainingActive) {
+                school.schoolTrainingActive = true;
+                school.schoolTrainingStep = 0;
+                school.schoolIdleStep = 0;
+                schoolStepTimers[schoolIndex] = 0.0f;
+            }
+
+            schoolStepTimers[schoolIndex] +=
+                deltaSeconds;
+
+            while (
+                schoolStepTimers[schoolIndex] >=
+                    SCHOOL_STEP_SECONDS &&
+                school.schoolTrainingActive &&
+                !school.schoolFinishingTraining
+            ) {
+                schoolStepTimers[schoolIndex] -=
+                    SCHOOL_STEP_SECONDS;
+
+                if (
+                    school.schoolTrainingStep <
+                        SCHOOL_TRAINING_STEPS
+                ) {
+                    school.schoolTrainingStep++;
+
+                    if (
+                        school.schoolTrainingStep <
+                            SCHOOL_TRAINING_STEPS
+                    ) {
+                        continue;
+                    }
+                } else if (
+                    school.schoolIdleStep <
+                        SCHOOL_IDLE_STEPS
+                ) {
+                    school.schoolIdleStep++;
+                }
+
+                if (
+                    school.schoolTrainingStep <
+                        SCHOOL_TRAINING_STEPS ||
+                    school.schoolIdleStep <
+                        SCHOOL_IDLE_STEPS
+                ) {
+                    continue;
+                }
+
+                school.schoolTrainingActive = false;
+                school.schoolFinishingTraining = true;
+
+                if (
+                    school.schoolGold >=
+                        SCHOOL_GOLD_COST
+                ) {
+                    school.schoolGold -=
+                        SCHOOL_GOLD_COST;
+                }
+
+                schoolStepTimers[schoolIndex] = 0.0f;
+            }
+        }
 
         // Aktualizuj pozice jednotek pred vykreslenim.
         updateUnits(
