@@ -1,0 +1,26 @@
+# CMake / build output
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Generated Vita packages
+*.vpk
+*.velf
+*.self
+
+# Temporary logs
+build_error.txt
+
+# Historical KaMVita checkpoints
+*_working*
+*_before_*
+
+# Editor / OS files
+*~
+*.swp
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
