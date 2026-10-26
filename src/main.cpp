@@ -1573,10 +1573,184 @@ int main(int argc, char* argv[])
                 continue;
             }
 
-            // Hotova jednotka ceka na dalsi rez:
-            // vytvoreni Unit a LeavingBuilding.
+            // Dokonceni vycviku a odchod jednotky ze School.
             if (school.schoolFinishingTraining) {
+                bool supportedProfession =
+                    profession ==
+                        static_cast<int>(
+                            GameUISchoolSelection::Serf
+                        ) ||
+                    profession ==
+                        static_cast<int>(
+                            GameUISchoolSelection::Worker
+                        );
+
+                // Ostatni profese zatim nemaji vlastni UnitType.
+                // Nesmime je potichu vytvorit jako Workera.
+                if (!supportedProfession) {
+                    schoolStepTimers[schoolIndex] = 0.0f;
+                    continue;
+                }
+
+                int freeUnitSlot = -1;
+
+                for (
+                    int unitIndex = 0;
+                    unitIndex < unitCount;
+                    ++unitIndex
+                ) {
+                    if (!units[unitIndex].active) {
+                        freeUnitSlot = unitIndex;
+                        break;
+                    }
+                }
+
+                if (
+                    freeUnitSlot == -1 &&
+                    unitCount < MAX_UNITS
+                ) {
+                    freeUnitSlot = unitCount;
+                    unitCount++;
+                }
+
+                // Pokud neni volne misto, hotova jednotka
+                // zustane uvnitr School a zkusime to znovu.
+                if (freeUnitSlot < 0) {
+                    schoolStepTimers[schoolIndex] = 0.0f;
+                    continue;
+                }
+
+                Unit& trainedUnit =
+                    units[freeUnitSlot];
+
+                trainedUnit = {};
+
+                trainedUnit.type =
+                    profession ==
+                        static_cast<int>(
+                            GameUISchoolSelection::Serf
+                        )
+                        ? UnitType::Serf
+                        : UnitType::Worker;
+
+                BuildingEntrance entrance =
+                    getBuildingEntrance(
+                        school.type
+                    );
+
+                // Logicky stred vstupni dlazdice.
+                trainedUnit.doorwayStartX =
+                    (
+                        school.tileX +
+                        entrance.tileOffsetX +
+                        0.5f
+                    ) * TILE_SIZE -
+                    18.0f;
+
+                trainedUnit.doorwayStartY =
+                    (
+                        school.tileY +
+                        entrance.tileOffsetY +
+                        0.5f
+                    ) * TILE_SIZE;
+
+                // Ulice je jednu dlazdici pod vstupem.
+                trainedUnit.doorwayTargetX =
+                    trainedUnit.doorwayStartX;
+
+                trainedUnit.doorwayTargetY =
+                    trainedUnit.doorwayStartY +
+                    TILE_SIZE;
+
+                trainedUnit.worldX =
+                    trainedUnit.doorwayStartX;
+
+                trainedUnit.worldY =
+                    trainedUnit.doorwayStartY;
+
+                trainedUnit.targetWorldX =
+                    trainedUnit.doorwayTargetX;
+
+                trainedUnit.targetWorldY =
+                    trainedUnit.doorwayTargetY;
+
+                // Doorway hodnoty jsou navazane na puvodni
+                // KaM CELL_SIZE_PX = 40, KaMVita ma 32.
+                constexpr float ORIGINAL_CELL_SIZE_PX =
+                    40.0f;
+
+                float doorwayScale =
+                    TILE_SIZE /
+                    ORIGINAL_CELL_SIZE_PX;
+
+                trainedUnit.doorwayOffsetX =
+                    static_cast<int>(
+                        (
+                            entrance.pixelOffsetX -
+                            ORIGINAL_CELL_SIZE_PX /
+                                2.0f
+                        ) *
+                        doorwayScale
+                    );
+
+                trainedUnit.doorwayOffsetY =
+                    static_cast<int>(
+                        entrance.pixelOffsetY *
+                        doorwayScale
+                    );
+
+                trainedUnit.doorwayProgress = 0.0f;
+                trainedUnit.visible = false;
+
+                trainedUnit.state =
+                    UnitState::LeavingBuilding;
+
+                // Smer na jih:
+                // N, NE, E, SE, S, SW, W, NW.
+                trainedUnit.direction = 4;
+
+                trainedUnit.animationFrame = 0;
+                trainedUnit.animationTimer = 0.0f;
+
+                trainedUnit.pathLength = 0;
+                trainedUnit.pathIndex = 0;
+
+                trainedUnit.targetBuilding = -1;
+                trainedUnit.targetRoadX = -1;
+                trainedUnit.targetRoadY = -1;
+
+                trainedUnit.workTimer = 0.0f;
+                trainedUnit.workAction =
+                    UnitWorkAction::None;
+
+                trainedUnit.active = true;
+
+                // Posun cekajicich objednavek smerem k WIP.
+                for (
+                    int queueIndex = 0;
+                    queueIndex <
+                        SCHOOL_QUEUE_SIZE - 1;
+                    ++queueIndex
+                ) {
+                    school.schoolQueue[queueIndex] =
+                        school.schoolQueue[
+                            queueIndex + 1
+                        ];
+                }
+
+                school.schoolQueue[
+                    SCHOOL_QUEUE_SIZE - 1
+                ] = -1;
+
+                school.schoolTrainingStep = 0;
+                school.schoolIdleStep = 0;
+                school.schoolTrainingActive = false;
+                school.schoolFinishingTraining = false;
+
                 schoolStepTimers[schoolIndex] = 0.0f;
+
+                // Dalsi polozka Queue[0] se v pristim
+                // pruchodu automaticky pokusi zahajit.
                 continue;
             }
 
