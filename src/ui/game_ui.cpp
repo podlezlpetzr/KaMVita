@@ -26,12 +26,33 @@ void renderGameUI(
     const BuildingResources& resources,
     const SchoolUIResources& schoolResources,
     const GameUIState& ui,
+    const Building* buildings,
+    int buildingCount,
     float cursorX,
     float cursorY
 )
 {
     if (!renderer)
         return;
+
+    const Building* selectedSchool = nullptr;
+
+    if (
+        buildings &&
+        ui.section == GameUISection::School &&
+        ui.selectedSchoolBuilding >= 0 &&
+        ui.selectedSchoolBuilding < buildingCount
+    ) {
+        const Building& candidate =
+            buildings[ui.selectedSchoolBuilding];
+
+        if (
+            candidate.active &&
+            candidate.type == BuildingType::School
+        ) {
+            selectedSchool = &candidate;
+        }
+    }
 
     // Pevny levy panel ve stylu PC KaM.
     SDL_Rect panel = {
@@ -229,17 +250,31 @@ void renderGameUI(
             &goldOuter
         );
 
+        int visibleGold = 0;
+
+        if (selectedSchool) {
+            visibleGold = selectedSchool->schoolGold;
+
+            if (visibleGold < 0)
+                visibleGold = 0;
+
+            if (visibleGold > goldOuter.w - 10)
+                visibleGold = goldOuter.w - 10;
+        }
+
         SDL_Rect goldInner = {
             goldOuter.x + 5,
             goldOuter.y + 4,
-            goldOuter.w - 10,
+            visibleGold,
             goldOuter.h - 8
         };
 
-        SDL_RenderFillRect(
-            renderer,
-            &goldInner
-        );
+        if (goldInner.w > 0) {
+            SDL_RenderFillRect(
+                renderer,
+                &goldInner
+            );
+        }
 
         // Queue[0]: jednotka ve vycviku.
         SDL_Rect wipSlot = {
@@ -269,6 +304,37 @@ void renderGameUI(
             &wipSlot
         );
 
+        if (selectedSchool) {
+            int profession =
+                selectedSchool->schoolQueue[0];
+
+            if (
+                profession >= 0 &&
+                profession < SCHOOL_PROFESSION_COUNT
+            ) {
+                SDL_Texture* icon =
+                    schoolResources
+                        .professions[profession]
+                        .icon;
+
+                if (icon) {
+                    SDL_Rect iconDestination = {
+                        wipSlot.x + 1,
+                        wipSlot.y + 1,
+                        wipSlot.w - 2,
+                        wipSlot.h - 2
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        icon,
+                        nullptr,
+                        &iconDestination
+                    );
+                }
+            }
+        }
+
         // Progress bar 0..150.
         SDL_Rect progressBackground = {
             panelX + 34,
@@ -297,13 +363,32 @@ void renderGameUI(
             &progressBackground
         );
 
-        // Zatim nulovy progress.
-        // Pozdeji bude sirka:
-        // 144 * schoolTrainingStep / 150.
+        int trainingStep = 0;
+
+        if (selectedSchool) {
+            trainingStep =
+                selectedSchool->schoolTrainingStep;
+
+            if (trainingStep < 0)
+                trainingStep = 0;
+
+            if (trainingStep > SCHOOL_TRAINING_STEPS) {
+                trainingStep =
+                    SCHOOL_TRAINING_STEPS;
+            }
+        }
+
+        int progressWidth =
+            (
+                (progressBackground.w - 2) *
+                trainingStep
+            ) /
+            SCHOOL_TRAINING_STEPS;
+
         SDL_Rect progressFill = {
             progressBackground.x + 1,
             progressBackground.y + 1,
-            0,
+            progressWidth,
             progressBackground.h - 2
         };
 
@@ -345,6 +430,39 @@ void renderGameUI(
                 renderer,
                 &queueSlot
             );
+
+            if (selectedSchool) {
+                int profession =
+                    selectedSchool
+                        ->schoolQueue[i + 1];
+
+                if (
+                    profession >= 0 &&
+                    profession <
+                        SCHOOL_PROFESSION_COUNT
+                ) {
+                    SDL_Texture* icon =
+                        schoolResources
+                            .professions[profession]
+                            .icon;
+
+                    if (icon) {
+                        SDL_Rect iconDestination = {
+                            queueSlot.x + 1,
+                            queueSlot.y + 1,
+                            queueSlot.w - 2,
+                            queueSlot.h - 2
+                        };
+
+                        SDL_RenderCopy(
+                            renderer,
+                            icon,
+                            nullptr,
+                            &iconDestination
+                        );
+                    }
+                }
+            }
         }
 
         int selected =

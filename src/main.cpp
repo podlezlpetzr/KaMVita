@@ -42,7 +42,7 @@ static bool saveGame(const Building* buildings, int buildingCount)
 
     SaveHeader header;
     header.magic = 0x4B414D56;
-    header.version = 4;
+    header.version = 5;
     header.buildingCount = buildingCount;
 
     if (fwrite(&header, sizeof(header), 1, file) != 1) {
@@ -73,7 +73,8 @@ static bool loadGame(Building* buildings, int* buildingCount)
     }
 
     if (header.magic != 0x4B414D56 ||
-        header.version != 4 ||
+        (header.version != 4 &&
+         header.version != 5) ||
         header.buildingCount < 0 ||
         header.buildingCount > MAX_BUILDINGS) {
         fclose(file);
@@ -89,6 +90,33 @@ static bool loadGame(Building* buildings, int* buildingCount)
     }
 
     fclose(file);
+
+    // Save v4 obsahoval School pole, ale fronta jeste
+    // nebyla aktivne pouzivana a prazdne sloty byly nuly.
+    // Od v5 je prazdny slot vzdy -1.
+    if (header.version == 4) {
+        for (int i = 0; i < MAX_BUILDINGS; ++i) {
+            if (
+                loadedBuildings[i].active &&
+                loadedBuildings[i].type ==
+                    BuildingType::School
+            ) {
+                for (
+                    int queueIndex = 0;
+                    queueIndex < SCHOOL_QUEUE_SIZE;
+                    ++queueIndex
+                ) {
+                    loadedBuildings[i]
+                        .schoolQueue[queueIndex] = -1;
+                }
+
+                loadedBuildings[i].schoolTrainingStep = 0;
+                loadedBuildings[i].schoolIdleStep = 0;
+                loadedBuildings[i].schoolTrainingActive = false;
+                loadedBuildings[i].schoolFinishingTraining = false;
+            }
+        }
+    }
 
     for (int i = 0; i < MAX_BUILDINGS; ++i) {
         if (loadedBuildings[i].active) {
@@ -254,6 +282,20 @@ int main(int argc, char* argv[])
             getBuildingStoneCost(
                 BuildingType::School
             );
+
+        for (
+            int queueIndex = 0;
+            queueIndex < SCHOOL_QUEUE_SIZE;
+            ++queueIndex
+        ) {
+            buildings[1].schoolQueue[queueIndex] = -1;
+        }
+
+        buildings[1].schoolTrainingStep = 0;
+        buildings[1].schoolIdleStep = 0;
+        buildings[1].schoolGold = 0;
+        buildings[1].schoolTrainingActive = false;
+        buildings[1].schoolFinishingTraining = false;
     }
     unsigned int previousButtons = 0;
     bool previousTouchDown = false;
@@ -410,6 +452,9 @@ int main(int argc, char* argv[])
         }
 
         // TRAIN ve School GUI.
+        // Tento rez pouze radi profesi do fronty.
+        // Samotny casovy vycvik a spawn po completion
+        // budou implementovany v dalsim rezu.
         if (
             gameUI.section ==
                 GameUISection::School &&
@@ -429,147 +474,38 @@ int main(int argc, char* argv[])
                 );
 
             if (validSchool) {
-                int freeUnitSlot = -1;
+                Building& school =
+                    buildings[schoolIndex];
+
+                int freeQueueSlot = -1;
 
                 for (
-                    int unitIndex = 0;
-                    unitIndex < unitCount;
-                    ++unitIndex
+                    int queueIndex = 0;
+                    queueIndex < SCHOOL_QUEUE_SIZE;
+                    ++queueIndex
                 ) {
-                    if (!units[unitIndex].active) {
-                        freeUnitSlot = unitIndex;
+                    if (
+                        school.schoolQueue[queueIndex] < 0
+                    ) {
+                        freeQueueSlot = queueIndex;
                         break;
                     }
                 }
 
-                if (
-                    freeUnitSlot == -1 &&
-                    unitCount < MAX_UNITS
-                ) {
-                    freeUnitSlot = unitCount;
-                    unitCount++;
-                }
-
-                if (freeUnitSlot >= 0) {
-                    Building& school =
-                        buildings[schoolIndex];
-
-                    Unit& trainedUnit =
-                        units[freeUnitSlot];
-
-                    trainedUnit = {};
-
-                    trainedUnit.type =
-                        gameUI.schoolSelection ==
-                            GameUISchoolSelection::Serf
-                            ? UnitType::Serf
-                            : UnitType::Worker;
-
-                    int schoolHeight =
-                        getBuildingHeight(
-                            school.type
+                if (freeQueueSlot >= 0) {
+                    int profession =
+                        static_cast<int>(
+                            gameUI.schoolSelection
                         );
 
-                    BuildingEntrance entrance =
-                        getBuildingEntrance(
-                            school.type
-                        );
-
-                    // Logicky stred vstupni dlazdice.
-                    // Pixelovy doorway offset se pouzije
-                    // pouze pri renderovani pruchodu.
-                    trainedUnit.doorwayStartX =
-                        (
-                            school.tileX +
-                            entrance.tileOffsetX +
-                            0.5f
-                        ) * TILE_SIZE -
-                        18.0f;
-
-                    trainedUnit.doorwayStartY =
-                        (
-                            school.tileY +
-                            entrance.tileOffsetY +
-                            0.5f
-                        ) * TILE_SIZE;
-
-                    // Ulice je jedna dlazdice pod
-                    // vstupem do School.
-                    trainedUnit.doorwayTargetX =
-                        trainedUnit.doorwayStartX;
-
-                    trainedUnit.doorwayTargetY =
-                        trainedUnit.doorwayStartY +
-                        TILE_SIZE;
-
-                    trainedUnit.worldX =
-                        trainedUnit.doorwayStartX;
-
-                    trainedUnit.worldY =
-                        trainedUnit.doorwayStartY;
-
-                    trainedUnit.targetWorldX =
-                        trainedUnit.doorwayTargetX;
-
-                    trainedUnit.targetWorldY =
-                        trainedUnit.doorwayTargetY;
-
-                    // Original:
-                    // OffsetXpx - polovina dlazdice.
-                    // Originalni KaM pouziva
-                    // CELL_SIZE_PX = 40.
-                    constexpr float ORIGINAL_CELL_SIZE_PX =
-                        40.0f;
-
-                    float doorwayScale =
-                        TILE_SIZE /
-                        ORIGINAL_CELL_SIZE_PX;
-
-                    trainedUnit.doorwayOffsetX =
-                        (int)(
-                            (
-                                entrance.pixelOffsetX -
-                                ORIGINAL_CELL_SIZE_PX /
-                                    2.0f
-                            ) *
-                            doorwayScale
-                        );
-
-                    trainedUnit.doorwayOffsetY =
-                        (int)(
-                            entrance.pixelOffsetY *
-                            doorwayScale
-                        );
-
-                    trainedUnit.doorwayProgress =
-                        0.0f;
-
-                    trainedUnit.visible = false;
-
-                    trainedUnit.state =
-                        UnitState::LeavingBuilding;
-
-                    // Smer na jih:
-                    // N, NE, E, SE, S, SW, W, NW.
-                    trainedUnit.direction = 4;
-
-                    trainedUnit.animationFrame = 0;
-                    trainedUnit.animationTimer = 0.0f;
-
-                    trainedUnit.pathLength = 0;
-                    trainedUnit.pathIndex = 0;
-
-                    trainedUnit.targetBuilding = -1;
-
-                    trainedUnit.targetRoadX = -1;
-                    trainedUnit.targetRoadY = -1;
-
-                    trainedUnit.workTimer = 0.0f;
-
-                    trainedUnit.workAction =
-                        UnitWorkAction::None;
-
-                    trainedUnit.active = true;
+                    if (
+                        profession >= 0 &&
+                        profession <
+                            SCHOOL_PROFESSION_COUNT
+                    ) {
+                        school.schoolQueue[freeQueueSlot] =
+                            profession;
+                    }
                 }
             }
 
@@ -1335,6 +1271,18 @@ int main(int argc, char* argv[])
             }
 
             if (freeSlot >= 0) {
+                // Recyklovany slot nesmi zdedit stav stare budovy.
+                buildings[freeSlot] = {};
+
+                for (
+                    int queueIndex = 0;
+                    queueIndex < SCHOOL_QUEUE_SIZE;
+                    ++queueIndex
+                ) {
+                    buildings[freeSlot]
+                        .schoolQueue[queueIndex] = -1;
+                }
+
                 buildings[freeSlot].tileX = selectedTileX;
                 buildings[freeSlot].tileY = selectedTileY;
                 buildings[freeSlot].type = selectedBuildingType;
@@ -1816,6 +1764,8 @@ int main(int argc, char* argv[])
             buildingResources,
             schoolUIResources,
             gameUI,
+            buildings,
+            buildingCount,
             cursorX,
             cursorY
         );

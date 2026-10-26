@@ -88,6 +88,8 @@ void renderGameUI(
     const BuildingResources& buildingResources,
     const SchoolUIResources& schoolResources,
     const GameUIState& ui,
+    const Building* buildings,
+    int buildingCount,
     float cursorX,
     float cursorY
 );
