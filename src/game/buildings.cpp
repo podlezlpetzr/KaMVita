@@ -523,11 +523,27 @@ void renderBuildings(
                 if (workPhase > 4)
                     workPhase = 4;
 
-                // Kazda z peti animacnich fazi cykluje
-                // pres svych pet RX snimku.
+                // Frame je odvozen primo z training kroku.
+                // Kazda Work faze ma 30 kroku a 5 RX snimku,
+                // tedy jeden RX snimek pripada na 6 kroku.
+                int phaseStep =
+                    building.schoolTrainingStep %
+                    30;
+
                 int phaseFrame =
-                    (SDL_GetTicks() / 120) %
-                    workFramesPerPhase;
+                    (
+                        phaseStep *
+                        workFramesPerPhase
+                    ) /
+                    30;
+
+                if (
+                    phaseFrame >=
+                        workFramesPerPhase
+                ) {
+                    phaseFrame =
+                        workFramesPerPhase - 1;
+                }
 
                 int workFrame =
                     workPhase * workFramesPerPhase +

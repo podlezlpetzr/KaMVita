@@ -524,6 +524,95 @@ int main(int argc, char* argv[])
             crossPressed = false;
         }
 
+        // Dotykove CANCEL tlacitko je WIP slot queue[0].
+        // Souradnice musi odpovidat renderu v game_ui.cpp.
+        bool schoolCancelTapped = false;
+
+        if (
+            gameUI.section == GameUISection::School &&
+            touchTapped
+        ) {
+            const int schoolPanelX =
+                (GAME_UI_PANEL_WIDTH - 180) / 2;
+
+            SDL_Rect schoolCancelArea = {
+                schoolPanelX,
+                76 + 48,
+                32,
+                32
+            };
+
+            schoolCancelTapped =
+                touchStartX >= schoolCancelArea.x &&
+                touchStartX <
+                    schoolCancelArea.x +
+                    schoolCancelArea.w &&
+                touchStartY >= schoolCancelArea.y &&
+                touchStartY <
+                    schoolCancelArea.y +
+                    schoolCancelArea.h;
+        }
+
+        // CANCEL ve School GUI.
+        // Square zrusi prave trenovanou jednotku v queue[0].
+        // Gold se nevraci, protoze se spotrebovava az pri completion.
+        if (
+            gameUI.section == GameUISection::School &&
+            (
+                squarePressed ||
+                schoolCancelTapped
+            )
+        ) {
+            int schoolIndex =
+                gameUI.selectedSchoolBuilding;
+
+            bool validSchool =
+                schoolIndex >= 0 &&
+                schoolIndex < buildingCount &&
+                buildings[schoolIndex].active &&
+                buildings[schoolIndex].type ==
+                    BuildingType::School &&
+                isBuildingComplete(
+                    buildings[schoolIndex]
+                );
+
+            if (validSchool) {
+                Building& school =
+                    buildings[schoolIndex];
+
+                if (school.schoolQueue[0] >= 0) {
+                    // Odstran WIP a posun vsechny cekajici
+                    // polozky o jeden slot dopredu.
+                    for (
+                        int queueIndex = 0;
+                        queueIndex < SCHOOL_QUEUE_SIZE - 1;
+                        ++queueIndex
+                    ) {
+                        school.schoolQueue[queueIndex] =
+                            school.schoolQueue[
+                                queueIndex + 1
+                            ];
+                    }
+
+                    school.schoolQueue[
+                        SCHOOL_QUEUE_SIZE - 1
+                    ] = -1;
+
+                    // Reset celeho rozpracovaneho vycviku.
+                    school.schoolTrainingStep = 0;
+                    school.schoolIdleStep = 0;
+                    school.schoolTrainingActive = false;
+                    school.schoolFinishingTraining = false;
+                }
+            }
+
+            // Vstup uz zpracovalo School GUI.
+            squarePressed = false;
+
+            if (schoolCancelTapped)
+                touchTapped = false;
+        }
+
         previousButtons = pad.buttons;
 
         if (r1Pressed && !buildMenuOpen) {
