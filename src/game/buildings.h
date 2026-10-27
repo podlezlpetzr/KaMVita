@@ -99,6 +99,7 @@ struct BuildingResources {
     SDL_Texture* school;
     SDL_Texture* schoolFlagpole;
     SDL_Texture* schoolFlagAtlas;
+    SDL_Texture* schoolWorkAtlas;
 
     SDL_Texture* roadIcon;
     SDL_Texture* storeIcon;

@@ -463,6 +463,119 @@ void renderBuildings(
                     &flagDestination
                 );
             }
+
+            // SCHOOL WORK1-WORK5 TRAINING OVERLAY
+            //
+            // Atlas ma 25 bunek 16x20:
+            // Work1 0..4, Work2 5..9, ... Work5 20..24.
+            // Skutecny rozmer a pivot zustava per-frame.
+            if (
+                resources.schoolWorkAtlas &&
+                building.schoolTrainingActive &&
+                building.schoolTrainingStep >= 0 &&
+                building.schoolTrainingStep <
+                    150
+            ) {
+                static const int workWidths[25] = {
+                    14, 14, 14, 14, 14,
+                    14, 14, 14, 14, 14,
+                    14, 14, 14, 15, 15,
+                    15, 15, 15, 15, 16,
+                    15, 15, 15, 15, 15
+                };
+
+                static const int workHeights[25] = {
+                    13, 13, 13, 13, 13,
+                    13, 13, 20, 20, 20,
+                    20, 20, 20, 20, 20,
+                    20, 20, 20, 13, 13,
+                    13, 13, 13, 13, 13
+                };
+
+                static const int workPivotX[25] = {
+                    -5, -5, -5, -5, -5,
+                    -5, -5, -5, -5, -5,
+                    -5, -5, -5, -13, -13,
+                    -13, -13, -13, -13, -13,
+                    -13, -13, -13, -13, -13
+                };
+
+                static const int workPivotY[25] = {
+                    -76, -76, -76, -76, -76,
+                    -76, -76, -76, -76, -76,
+                    -76, -76, -76, -76, -76,
+                    -76, -76, -76, -76, -76,
+                    -76, -76, -76, -76, -76
+                };
+
+                const int workCellWidth = 16;
+                const int workCellHeight = 20;
+                const int workFramesPerPhase = 5;
+                const int workTrainingSteps = 150;
+                const int workPhaseSteps = 30;
+                const int workMoveX = -17;
+                const int workMoveY = 5;
+
+                int workPhase =
+                    building.schoolTrainingStep /
+                    workPhaseSteps;
+
+                if (workPhase > 4)
+                    workPhase = 4;
+
+                // Kazda z peti animacnich fazi cykluje
+                // pres svych pet RX snimku.
+                int phaseFrame =
+                    (SDL_GetTicks() / 120) %
+                    workFramesPerPhase;
+
+                int workFrame =
+                    workPhase * workFramesPerPhase +
+                    phaseFrame;
+
+                int frameWidth =
+                    workWidths[workFrame];
+
+                int frameHeight =
+                    workHeights[workFrame];
+
+                SDL_Rect workSource = {
+                    workFrame * workCellWidth,
+                    0,
+                    frameWidth,
+                    frameHeight
+                };
+
+                int workX =
+                    stoneDestinationX +
+                    (
+                        workPivotX[workFrame] +
+                        workMoveX -
+                        stonePivotX
+                    );
+
+                int workY =
+                    stoneDestinationY +
+                    (
+                        workPivotY[workFrame] +
+                        workMoveY -
+                        stonePivotY
+                    );
+
+                SDL_Rect workDestination = {
+                    workX,
+                    workY,
+                    frameWidth,
+                    frameHeight
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.schoolWorkAtlas,
+                    &workSource,
+                    &workDestination
+                );
+            }
         }
 
         // DEBUG SCHOOL ENTRANCE OVERLAY
@@ -894,6 +1007,12 @@ BuildingResources loadBuildingResources(
             "app0:assets/buildings/school/runtime/flag_atlas.bmp"
         );
 
+    resources.schoolWorkAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/school/runtime/work_atlas.bmp"
+        );
+
     resources.schoolIcon = loadColorKeyTexture(
         renderer,
         "app0:assets/ui/buildings/school_icon.bmp"
@@ -959,8 +1078,13 @@ void destroyBuildingResources(
         resources->schoolFlagAtlas
     );
 
+    SDL_DestroyTexture(
+        resources->schoolWorkAtlas
+    );
+
     resources->schoolFlagpole = nullptr;
     resources->schoolFlagAtlas = nullptr;
+    resources->schoolWorkAtlas = nullptr;
 
     resources->schoolIcon = nullptr;
 

@@ -300,6 +300,10 @@ vita_create_vpk(
         assets/buildings/school/runtime/flag_atlas.bmp
 
     FILE
+        assets/buildings/school/runtime/work_atlas.bmp
+        assets/buildings/school/runtime/work_atlas.bmp
+
+    FILE
         assets/ui/school/professions/animal_breeder/icon.bmp
         assets/ui/school/professions/animal_breeder/icon.bmp
 
