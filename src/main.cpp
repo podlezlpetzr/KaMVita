@@ -553,6 +553,105 @@ int main(int argc, char* argv[])
                     schoolCancelArea.h;
         }
 
+        // Dotykove zruseni konkretni cekajici
+        // polozky queue[1..5].
+        int schoolWaitingCancelIndex = -1;
+
+        if (
+            gameUI.section == GameUISection::School &&
+            touchTapped &&
+            !schoolCancelTapped
+        ) {
+            const int schoolPanelX =
+                (GAME_UI_PANEL_WIDTH - 180) / 2;
+
+            const int schoolQueueY = 76 + 80;
+
+            for (
+                int waitingIndex = 0;
+                waitingIndex < SCHOOL_WAITING_SLOTS;
+                ++waitingIndex
+            ) {
+                SDL_Rect waitingSlotArea = {
+                    schoolPanelX + waitingIndex * 36,
+                    schoolQueueY,
+                    32,
+                    32
+                };
+
+                bool insideWaitingSlot =
+                    touchStartX >= waitingSlotArea.x &&
+                    touchStartX <
+                        waitingSlotArea.x +
+                        waitingSlotArea.w &&
+                    touchStartY >= waitingSlotArea.y &&
+                    touchStartY <
+                        waitingSlotArea.y +
+                        waitingSlotArea.h;
+
+                if (insideWaitingSlot) {
+                    // waitingIndex 0 odpovida queue[1].
+                    schoolWaitingCancelIndex =
+                        waitingIndex + 1;
+                    break;
+                }
+            }
+        }
+
+        if (schoolWaitingCancelIndex >= 1) {
+            int schoolIndex =
+                gameUI.selectedSchoolBuilding;
+
+            bool validSchool =
+                schoolIndex >= 0 &&
+                schoolIndex < buildingCount &&
+                buildings[schoolIndex].active &&
+                buildings[schoolIndex].type ==
+                    BuildingType::School &&
+                isBuildingComplete(
+                    buildings[schoolIndex]
+                );
+
+            if (validSchool) {
+                Building& school =
+                    buildings[schoolIndex];
+
+                if (
+                    schoolWaitingCancelIndex <
+                        SCHOOL_QUEUE_SIZE &&
+                    school.schoolQueue[
+                        schoolWaitingCancelIndex
+                    ] >= 0
+                ) {
+                    // Odstran pouze zvolenou cekajici
+                    // polozku a zbytek fronty posun.
+                    for (
+                        int queueIndex =
+                            schoolWaitingCancelIndex;
+                        queueIndex <
+                            SCHOOL_QUEUE_SIZE - 1;
+                        ++queueIndex
+                    ) {
+                        school.schoolQueue[queueIndex] =
+                            school.schoolQueue[
+                                queueIndex + 1
+                            ];
+                    }
+
+                    school.schoolQueue[
+                        SCHOOL_QUEUE_SIZE - 1
+                    ] = -1;
+
+                    // queue[0] a bezici progress se
+                    // zamerne nijak nerestuji.
+                }
+            }
+
+            // Tap do queue patri pouze School GUI,
+            // i kdyz byl zvoleny slot prazdny.
+            touchTapped = false;
+        }
+
         // CANCEL ve School GUI.
         // Square zrusi prave trenovanou jednotku v queue[0].
         // Gold se nevraci, protoze se spotrebovava az pri completion.
