@@ -24,3 +24,12 @@ build_error.txt
 Thumbs.db
 __pycache__/
 *.pyc
+
+# Proprietary Knights and Merchants data
+# Kept locally, never publish in the KaMVita repository
+/assets/
+/resources/
+
+# Python cache
+__pycache__/
+*.pyc
