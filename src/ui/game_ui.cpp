@@ -702,11 +702,15 @@ void renderGameUI(
 
         // Ramecky tri carouselovych pozic.
         for (int i = 0; i < 3; ++i) {
+            bool portraitFocused =
+                i == 1 &&
+                !ui.schoolQueueFocus;
+
             SDL_SetRenderDrawColor(
                 renderer,
-                i == 1 ? 104 : 65,
-                i == 1 ? 80 : 54,
-                i == 1 ? 42 : 35,
+                portraitFocused ? 104 : 65,
+                portraitFocused ? 80 : 54,
+                portraitFocused ? 42 : 35,
                 255
             );
 
@@ -717,9 +721,9 @@ void renderGameUI(
 
             SDL_SetRenderDrawColor(
                 renderer,
-                i == 1 ? 224 : 124,
-                i == 1 ? 184 : 101,
-                i == 1 ? 97 : 61,
+                portraitFocused ? 224 : 124,
+                portraitFocused ? 184 : 101,
+                portraitFocused ? 97 : 61,
                 255
             );
 
@@ -844,46 +848,99 @@ void renderGameUI(
             rightButton
         };
 
+        bool selectedQueueSlotOccupied = false;
+
+        if (
+            ui.schoolQueueFocus &&
+            selectedSchool &&
+            ui.schoolQueueSelection >= 0 &&
+            ui.schoolQueueSelection <
+                SCHOOL_QUEUE_SIZE
+        ) {
+            selectedQueueSlotOccupied =
+                selectedSchool->schoolQueue[
+                    ui.schoolQueueSelection
+                ] >= 0;
+        }
+
         for (int i = 0; i < 3; ++i) {
             bool buttonEnabled = true;
 
-            if (i == 0 && selected == 0)
-                buttonEnabled = false;
+            if (ui.schoolQueueFocus) {
+                // Ve queue rezimu je aktivni pouze
+                // prostredni CANCEL tlacitko.
+                if (i != 1)
+                    buttonEnabled = false;
 
-            if (
-                i == 2 &&
-                selected ==
-                    SCHOOL_PROFESSION_COUNT - 1
-            ) {
-                buttonEnabled = false;
+                if (
+                    i == 1 &&
+                    !selectedQueueSlotOccupied
+                ) {
+                    buttonEnabled = false;
+                }
+            } else {
+                if (i == 0 && selected == 0)
+                    buttonEnabled = false;
+
+                if (
+                    i == 2 &&
+                    selected ==
+                        SCHOOL_PROFESSION_COUNT - 1
+                ) {
+                    buttonEnabled = false;
+                }
             }
 
-            SDL_SetRenderDrawColor(
-                renderer,
-                !buttonEnabled
-                    ? 52
-                    : (i == 1 ? 126 : 91),
-                !buttonEnabled
-                    ? 46
-                    : (i == 1 ? 92 : 69),
-                !buttonEnabled
-                    ? 38
-                    : (i == 1 ? 42 : 40),
-                255
-            );
+            if (!buttonEnabled) {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    52, 46, 38, 255
+                );
+            } else if (
+                i == 1 &&
+                ui.schoolQueueFocus
+            ) {
+                // Aktivni CANCEL.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    112, 36, 29, 255
+                );
+            } else if (i == 1) {
+                // Aktivni TRAIN.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    126, 92, 42, 255
+                );
+            } else {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    91, 69, 40, 255
+                );
+            }
 
             SDL_RenderFillRect(
                 renderer,
                 &buttons[i]
             );
 
-            SDL_SetRenderDrawColor(
-                renderer,
-                buttonEnabled ? 220 : 98,
-                buttonEnabled ? 185 : 83,
-                buttonEnabled ? 105 : 58,
-                255
-            );
+            if (
+                buttonEnabled &&
+                i == 1 &&
+                ui.schoolQueueFocus
+            ) {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    244, 138, 108, 255
+                );
+            } else {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    buttonEnabled ? 220 : 98,
+                    buttonEnabled ? 185 : 83,
+                    buttonEnabled ? 105 : 58,
+                    255
+                );
+            }
 
             SDL_RenderDrawRect(
                 renderer,
@@ -892,7 +949,10 @@ void renderGameUI(
         }
 
         // Sipka LEFT.
-        if (selected > 0) {
+        if (
+            !ui.schoolQueueFocus &&
+            selected > 0
+        ) {
             SDL_SetRenderDrawColor(
                 renderer,
                 232, 205, 142, 255
@@ -915,36 +975,86 @@ void renderGameUI(
             );
         }
 
-        // TRAIN symbol.
-        SDL_SetRenderDrawColor(
-            renderer,
-            242, 193, 54, 255
-        );
+        if (ui.schoolQueueFocus) {
+            // CANCEL symbol ve queue rezimu.
+            SDL_SetRenderDrawColor(
+                renderer,
+                selectedQueueSlotOccupied
+                    ? 255
+                    : 112,
+                selectedQueueSlotOccupied
+                    ? 210
+                    : 94,
+                selectedQueueSlotOccupied
+                    ? 177
+                    : 76,
+                255
+            );
 
-        SDL_Rect trainSymbol = {
-            trainButton.x + 17,
-            trainButton.y + 11,
-            20,
-            18
-        };
+            SDL_Rect cancelSymbol = {
+                trainButton.x + 16,
+                trainButton.y + 10,
+                22,
+                20
+            };
 
-        SDL_RenderDrawRect(
-            renderer,
-            &trainSymbol
-        );
+            SDL_RenderDrawRect(
+                renderer,
+                &cancelSymbol
+            );
 
-        SDL_RenderDrawLine(
-            renderer,
-            trainSymbol.x + 4,
-            trainSymbol.y + 9,
-            trainSymbol.x + 16,
-            trainSymbol.y + 9
-        );
+            SDL_RenderDrawLine(
+                renderer,
+                cancelSymbol.x + 5,
+                cancelSymbol.y + 4,
+                cancelSymbol.x +
+                    cancelSymbol.w - 6,
+                cancelSymbol.y +
+                    cancelSymbol.h - 5
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                cancelSymbol.x +
+                    cancelSymbol.w - 6,
+                cancelSymbol.y + 4,
+                cancelSymbol.x + 5,
+                cancelSymbol.y +
+                    cancelSymbol.h - 5
+            );
+        } else {
+            // TRAIN symbol ve vyberu profese.
+            SDL_SetRenderDrawColor(
+                renderer,
+                242, 193, 54, 255
+            );
+
+            SDL_Rect trainSymbol = {
+                trainButton.x + 17,
+                trainButton.y + 11,
+                20,
+                18
+            };
+
+            SDL_RenderDrawRect(
+                renderer,
+                &trainSymbol
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                trainSymbol.x + 4,
+                trainSymbol.y + 9,
+                trainSymbol.x + 16,
+                trainSymbol.y + 9
+            );
+        }
 
         // Sipka RIGHT.
         if (
+            !ui.schoolQueueFocus &&
             selected <
-            SCHOOL_PROFESSION_COUNT - 1
+                SCHOOL_PROFESSION_COUNT - 1
         ) {
             SDL_SetRenderDrawColor(
                 renderer,
