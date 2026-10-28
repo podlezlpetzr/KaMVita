@@ -53,6 +53,11 @@ struct GameUIState {
     GameUISection section;
     GameUISchoolSelection schoolSelection;
 
+    // False: ovladani carouselu profesi.
+    // True: ovladani School queue[0..5].
+    bool schoolQueueFocus;
+    int schoolQueueSelection;
+
     int selectedSchoolBuilding;
 };
 

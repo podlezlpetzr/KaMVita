@@ -18,6 +18,9 @@ void initGameUI(
     ui->schoolSelection =
         GameUISchoolSelection::Serf;
 
+    ui->schoolQueueFocus = false;
+    ui->schoolQueueSelection = 0;
+
     ui->selectedSchoolBuilding = -1;
 }
 
@@ -381,6 +384,41 @@ void renderGameUI(
             );
         }
 
+        // Gamepadovy focus queue[0]: WIP.
+        if (
+            ui.schoolQueueFocus &&
+            ui.schoolQueueSelection == 0
+        ) {
+            SDL_Rect queueFocusOuter = {
+                wipSlot.x - 2,
+                wipSlot.y - 2,
+                wipSlot.w + 4,
+                wipSlot.h + 4
+            };
+
+            SDL_Rect queueFocusInner = {
+                wipSlot.x - 1,
+           wipSlot.y - 1,
+                wipSlot.w + 2,
+                wipSlot.h + 2
+            };
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                255, 221, 116, 255
+            );
+
+            SDL_RenderDrawRect(
+                renderer,
+                &queueFocusOuter
+            );
+
+            SDL_RenderDrawRect(
+                renderer,
+                &queueFocusInner
+            );
+        }
+
         // Progress bar 0..150.
         SDL_Rect progressBackground = {
             panelX + 34,
@@ -558,6 +596,53 @@ void renderGameUI(
                         cancelBadge.h - 3
                 );
             }
+        }
+
+        // Gamepadovy focus queue[1..5].
+        if (
+            ui.schoolQueueFocus &&
+            ui.schoolQueueSelection >= 1 &&
+            ui.schoolQueueSelection <
+                SCHOOL_QUEUE_SIZE
+        ) {
+            int waitingIndex =
+                ui.schoolQueueSelection - 1;
+
+            SDL_Rect focusedWaitingSlot = {
+                panelX + waitingIndex * 36,
+                panelY + 80,
+                32,
+                32
+            };
+
+            SDL_Rect queueFocusOuter = {
+                focusedWaitingSlot.x - 2,
+                focusedWaitingSlot.y - 2,
+                focusedWaitingSlot.w + 4,
+                focusedWaitingSlot.h + 4
+            };
+
+            SDL_Rect queueFocusInner = {
+                focusedWaitingSlot.x - 1,
+                focusedWaitingSlot.y - 1,
+                focusedWaitingSlot.w + 2,
+                focusedWaitingSlot.h + 2
+            };
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                255, 221, 116, 255
+            );
+
+            SDL_RenderDrawRect(
+                renderer,
+                &queueFocusOuter
+            );
+
+            SDL_RenderDrawRect(
+                renderer,
+                &queueFocusInner
+            );
         }
 
         int selected =

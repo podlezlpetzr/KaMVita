@@ -414,18 +414,60 @@ int main(int argc, char* argv[])
 
         // Navigace GUI.
         if (gameUI.section == GameUISection::School) {
-            if (leftPressed) {
-                moveSchoolUISelection(
-                    &gameUI,
-                    -1
-                );
+            // Sipka nahoru prepne z carouselu profesi
+            // do WIP/queue oblasti.
+            if (
+                upPressed &&
+                !gameUI.schoolQueueFocus
+            ) {
+                gameUI.schoolQueueFocus = true;
+                gameUI.schoolQueueSelection = 0;
             }
 
-            if (rightPressed) {
-                moveSchoolUISelection(
-                    &gameUI,
-                    1
-                );
+            // Sipka dolu vrati focus na carousel profesi.
+            if (
+                downPressed &&
+                gameUI.schoolQueueFocus
+            ) {
+                gameUI.schoolQueueFocus = false;
+            }
+
+            if (gameUI.schoolQueueFocus) {
+                if (leftPressed) {
+                    gameUI.schoolQueueSelection--;
+
+                    if (
+                        gameUI.schoolQueueSelection < 0
+                    ) {
+                        gameUI.schoolQueueSelection = 0;
+                    }
+                }
+
+                if (rightPressed) {
+                    gameUI.schoolQueueSelection++;
+
+                    if (
+                        gameUI.schoolQueueSelection >=
+                            SCHOOL_QUEUE_SIZE
+                    ) {
+                        gameUI.schoolQueueSelection =
+                            SCHOOL_QUEUE_SIZE - 1;
+                    }
+                }
+            } else {
+                if (leftPressed) {
+                    moveSchoolUISelection(
+                        &gameUI,
+                        -1
+                    );
+                }
+
+                if (rightPressed) {
+                    moveSchoolUISelection(
+                        &gameUI,
+                        1
+                    );
+                }
             }
         } else if (gameUI.buildSectionActive) {
             if (leftPressed) {
@@ -468,7 +510,8 @@ int main(int argc, char* argv[])
         if (
             gameUI.section ==
                 GameUISection::School &&
-            crossPressed
+            crossPressed &&
+            !gameUI.schoolQueueFocus
         ) {
             int schoolIndex =
                 gameUI.selectedSchoolBuilding;
@@ -524,6 +567,16 @@ int main(int argc, char* argv[])
             crossPressed = false;
         }
 
+        // Pri focusu School queue nema X zadnou TRAIN
+        // ani mapovou funkci.
+        if (
+            gameUI.section == GameUISection::School &&
+            gameUI.schoolQueueFocus &&
+            crossPressed
+        ) {
+            crossPressed = false;
+        }
+
         // Dotykove CANCEL tlacitko je WIP slot queue[0].
         // Souradnice musi odpovidat renderu v game_ui.cpp.
         bool schoolCancelTapped = false;
@@ -556,6 +609,20 @@ int main(int argc, char* argv[])
         // Dotykove zruseni konkretni cekajici
         // polozky queue[1..5].
         int schoolWaitingCancelIndex = -1;
+
+        // Gamepad CANCEL pro vybrany cekajici slot.
+        // Slot 0 je WIP a obslouzi jej WIP cancel blok.
+        if (
+            gameUI.section == GameUISection::School &&
+            gameUI.schoolQueueFocus &&
+            squarePressed &&
+            gameUI.schoolQueueSelection >= 1 &&
+            gameUI.schoolQueueSelection <
+                SCHOOL_QUEUE_SIZE
+        ) {
+            schoolWaitingCancelIndex =
+                gameUI.schoolQueueSelection;
+        }
 
         if (
             gameUI.section == GameUISection::School &&
@@ -650,6 +717,15 @@ int main(int argc, char* argv[])
             // Tap do queue patri pouze School GUI,
             // i kdyz byl zvoleny slot prazdny.
             touchTapped = false;
+
+            // Square uz zpracovalo zruseni vybraneho
+            // cekajiciho slotu.
+            if (
+                gameUI.schoolQueueFocus &&
+                gameUI.schoolQueueSelection >= 1
+            ) {
+                squarePressed = false;
+            }
         }
 
         // CANCEL ve School GUI.
@@ -658,7 +734,13 @@ int main(int argc, char* argv[])
         if (
             gameUI.section == GameUISection::School &&
             (
-                squarePressed ||
+                (
+                    squarePressed &&
+                    (
+                        !gameUI.schoolQueueFocus ||
+                        gameUI.schoolQueueSelection == 0
+                    )
+                ) ||
                 schoolCancelTapped
             )
         ) {
