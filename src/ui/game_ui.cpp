@@ -335,6 +335,52 @@ void renderGameUI(
             }
         }
 
+        // Viditelne CANCEL tlacitko pro obsazeny WIP slot.
+        // Cervene X v pravem hornim rohu naznacuje,
+        // ze klepnuti na tento slot zrusi vycvik.
+        if (
+            selectedSchool &&
+            selectedSchool->schoolQueue[0] >= 0
+        ) {
+            SDL_Rect cancelBadge = {
+                wipSlot.x + wipSlot.w - 11,
+                wipSlot.y + 1,
+                10,
+                10
+            };
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                104, 24, 20, 255
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &cancelBadge
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                255, 214, 178, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                cancelBadge.x + 2,
+                cancelBadge.y + 2,
+                cancelBadge.x + cancelBadge.w - 3,
+                cancelBadge.y + cancelBadge.h - 3
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                cancelBadge.x + cancelBadge.w - 3,
+                cancelBadge.y + 2,
+                cancelBadge.x + 2,
+                cancelBadge.y + cancelBadge.h - 3
+            );
+        }
+
         // Progress bar 0..150.
         SDL_Rect progressBackground = {
             panelX + 34,
@@ -462,6 +508,55 @@ void renderGameUI(
                         );
                     }
                 }
+            }
+
+            // Viditelne CANCEL X pro obsazeny
+            // cekajici slot queue[1..5].
+            if (
+                selectedSchool &&
+                selectedSchool->schoolQueue[i + 1] >= 0
+            ) {
+                SDL_Rect cancelBadge = {
+                    queueSlot.x + queueSlot.w - 11,
+                    queueSlot.y + 1,
+                    10,
+                    10
+                };
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    104, 24, 20, 255
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &cancelBadge
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    255, 214, 178, 255
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    cancelBadge.x + 2,
+                    cancelBadge.y + 2,
+                    cancelBadge.x +
+                        cancelBadge.w - 3,
+                    cancelBadge.y +
+                        cancelBadge.h - 3
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    cancelBadge.x +
+                        cancelBadge.w - 3,
+                    cancelBadge.y + 2,
+                    cancelBadge.x + 2,
+                    cancelBadge.y +
+                        cancelBadge.h - 3
+                );
             }
         }
 
