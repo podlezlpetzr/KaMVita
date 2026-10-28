@@ -419,8 +419,10 @@ void renderGameUI(
             );
         }
 
-        // Progress bar 0..150.
-        SDL_Rect progressBackground = {
+        // Progress vycviku.
+        // Dvojity ramecek vytvari zapusteny vzhled
+        // odpovidajici zbytku School panelu.
+        SDL_Rect progressOuter = {
             panelX + 34,
             panelY + 54,
             146,
@@ -429,12 +431,12 @@ void renderGameUI(
 
         SDL_SetRenderDrawColor(
             renderer,
-            38, 32, 25, 255
+            34, 28, 22, 255
         );
 
         SDL_RenderFillRect(
             renderer,
-            &progressBackground
+            &progressOuter
         );
 
         SDL_SetRenderDrawColor(
@@ -444,7 +446,34 @@ void renderGameUI(
 
         SDL_RenderDrawRect(
             renderer,
-            &progressBackground
+            &progressOuter
+        );
+
+        SDL_Rect progressInner = {
+            progressOuter.x + 2,
+            progressOuter.y + 2,
+            progressOuter.w - 4,
+            progressOuter.h - 4
+        };
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            55, 43, 29, 255
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &progressInner
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            91, 70, 43, 255
+        );
+
+        SDL_RenderDrawRect(
+            renderer,
+            &progressInner
         );
 
         int trainingStep = 0;
@@ -464,27 +493,43 @@ void renderGameUI(
 
         int progressWidth =
             (
-                (progressBackground.w - 2) *
+                (progressInner.w - 2) *
                 trainingStep
             ) /
             SCHOOL_TRAINING_STEPS;
 
         SDL_Rect progressFill = {
-            progressBackground.x + 1,
-            progressBackground.y + 1,
+            progressInner.x + 1,
+            progressInner.y + 1,
             progressWidth,
-            progressBackground.h - 2
+            progressInner.h - 2
         };
 
         SDL_SetRenderDrawColor(
             renderer,
-            191, 142, 53, 255
+            176, 124, 40, 255
         );
 
-        SDL_RenderFillRect(
-            renderer,
-            &progressFill
-        );
+        if (progressFill.w > 0) {
+            SDL_RenderFillRect(
+                renderer,
+                &progressFill
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                229, 181, 72, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                progressFill.x,
+                progressFill.y,
+                progressFill.x +
+                    progressFill.w - 1,
+                progressFill.y
+            );
+        }
 
         // Queue[1..5].
         for (int i = 0; i < SCHOOL_WAITING_SLOTS; ++i) {
