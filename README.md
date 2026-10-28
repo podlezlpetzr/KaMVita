@@ -2,35 +2,41 @@
 
 KaMVita is an experimental implementation of Knights and Merchants gameplay for the PlayStation Vita.
 
-## Status
+The project is currently under active development.
 
-KaMVita is currently under active development.
+## Current features
 
-Implemented or partially implemented systems include:
-
-- PS Vita / VitaSDK build
+- PlayStation Vita / VitaSDK support
 - SDL2 rendering
-- terrain rendering
-- building placement and construction
-- roads and pathfinding
+- Terrain rendering
+- Building placement and construction
+- Road construction
 - Worker and Serf units
+- Pathfinding
 - School building
-- School training queue
-- touchscreen controls
-- gamepad controls
+- Unit training queue
+- Touchscreen controls
+- Gamepad controls
+- Basic save/load functionality
 
 ## Original game data
 
-This repository does not contain original Knights and Merchants game assets.
+This repository does not include the original Knights and Merchants game assets.
 
-Original graphics, sounds, music, resource files and other proprietary game data are not distributed with KaMVita.
+KaMVita requires data obtained from a legally owned copy of Knights and Merchants.
 
-Local development uses separately supplied game data which is excluded from this repository.
+Original graphics, sounds, music and other Knights and Merchants game data are not distributed with this repository.
 
-## Building
+## Development
 
-Build instructions will be documented as the project is prepared for public development.
+The project is built using VitaSDK and SDL2.
+
+KaMVita is currently a work in progress and many gameplay systems are incomplete.
 
 ## Project status
 
-Work in progress. The project is not yet a complete playable implementation of Knights and Merchants.
+Current development is focused on completing the School system, unit behaviour, GUI and the foundations required for the original Knights and Merchants economic gameplay.
+
+## Disclaimer
+
+KaMVita is an independent fan project and is not affiliated with or endorsed by the original Knights and Merchants developers, publishers, or rights holders.
