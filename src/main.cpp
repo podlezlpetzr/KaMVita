@@ -449,6 +449,15 @@ enum class BuildTool {
     Remove
 };
 
+
+// Samostatny mapovy stav pro Field/Wine plany.
+// Road zustava ve vlastnim RoadState workflow.
+enum class LandPlanState : unsigned char {
+    None = 0,
+    Field,
+    Wine
+};
+
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -523,6 +532,15 @@ int main(int argc, char* argv[])
 
     // Stav vystavby cesty pro kazdou dlazdici.
     RoadState roads[MAP_HEIGHT][MAP_WIDTH] = {};
+
+    // Field/Wine planovaci vrstva.
+    // V tomto checkpointu pouzivame pouze Field.
+    // Wine bude zapojeno v nasledujicim rezu.
+    LandPlanState landPlans[
+        MAP_HEIGHT
+    ][
+        MAP_WIDTH
+    ] = {};
 
     Unit units[MAX_UNITS] = {};
     int unitCount = 0;
@@ -2177,6 +2195,121 @@ int main(int argc, char* argv[])
             }
         }
         // -------------------------------------------------
+        // Field tool GUI 337
+        //
+        // Prvni runtime implementace Field planu.
+        //
+        // Square:
+        // None  -> Field
+        // Field -> None
+        //
+        // Field plan nesmi prekryvat:
+        // - aktivni building footprint,
+        // - zadny RoadState.
+        // -------------------------------------------------
+
+        if (
+            !buildMenuOpen &&
+            activeBuildTool == BuildTool::Field &&
+            squarePressed &&
+            hoverTileX >= 0 &&
+            hoverTileX < MAP_WIDTH &&
+            hoverTileY >= 0 &&
+            hoverTileY < MAP_HEIGHT
+        ) {
+            bool blockedByBuilding = false;
+
+            for (
+                int buildingIndex = 0;
+                buildingIndex < buildingCount;
+                ++buildingIndex
+            ) {
+                const Building& building =
+                    buildings[buildingIndex];
+
+                if (!building.active)
+                    continue;
+
+                const int localX =
+                    hoverTileX -
+                    building.tileX;
+
+                const int localY =
+                    hoverTileY -
+                    building.tileY;
+
+                if (
+                    localX < 0 ||
+                    localY < 0
+                ) {
+                    continue;
+                }
+
+                const int width =
+                    getBuildingWidth(
+                        building.type
+                    );
+
+                const int height =
+                    getBuildingHeight(
+                        building.type
+                    );
+
+                if (
+                    localX >= width ||
+                    localY >= height
+                ) {
+                    continue;
+                }
+
+                if (
+                    getBuildingPlanValue(
+                        building.type,
+                        localX,
+                        localY
+                    ) != 0
+                ) {
+                    blockedByBuilding = true;
+                    break;
+                }
+            }
+
+            const bool blockedByRoad =
+                roads[
+                    hoverTileY
+                ][
+                    hoverTileX
+                ] != RoadState::None;
+
+            if (
+                !blockedByBuilding &&
+                !blockedByRoad
+            ) {
+                LandPlanState& plan =
+                    landPlans[
+                        hoverTileY
+                    ][
+                        hoverTileX
+                    ];
+
+                if (
+                    plan ==
+                    LandPlanState::Field
+                ) {
+                    plan =
+                        LandPlanState::None;
+                } else if (
+                    plan ==
+                    LandPlanState::None
+                ) {
+                    plan =
+                        LandPlanState::Field;
+                }
+            }
+        }
+
+
+        // -------------------------------------------------
         // Remove tool GUI 340
         //
         // Prvni bezpecna verze rusi pouze:
@@ -2332,7 +2465,14 @@ int main(int argc, char* argv[])
                 }
             }
 
-            if (!blockedByBuilding) {
+            if (
+                !blockedByBuilding &&
+                landPlans[
+                    hoverTileY
+                ][
+                    hoverTileX
+                ] == LandPlanState::None
+            ) {
                 RoadState& road =
                     roads[hoverTileY][hoverTileX];
 
@@ -2409,6 +2549,84 @@ int main(int argc, char* argv[])
                 selectedTileY = -1;
             }
         }
+
+
+        // -------------------------------------------------
+        // Field planning overlay
+        //
+        // Docasny diagnosticky visual pro Field plan.
+        // Originalni KaM plan rendering prijde az po
+        // overeni mapove logiky.
+        // -------------------------------------------------
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_BLEND
+        );
+
+        for (
+            int fieldY = 0;
+            fieldY < MAP_HEIGHT;
+            ++fieldY
+        ) {
+            for (
+                int fieldX = 0;
+                fieldX < MAP_WIDTH;
+                ++fieldX
+            ) {
+                if (
+                    landPlans[
+                        fieldY
+                    ][
+                        fieldX
+                    ] != LandPlanState::Field
+                ) {
+                    continue;
+                }
+
+                SDL_Rect fieldPlanRect = {
+                    fieldX * TILE_SIZE -
+                        (int)cameraX,
+                    fieldY * TILE_SIZE -
+                        (int)cameraY,
+                    TILE_SIZE,
+                    TILE_SIZE
+                };
+
+                // Jemna zlutozelena vypln.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    190,
+                    165,
+                    45,
+                    72
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &fieldPlanRect
+                );
+
+                // Vyraznejsi obrys planu.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    238,
+                    211,
+                    76,
+                    210
+                );
+
+                SDL_RenderDrawRect(
+                    renderer,
+                    &fieldPlanRect
+                );
+            }
+        }
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_NONE
+        );
 
 
         // Vykresleni planu a fazi vystavby cest.
