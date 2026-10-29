@@ -135,25 +135,72 @@ static Building migrateBuildingSaveV5(
 
 
 
-static bool saveGame(const Building* buildings, int buildingCount)
+static bool saveGame(
+    const Building* buildings,
+    int buildingCount,
+    const WareDistribution& wareDistribution
+)
 {
-    sceIoMkdir("ux0:data/kamvita", 0777);
+    sceIoMkdir(
+        "ux0:data/kamvita",
+        0777
+    );
 
-    FILE* file = fopen("ux0:data/kamvita/save.dat", "wb");
+    FILE* file = fopen(
+        "ux0:data/kamvita/save.dat",
+        "wb"
+    );
+
     if (!file)
         return false;
 
-    SaveHeader header;
+    SaveHeader header = {};
+
     header.magic = 0x4B414D56;
-    header.version = 6;
+
+    // Save v7:
+    // za blokem budov je ulozenych presne
+    // 16 bajtu WareDistribution.
+    header.version = 7;
     header.buildingCount = buildingCount;
 
-    if (fwrite(&header, sizeof(header), 1, file) != 1) {
+    if (
+        fwrite(
+            &header,
+            sizeof(header),
+            1,
+            file
+        ) != 1
+    ) {
         fclose(file);
         return false;
     }
 
-    if (fwrite(buildings, sizeof(Building), MAX_BUILDINGS, file) != MAX_BUILDINGS) {
+    if (
+        fwrite(
+            buildings,
+            sizeof(Building),
+            MAX_BUILDINGS,
+            file
+        ) != MAX_BUILDINGS
+    ) {
+        fclose(file);
+        return false;
+    }
+
+    static_assert(
+        sizeof(WareDistribution) == 16,
+        "WareDistribution save format musi mit 16 bajtu"
+    );
+
+    if (
+        fwrite(
+            &wareDistribution,
+            sizeof(WareDistribution),
+            1,
+            file
+        ) != 1
+    ) {
         fclose(file);
         return false;
     }
@@ -164,9 +211,16 @@ static bool saveGame(const Building* buildings, int buildingCount)
 
 static bool loadGame(
     Building* buildings,
-    int* buildingCount
+    int* buildingCount,
+    WareDistribution* wareDistribution
 )
 {
+    // Remake defaults plati pro novou hru,
+    // chybejici save a starsi save v4-v6.
+    initializeWareDistribution(
+        wareDistribution
+    );
+
     FILE* file =
         fopen(
             "ux0:data/kamvita/save.dat",
@@ -195,7 +249,8 @@ static bool loadGame(
         (
             header.version != 4 &&
             header.version != 5 &&
-            header.version != 6
+            header.version != 6 &&
+            header.version != 7
         ) ||
         header.buildingCount < 0 ||
         header.buildingCount > MAX_BUILDINGS
@@ -206,7 +261,10 @@ static bool loadGame(
 
     Building loadedBuildings[MAX_BUILDINGS] = {};
 
-    if (header.version == 6) {
+    if (
+        header.version == 6 ||
+        header.version == 7
+    ) {
         if (
             fread(
                 loadedBuildings,
@@ -244,6 +302,52 @@ static bool loadGame(
                 migrateBuildingSaveV5(
                     legacyBuildings[i]
                 );
+        }
+    }
+
+    if (header.version == 7) {
+        WareDistribution loadedDistribution = {};
+
+        if (
+            fread(
+                &loadedDistribution,
+                sizeof(WareDistribution),
+                1,
+                file
+            ) != 1
+        ) {
+            fclose(file);
+            return false;
+        }
+
+        if (wareDistribution) {
+            for (
+                int wareIndex = 0;
+                wareIndex < WARE_RATIO_TAB_COUNT;
+                ++wareIndex
+            ) {
+                for (
+                    int targetIndex = 0;
+                    targetIndex <
+                        WARE_RATIO_TARGET_COUNT;
+                    ++targetIndex
+                ) {
+                    // Setter zaroven omezi poskozene
+                    // hodnoty do rozsahu 0..5.
+                    setWareDistributionValue(
+                        wareDistribution,
+                        static_cast<WareRatioType>(
+                            wareIndex
+                        ),
+                        targetIndex,
+                        loadedDistribution.values[
+                            wareIndex
+                        ][
+                            targetIndex
+                        ]
+                    );
+                }
+            }
         }
     }
 
@@ -425,7 +529,11 @@ int main(int argc, char* argv[])
     float schoolStepTimers[MAX_BUILDINGS] = {};
 
     bool gameLoaded =
-        loadGame(buildings, &buildingCount);
+        loadGame(
+            buildings,
+            &buildingCount,
+            &wareDistribution
+        );
 
     // Development start:
     // pokud neni save, zacneme s hotovym
@@ -1534,8 +1642,13 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (startPressed)
-            saveGame(buildings, buildingCount);
+        if (startPressed) {
+            saveGame(
+                buildings,
+                buildingCount,
+                wareDistribution
+            );
+        }
         int analogX = (int)pad.lx - 128;
         int analogY = (int)pad.ly - 128;
 
