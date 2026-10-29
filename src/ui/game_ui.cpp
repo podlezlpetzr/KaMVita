@@ -2235,36 +2235,212 @@ void renderGameUI(
     }
 
     // =====================================================
-    // ORIGINALNI KaM BUILD BUTTONFLAT
+    // KOMPLETNI ORIGINALNI KaM BUILD 439
     //
-    // Remake:
-    // TKMButtonFlat 33x33
-    // horizontalni krok 37 px
+    // Akcni radek:
+    // Road je v KaMVita funkcni.
     //
-    // KaMVita zatim implementuje:
-    // Road, Store, Bakery, Farm, School.
+    // House grid:
+    // puvodni GUIHouseOrder[27],
+    // 5 sloupcu, ButtonFlat 33x33,
+    // krok 37 px.
+    //
+    // Implementovane:
+    // School, Farm, Bakery, Store.
+    //
+    // Ostatni budovy pouzivaji GUI 41,
+    // stejne jako nedostupne houses v Remaku.
     // =====================================================
 
     if (ui.section == GameUISection::Build) {
-        const int buildStartX = 6;
-        const int buildStartY = 350;
-        const int buildButtonSize = 33;
-        const int buildStep = 37;
+        const int buttonSize = 33;
+        const int buttonStep = 37;
 
-        for (int i = 0; i < 5; ++i) {
-            SDL_Rect button = {
-                buildStartX + i * buildStep,
-                buildStartY,
-                buildButtonSize,
-                buildButtonSize
+        // Sidebar toolbar konci na Y=230.
+        // Rozlozeni je prizpusobeno vysce Vita displeje,
+        // ale zachovava originalni 33/37 geometrii.
+        const int actionY = 282;
+        const int housesStartY = 321;
+        const int contentX = 6;
+
+        // -------------------------------------------------
+        // Road, samostatna funkcni Build akce
+        // -------------------------------------------------
+
+        SDL_Rect roadButton = {
+            contentX,
+            actionY,
+            buttonSize,
+            buttonSize
+        };
+
+        const bool roadSelected =
+            ui.buildSelection ==
+                GameUIBuildSelection::Road;
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_BLEND
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            roadSelected ? 103 : 49,
+            roadSelected ? 84 : 42,
+            roadSelected ? 48 : 32,
+            roadSelected ? 205 : 135
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &roadButton
+        );
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_NONE
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            35, 30, 25, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            roadButton.x,
+            roadButton.y,
+            roadButton.x + roadButton.w - 1,
+            roadButton.y
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            roadButton.x,
+            roadButton.y,
+            roadButton.x,
+            roadButton.y + roadButton.h - 1
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            roadSelected ? 230 : 171,
+            roadSelected ? 194 : 154,
+            roadSelected ? 100 : 121,
+            255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            roadButton.x,
+            roadButton.y + roadButton.h - 1,
+            roadButton.x + roadButton.w - 1,
+            roadButton.y + roadButton.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            roadButton.x + roadButton.w - 1,
+            roadButton.y,
+            roadButton.x + roadButton.w - 1,
+            roadButton.y + roadButton.h - 1
+        );
+
+        SDL_Texture* roadIcon =
+            schoolResources.buildOriginalIcons[0];
+
+        if (roadIcon) {
+            int width = 0;
+            int height = 0;
+
+            SDL_QueryTexture(
+                roadIcon,
+                nullptr,
+                nullptr,
+                &width,
+                &height
+            );
+
+            SDL_Rect destination = {
+                roadButton.x +
+                    (roadButton.w - width) / 2,
+                roadButton.y +
+                    (roadButton.h - height) / 2,
+                width,
+                height
             };
 
-            const bool selected =
-                static_cast<int>(
-                    ui.buildSelection
-                ) == i;
+            SDL_RenderCopy(
+                renderer,
+                roadIcon,
+                nullptr,
+                &destination
+            );
+        }
 
-            // TKMButtonFlat-like podklad.
+        // -------------------------------------------------
+        // Puvodni GUIHouseOrder[27]
+        // -------------------------------------------------
+
+        for (
+            int houseIndex = 0;
+            houseIndex < GUI_HOUSE_COUNT;
+            ++houseIndex
+        ) {
+            const int column =
+                houseIndex % 5;
+
+            const int row =
+                houseIndex / 5;
+
+            SDL_Rect button = {
+                contentX +
+                    column * buttonStep,
+                housesStartY +
+                    row * buttonStep,
+                buttonSize,
+                buttonSize
+            };
+
+            const HouseIconType houseType =
+                GUI_HOUSE_ORDER[houseIndex];
+
+            bool implemented = false;
+            bool selected = false;
+
+            switch (houseType) {
+                case HouseIconType::School:
+                    implemented = true;
+                    selected =
+                        ui.buildSelection ==
+                            GameUIBuildSelection::School;
+                    break;
+
+                case HouseIconType::Farm:
+                    implemented = true;
+                    selected =
+                        ui.buildSelection ==
+                            GameUIBuildSelection::Farm;
+                    break;
+
+                case HouseIconType::Bakery:
+                    implemented = true;
+                    selected =
+                        ui.buildSelection ==
+                            GameUIBuildSelection::Bakery;
+                    break;
+
+                case HouseIconType::Store:
+                    implemented = true;
+                    selected =
+                        ui.buildSelection ==
+                            GameUIBuildSelection::Store;
+                    break;
+
+                default:
+                    break;
+            }
+
             SDL_SetRenderDrawBlendMode(
                 renderer,
                 SDL_BLENDMODE_BLEND
@@ -2275,7 +2451,7 @@ void renderGameUI(
                 selected ? 103 : 49,
                 selected ? 84 : 42,
                 selected ? 48 : 32,
-                selected ? 205 : 135
+                selected ? 205 : 125
             );
 
             SDL_RenderFillRect(
@@ -2288,13 +2464,9 @@ void renderGameUI(
                 SDL_BLENDMODE_NONE
             );
 
-            // Horni/levy okraj.
             SDL_SetRenderDrawColor(
                 renderer,
-                selected ? 55 : 35,
-                selected ? 45 : 30,
-                selected ? 28 : 25,
-                255
+                35, 30, 25, 255
             );
 
             SDL_RenderDrawLine(
@@ -2313,7 +2485,6 @@ void renderGameUI(
                 button.y + button.h - 1
             );
 
-            // Spodni/pravy okraj.
             SDL_SetRenderDrawColor(
                 renderer,
                 selected ? 230 : 171,
@@ -2339,37 +2510,41 @@ void renderGameUI(
             );
 
             SDL_Texture* icon =
-                schoolResources.buildOriginalIcons[i];
+                implemented
+                    ? getHouseIcon(
+                        houseIcons,
+                        houseType
+                    )
+                    : schoolResources.questionIcon;
 
             if (!icon)
                 continue;
 
-            int iconWidth = 0;
-            int iconHeight = 0;
+            int width = 0;
+            int height = 0;
 
             SDL_QueryTexture(
                 icon,
                 nullptr,
                 nullptr,
-                &iconWidth,
-                &iconHeight
+                &width,
+                &height
             );
 
-            // Originalni glyph se NEZVETSUJE.
-            SDL_Rect iconDestination = {
+            SDL_Rect destination = {
                 button.x +
-                    (button.w - iconWidth) / 2,
+                    (button.w - width) / 2,
                 button.y +
-                    (button.h - iconHeight) / 2,
-                iconWidth,
-                iconHeight
+                    (button.h - height) / 2,
+                width,
+                height
             };
 
             SDL_RenderCopy(
                 renderer,
                 icon,
                 nullptr,
-                &iconDestination
+                &destination
             );
         }
     }

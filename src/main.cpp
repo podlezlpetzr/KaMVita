@@ -1708,38 +1708,114 @@ int main(int argc, char* argv[])
         if (cursorY > SCREEN_HEIGHT - 1) cursorY = SCREEN_HEIGHT - 1;
 
         // -------------------------------------------------
-        // Pevny KaM BUILD panel
+        // Kompletni KaM BUILD 439 touch geometrie
         // -------------------------------------------------
         if (gameUI.section == GameUISection::Build) {
-            // Originalni KaM TKMButtonFlat geometrie.
-            const int uiSlotSize = 33;
-            const int uiSlotGap = 4;
-            const int uiStartX = 6;
-            const int uiStartY = 350;
-            const int uiColumns = 5;
+            const int buildButtonSize = 33;
+            const int buildButtonStep = 37;
+            const int buildContentX = 6;
+            const int buildActionY = 282;
+            const int buildHousesY = 321;
 
             int hoveredBuildItem = -1;
 
-            for (int i = 0; i < 5; ++i) {
-                int column = i % uiColumns;
-                int row = i / uiColumns;
+            // Road = GameUIBuildSelection::Road = 0.
+            SDL_Rect roadArea = {
+                buildContentX,
+                buildActionY,
+                buildButtonSize,
+                buildButtonSize
+            };
 
-                int slotX =
-                    uiStartX +
-                    column *
-                    (uiSlotSize + uiSlotGap);
+            if (
+                cursorX >= roadArea.x &&
+                cursorX < roadArea.x + roadArea.w &&
+                cursorY >= roadArea.y &&
+                cursorY < roadArea.y + roadArea.h
+            ) {
+                hoveredBuildItem =
+                    static_cast<int>(
+                        GameUIBuildSelection::Road
+                    );
+            }
 
-                int slotY =
-                    uiStartY +
-                    row *
-                    (uiSlotSize + uiSlotGap);
+            // Pouze implementovane houses jsou klikatelne.
+            if (hoveredBuildItem < 0) {
+                for (
+                    int houseIndex = 0;
+                    houseIndex < GUI_HOUSE_COUNT;
+                    ++houseIndex
+                ) {
+                    const int column =
+                        houseIndex % 5;
 
-                if (cursorX >= slotX &&
-                    cursorX < slotX + uiSlotSize &&
-                    cursorY >= slotY &&
-                    cursorY < slotY + uiSlotSize) {
+                    const int row =
+                        houseIndex / 5;
 
-                    hoveredBuildItem = i;
+                    SDL_Rect houseArea = {
+                        buildContentX +
+                            column * buildButtonStep,
+                        buildHousesY +
+                            row * buildButtonStep,
+                        buildButtonSize,
+                        buildButtonSize
+                    };
+
+                    if (
+                        cursorX < houseArea.x ||
+                        cursorX >=
+                            houseArea.x +
+                                houseArea.w ||
+                        cursorY < houseArea.y ||
+                        cursorY >=
+                            houseArea.y +
+                                houseArea.h
+                    ) {
+                        continue;
+                    }
+
+                    switch (
+                        GUI_HOUSE_ORDER[houseIndex]
+                    ) {
+                        case HouseIconType::Store:
+                            hoveredBuildItem =
+                                static_cast<int>(
+                                    GameUIBuildSelection::
+                                        Store
+                                );
+                            break;
+
+                        case HouseIconType::Bakery:
+                            hoveredBuildItem =
+                                static_cast<int>(
+                                    GameUIBuildSelection::
+                                        Bakery
+                                );
+                            break;
+
+                        case HouseIconType::Farm:
+                            hoveredBuildItem =
+                                static_cast<int>(
+                                    GameUIBuildSelection::
+                                        Farm
+                                );
+                            break;
+
+                        case HouseIconType::School:
+                            hoveredBuildItem =
+                                static_cast<int>(
+                                    GameUIBuildSelection::
+                                        School
+                                );
+                            break;
+
+                        default:
+                            // Neimplementovane budovy odpovidaji
+                            // neaktivnimu GUI 41 v Remaku.
+                            hoveredBuildItem = -1;
+                            break;
+                    }
+
                     break;
                 }
             }
