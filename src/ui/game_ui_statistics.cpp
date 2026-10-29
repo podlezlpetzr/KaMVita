@@ -346,7 +346,7 @@ void renderStatBlock(
 
 void renderGameUIStatistics(
     SDL_Renderer* renderer,
-    const BuildingResources& buildingResources,
+    const HouseIconResources& houseIcons,
     const SchoolUIResources& uiResources,
     const GameUIStatistics& stats
 )
@@ -367,7 +367,10 @@ void renderGameUIStatistics(
     // Buildings: Store, Bakery, Farm, School.
     renderStatBlock(
         renderer,
-        buildingResources.storeIcon,
+        getHouseIcon(
+            houseIcons,
+            HouseIconType::Store
+        ),
         uiResources.statisticsCounts,
         uiResources.statisticsWipCounts,
         firstX + stepX * 0,
@@ -378,7 +381,10 @@ void renderGameUIStatistics(
 
     renderStatBlock(
         renderer,
-        buildingResources.bakeryIcon,
+        getHouseIcon(
+            houseIcons,
+            HouseIconType::Bakery
+        ),
         uiResources.statisticsCounts,
         uiResources.statisticsWipCounts,
         firstX + stepX * 1,
@@ -389,7 +395,10 @@ void renderGameUIStatistics(
 
     renderStatBlock(
         renderer,
-        buildingResources.farmIcon,
+        getHouseIcon(
+            houseIcons,
+            HouseIconType::Farm
+        ),
         uiResources.statisticsCounts,
         uiResources.statisticsWipCounts,
         firstX + stepX * 2,
@@ -400,7 +409,10 @@ void renderGameUIStatistics(
 
     renderStatBlock(
         renderer,
-        buildingResources.schoolIcon,
+        getHouseIcon(
+            houseIcons,
+            HouseIconType::School
+        ),
         uiResources.statisticsCounts,
         uiResources.statisticsWipCounts,
         firstX + stepX * 3,

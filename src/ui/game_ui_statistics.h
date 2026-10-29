@@ -2,6 +2,7 @@
 
 #include "../game/buildings.h"
 #include "../game/units.h"
+#include "house_icons.h"
 
 
 struct GameUIStatistics {
@@ -44,7 +45,6 @@ GameUIStatistics calculateGameUIStatistics(
 );
 
 
-struct BuildingResources;
 struct SchoolUIResources;
 
 
@@ -52,7 +52,7 @@ struct SchoolUIResources;
 // Pouziva pouze hodnoty z calculateGameUIStatistics().
 void renderGameUIStatistics(
     SDL_Renderer* renderer,
-    const BuildingResources& buildingResources,
+    const HouseIconResources& houseIcons,
     const SchoolUIResources& uiResources,
     const GameUIStatistics& stats
 );

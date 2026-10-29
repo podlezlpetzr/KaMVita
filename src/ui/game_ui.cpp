@@ -362,7 +362,7 @@ void renderGameUI(
 
         renderGameUIStatistics(
             renderer,
-            resources,
+            houseIcons,
             schoolResources,
             statistics
         );
