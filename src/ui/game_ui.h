@@ -161,6 +161,10 @@ struct SchoolUIResources {
     // buildHouseNameText je kompletni katalog vsech
     // 29 HouseIconType ve stejnem poradi jako HouseIconType.
     SDL_Texture* buildNameText[7];
+
+    // Originalni KaM TX_BUILD_DEMOLISH pro GUI 340.
+    SDL_Texture* buildDemolishText;
+
     SDL_Texture* buildHouseNameText[29];
 
     // Originalni Ratios 440 resources.

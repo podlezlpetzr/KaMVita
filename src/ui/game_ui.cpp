@@ -2312,6 +2312,9 @@ void renderGameUI(
         const bool wineToolSelected =
             ui.buildToolSelection == 2;
 
+        const bool demolishToolSelected =
+            ui.buildToolSelection == 3;
+
         const bool houseCatalogSelected =
             ui.buildHouseCatalogSelection >= 0 &&
             ui.buildHouseCatalogSelection <
@@ -2338,6 +2341,28 @@ void renderGameUI(
             selectedWoodCost = 1;
             selectedStoneCost = 0;
             selectedHasWood = true;
+            selectedHasStone = false;
+        } else if (demolishToolSelected) {
+            // KaM Remake:
+            // SetCost(
+            //     cmErase,
+            //     0,
+            //     340,
+            //     0,
+            //     0,
+            //     TX_BUILD_DEMOLISH
+            // );
+
+            selectedBuildIcon =
+                schoolResources.buildRemoveIcon;
+
+            selectedBuildName =
+                schoolResources.buildDemolishText;
+
+            selectedWoodCost = 0;
+            selectedStoneCost = 0;
+
+            selectedHasWood = false;
             selectedHasStone = false;
         } else if (houseCatalogSelected) {
             const HouseIconType houseType =
@@ -3336,6 +3361,12 @@ SchoolUIResources loadSchoolUIResources(
             );
     }
 
+    resources.buildDemolishText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/text/demolish.bmp"
+        );
+
     static const char* buildHouseNameFiles[29] = {
         "armor_smithy",
         "armor_workshop",
@@ -3665,6 +3696,15 @@ void destroySchoolUIResources(
         }
     }
 
+
+    if (resources->buildDemolishText) {
+        SDL_DestroyTexture(
+            resources->buildDemolishText
+        );
+
+        resources->buildDemolishText =
+            nullptr;
+    }
 
     for (int i = 0; i < 29; ++i) {
         if (resources->buildHouseNameText[i]) {

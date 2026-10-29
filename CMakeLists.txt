@@ -980,4 +980,8 @@ vita_create_vpk(
         assets/ui/build/text/houses/woodcutter.bmp
         assets/ui/build/text/houses/woodcutter.bmp
 
+    FILE
+        assets/ui/build/text/demolish.bmp
+        assets/ui/build/text/demolish.bmp
+
 )

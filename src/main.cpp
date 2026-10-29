@@ -2369,7 +2369,10 @@ int main(int argc, char* argv[])
         // Square:
         // None  -> Wine
         // Wine  -> None
-        // Field -> Wine
+        // Field -> beze zmeny
+        //
+        // KaM Remake CanAddFieldPlan vyzaduje,
+        // aby na dlazdici nebyl zadny jiny field plan.
         //
         // Wine plan nesmi prekryvat:
         // - aktivni building footprint,
@@ -2464,11 +2467,16 @@ int main(int argc, char* argv[])
                     plan ==
                     LandPlanState::Wine
                 ) {
+                    // Stejny typ planu se druhym
+                    // stiskem zrusi.
                     plan =
                         LandPlanState::None;
-                } else {
-                    // None -> Wine
-                    // Field -> Wine
+                } else if (
+                    plan ==
+                    LandPlanState::None
+                ) {
+                    // Jiny FieldType nesmi prepsat
+                    // existujici plan na dlazdici.
                     plan =
                         LandPlanState::Wine;
                 }
