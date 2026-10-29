@@ -1,0 +1,5 @@
+id=143
+width=19
+height=27
+pivot_x=-9
+pivot_y=-13

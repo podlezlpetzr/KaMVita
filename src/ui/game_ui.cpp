@@ -174,34 +174,553 @@ void renderGameUI(
         // Pozadi poskytuje primo autenticky sidebar 404.
         (void)needsArea;
 
-        // Docasny Gold symbol.
-        // Funkcni pocet zlata pripojime ke konkretni School.
-        SDL_Rect goldOuter = {
-            panelX + 74,
-            panelY + 23,
-            32,
-            14
+        // =================================================
+        // ORIGINAL KaM HOUSE HEADER
+        //
+        // Original:
+        // House panel Y + 42:
+        // 0 delivery, 30 repair, 60 logo, 90 worker
+        // health X=120, Y=57, 55x15.
+        //
+        // Vita School content zacina na panelY=274,
+        // coz odpovida originalnimu House Y+76.
+        // House top je tedy panelY-76 = 198.
+        // =================================================
+
+        const int houseTop = panelY - 76;
+        const int houseControlsY = houseTop + 42;
+
+        SDL_Rect deliveryButton = {
+            panelX,
+            houseControlsY,
+            30,
+            30
         };
+
+        SDL_Rect repairButton = {
+            panelX + 30,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect houseLogoArea = {
+            panelX + 60,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect workerArea = {
+            panelX + 90,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect healthBar = {
+            panelX + 120,
+            houseTop + 57,
+            55,
+            15
+        };
+
+        // -------------------------------------------------
+        // Delivery + Repair bsGame podklady
+        // -------------------------------------------------
+
+        SDL_Rect houseButtons[2] = {
+            deliveryButton,
+            repairButton
+        };
+
+        for (int buttonIndex = 0;
+             buttonIndex < 2;
+             ++buttonIndex) {
+
+            if (schoolResources.buttonStone) {
+                SDL_Rect source = {
+                    12 + buttonIndex * 34,
+                    40,
+                    houseButtons[buttonIndex].w,
+                    houseButtons[buttonIndex].h
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.buttonStone,
+                    &source,
+                    &houseButtons[buttonIndex]
+                );
+            }
+
+            // Zasunutý game bevel.
+            SDL_SetRenderDrawColor(
+                renderer,
+                38, 32, 26, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                houseButtons[buttonIndex].x,
+                houseButtons[buttonIndex].y,
+                houseButtons[buttonIndex].x +
+                    houseButtons[buttonIndex].w - 1,
+                houseButtons[buttonIndex].y
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                houseButtons[buttonIndex].x,
+                houseButtons[buttonIndex].y,
+                houseButtons[buttonIndex].x,
+                houseButtons[buttonIndex].y +
+                    houseButtons[buttonIndex].h - 1
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                184, 169, 137, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                houseButtons[buttonIndex].x,
+                houseButtons[buttonIndex].y +
+                    houseButtons[buttonIndex].h - 1,
+                houseButtons[buttonIndex].x +
+                    houseButtons[buttonIndex].w - 1,
+                houseButtons[buttonIndex].y +
+                    houseButtons[buttonIndex].h - 1
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                houseButtons[buttonIndex].x +
+                    houseButtons[buttonIndex].w - 1,
+                houseButtons[buttonIndex].y,
+                houseButtons[buttonIndex].x +
+                    houseButtons[buttonIndex].w - 1,
+                houseButtons[buttonIndex].y +
+                    houseButtons[buttonIndex].h - 1
+            );
+        }
+
+        if (selectedSchool) {
+            // ---------------------------------------------
+            // Delivery 37/38
+            // ---------------------------------------------
+
+            SDL_Texture* deliveryGlyph =
+                selectedSchool->wareDeliveryEnabled
+                    ? schoolResources.deliveryOn
+                    : schoolResources.deliveryOff;
+
+            if (deliveryGlyph) {
+                int w = 0;
+                int h = 0;
+
+                SDL_QueryTexture(
+                    deliveryGlyph,
+                    nullptr,
+                    nullptr,
+                    &w,
+                    &h
+                );
+
+                SDL_Rect dst = {
+                    deliveryButton.x +
+                        (deliveryButton.w - w) / 2,
+                    deliveryButton.y +
+                        (deliveryButton.h - h) / 2,
+                    w,
+                    h
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    deliveryGlyph,
+                    nullptr,
+                    &dst
+                );
+            }
+
+            // ---------------------------------------------
+            // Repair 39/40
+            // ---------------------------------------------
+
+            SDL_Texture* repairGlyph =
+                selectedSchool->repairEnabled
+                    ? schoolResources.repairOn
+                    : schoolResources.repairOff;
+
+            if (repairGlyph) {
+                int w = 0;
+                int h = 0;
+
+                SDL_QueryTexture(
+                    repairGlyph,
+                    nullptr,
+                    nullptr,
+                    &w,
+                    &h
+                );
+
+                SDL_Rect dst = {
+                    repairButton.x +
+                        (repairButton.w - w) / 2,
+                    repairButton.y +
+                        (repairButton.h - h) / 2,
+                    w,
+                    h
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    repairGlyph,
+                    nullptr,
+                    &dst
+                );
+            }
+        }
+
+        // -------------------------------------------------
+        // Skutecna School ikona
+        // -------------------------------------------------
+
+        if (resources.schoolIcon) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                resources.schoolIcon,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            float scaleX =
+                (float)houseLogoArea.w / (float)w;
+
+            float scaleY =
+                (float)houseLogoArea.h / (float)h;
+
+            float scale =
+                scaleX < scaleY ? scaleX : scaleY;
+
+            if (scale > 1.0f)
+                scale = 1.0f;
+
+            int dw = (int)(w * scale);
+            int dh = (int)(h * scale);
+
+            SDL_Rect dst = {
+                houseLogoArea.x +
+                    (houseLogoArea.w - dw) / 2,
+                houseLogoArea.y +
+                    (houseLogoArea.h - dh) / 2,
+                dw,
+                dh
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.schoolIcon,
+                nullptr,
+                &dst
+            );
+        }
+
+        // -------------------------------------------------
+        // Worker 141
+        // -------------------------------------------------
+
+        if (schoolResources.houseWorker) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                schoolResources.houseWorker,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect dst = {
+                workerArea.x +
+                    (workerArea.w - w) / 2,
+                workerArea.y +
+                    (workerArea.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.houseWorker,
+                nullptr,
+                &dst
+            );
+        }
+
+        // -------------------------------------------------
+        // Health 55x15 podle TKMPercentBar
+        // -------------------------------------------------
 
         SDL_SetRenderDrawColor(
             renderer,
-            95, 69, 30, 255
+            38, 33, 27, 255
         );
 
         SDL_RenderFillRect(
             renderer,
-            &goldOuter
+            &healthBar
         );
 
         SDL_SetRenderDrawColor(
             renderer,
-            242, 193, 54, 255
+            28, 24, 20, 255
         );
 
-        SDL_RenderDrawRect(
+        SDL_RenderDrawLine(
             renderer,
-            &goldOuter
+            healthBar.x,
+            healthBar.y,
+            healthBar.x + healthBar.w - 1,
+            healthBar.y
         );
+
+        SDL_RenderDrawLine(
+            renderer,
+            healthBar.x,
+            healthBar.y,
+            healthBar.x,
+            healthBar.y + healthBar.h - 1
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            176, 163, 134, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            healthBar.x,
+            healthBar.y + healthBar.h - 1,
+            healthBar.x + healthBar.w - 1,
+            healthBar.y + healthBar.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            healthBar.x + healthBar.w - 1,
+            healthBar.y,
+            healthBar.x + healthBar.w - 1,
+            healthBar.y + healthBar.h - 1
+        );
+
+        int houseHealthWidth = 0;
+
+        if (
+            selectedSchool &&
+            selectedSchool->maxHealth > 0
+        ) {
+            houseHealthWidth =
+                (
+                    (healthBar.w - 2) *
+                    selectedSchool->health
+                ) /
+                selectedSchool->maxHealth;
+
+            if (houseHealthWidth < 0)
+                houseHealthWidth = 0;
+
+            if (
+                houseHealthWidth >
+                    healthBar.w - 2
+            ) {
+                houseHealthWidth =
+                    healthBar.w - 2;
+            }
+        }
+
+        if (houseHealthWidth > 0) {
+            SDL_Rect healthFill = {
+                healthBar.x + 1,
+                healthBar.y + 1,
+                houseHealthWidth,
+                healthBar.h - 2
+            };
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                0, 170, 38, 255
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &healthFill
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                0, 69, 16, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                healthFill.x,
+                healthFill.y,
+                healthFill.x +
+                    healthFill.w - 1,
+                healthFill.y
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                healthFill.x,
+                healthFill.y,
+                healthFill.x,
+                healthFill.y +
+                    healthFill.h - 1
+            );
+        }
+
+        // Originalni fnt_Grey text "needs".
+        if (schoolResources.needsText) {
+            int needsWidth = 0;
+            int needsHeight = 0;
+
+            SDL_QueryTexture(
+                schoolResources.needsText,
+                nullptr,
+                nullptr,
+                &needsWidth,
+                &needsHeight
+            );
+
+            SDL_Rect needsDestination = {
+                panelX +
+                    (contentWidth - needsWidth) / 2,
+                panelY + 2,
+                needsWidth,
+                needsHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.needsText,
+                nullptr,
+                &needsDestination
+            );
+        }
+
+        // Aktivni Gold radek podle originalniho TKMWaresRow:
+        // vyska 21 px, ikony 14x14 zprava s krokem 14 px.
+        SDL_Rect goldRow = {
+            panelX,
+            panelY + 21,
+            contentWidth,
+            21
+        };
+
+        // Jemny podklad podle originalniho TKMWaresRow.
+        // Je tlumeny, aby zustala zachovana textura dreva.
+        // Polopruhledny podklad: puvodni drevo 404
+        // zustava citelne pod TKMWaresRow.
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_BLEND
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            49, 42, 32, 125
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &goldRow
+        );
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_NONE
+        );
+
+        // Zapusteny bevel.
+        SDL_SetRenderDrawColor(
+            renderer,
+            42, 35, 28, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            goldRow.x,
+            goldRow.y,
+            goldRow.x + goldRow.w - 1,
+            goldRow.y
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            goldRow.x,
+            goldRow.y,
+            goldRow.x,
+            goldRow.y + goldRow.h - 1
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            158, 142, 109, 220
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            goldRow.x,
+            goldRow.y + goldRow.h - 1,
+            goldRow.x + goldRow.w - 1,
+            goldRow.y + goldRow.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            goldRow.x + goldRow.w - 1,
+            goldRow.y,
+            goldRow.x + goldRow.w - 1,
+            goldRow.y + goldRow.h - 1
+        );
+
+        // Originalni fnt_Game text "Gold" vlevo.
+        if (schoolResources.goldText) {
+            int goldTextWidth = 0;
+            int goldTextHeight = 0;
+
+            SDL_QueryTexture(
+                schoolResources.goldText,
+                nullptr,
+                nullptr,
+                &goldTextWidth,
+                &goldTextHeight
+            );
+
+            SDL_Rect goldTextDestination = {
+                goldRow.x + 4,
+                goldRow.y +
+                    (goldRow.h - goldTextHeight) / 2,
+                goldTextWidth,
+                goldTextHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.goldText,
+                nullptr,
+                &goldTextDestination
+            );
+        }
 
         int visibleGold = 0;
 
@@ -210,24 +729,48 @@ void renderGameUI(
 
             if (visibleGold < 0)
                 visibleGold = 0;
-
-            if (visibleGold > goldOuter.w - 10)
-                visibleGold = goldOuter.w - 10;
         }
 
-        SDL_Rect goldInner = {
-            goldOuter.x + 5,
-            goldOuter.y + 4,
-            visibleGold,
-            goldOuter.h - 8
-        };
+        // Do 180px radku se bezpecne vejde 11 ikon.
+        // Vyssi zasoba zustava funkcni, jen se vizualne omezi.
+        int drawnGold = visibleGold;
 
-        if (goldInner.w > 0) {
-            SDL_RenderFillRect(
-                renderer,
-                &goldInner
-            );
+        if (drawnGold > 11)
+            drawnGold = 11;
+
+        for (
+            int goldIndex = drawnGold - 1;
+            goldIndex >= 0;
+            --goldIndex
+        ) {
+            SDL_Rect goldDestination = {
+                goldRow.x + goldRow.w -
+                    18 - goldIndex * 14,
+                goldRow.y + 3,
+                14,
+                14
+            };
+
+            if (schoolResources.goldIcon) {
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.goldIcon,
+                    nullptr,
+                    &goldDestination
+                );
+            } else {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    223, 177, 48, 255
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &goldDestination
+                );
+            }
         }
+
 
         // Queue[0]: jednotka ve vycviku.
         SDL_Rect wipSlot = {
@@ -248,12 +791,30 @@ void renderGameUI(
                 wipSlot.h
             };
 
-            SDL_SetTextureColorMod(
-                schoolResources.buttonStone,
-                138,
-                133,
-                119
-            );
+            // WIP stone:
+            // prazdny slot s GUI 41 ma stejny svetly kamen
+            // jako originalni School ovladaci tlacitka.
+            // Obsazeny WIP zustava lehce utlumeny,
+            // aby ikona trenovane jednotky zustala citelna.
+            bool wipHasUnit =
+                selectedSchool &&
+                selectedSchool->schoolQueue[0] >= 0;
+
+            if (wipHasUnit) {
+                SDL_SetTextureColorMod(
+                    schoolResources.buttonStone,
+                    138,
+                    133,
+                    119
+                );
+            } else {
+                SDL_SetTextureColorMod(
+                    schoolResources.buttonStone,
+                    255,
+                    255,
+                    255
+                );
+            }
 
             SDL_RenderCopy(
                 renderer,
@@ -353,6 +914,44 @@ void renderGameUI(
                     );
                 }
             }
+        }
+
+        // Original KaM: prazdny WIP slot zobrazuje
+        // GUI sprite 41 - question mark.
+        bool wipOccupied =
+            selectedSchool &&
+            selectedSchool->schoolQueue[0] >= 0;
+
+        if (
+            !wipOccupied &&
+            schoolResources.questionIcon
+        ) {
+            int questionWidth = 0;
+            int questionHeight = 0;
+
+            SDL_QueryTexture(
+                schoolResources.questionIcon,
+                nullptr,
+                nullptr,
+                &questionWidth,
+                &questionHeight
+            );
+
+            SDL_Rect questionDestination = {
+                wipSlot.x +
+                    (wipSlot.w - questionWidth) / 2,
+                wipSlot.y +
+                    (wipSlot.h - questionHeight) / 2,
+                questionWidth,
+                questionHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.questionIcon,
+                nullptr,
+                &questionDestination
+            );
         }
 
         // Viditelne CANCEL tlacitko pro obsazeny WIP slot.
@@ -616,47 +1215,28 @@ void renderGameUI(
                 32
             };
 
-            // Queue slot ve stylu originalniho KaM.
-            if (schoolResources.buttonStone) {
-                SDL_Rect queueStoneSource = {
-                    8 + i * 34,
-                    92,
-                    queueSlot.w,
-                    queueSlot.h
-                };
+            // Jemny podklad queue podle stejneho vizualniho
+            // principu jako Gold TKMWaresRow.
+            // Dreveny sidebar 404 zustava citelny.
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_BLEND
+            );
 
-                // Prázdné sloty jsou subtilnější než WIP.
-                SDL_SetTextureColorMod(
-                    schoolResources.buttonStone,
-                    115,
-                    111,
-                    100
-                );
+            SDL_SetRenderDrawColor(
+                renderer,
+                49, 42, 32, 125
+            );
 
-                SDL_RenderCopy(
-                    renderer,
-                    schoolResources.buttonStone,
-                    &queueStoneSource,
-                    &queueSlot
-                );
+            SDL_RenderFillRect(
+                renderer,
+                &queueSlot
+            );
 
-                SDL_SetTextureColorMod(
-                    schoolResources.buttonStone,
-                    255,
-                    255,
-                    255
-                );
-            } else {
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    45, 41, 34, 255
-                );
-
-                SDL_RenderFillRect(
-                    renderer,
-                    &queueSlot
-                );
-            }
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
 
             // Zasunutý tmavy vrch a levy okraj.
             SDL_SetRenderDrawColor(
@@ -853,6 +1433,44 @@ void renderGameUI(
                 SCHOOL_PROFESSION_COUNT - 1;
         }
 
+        // Originalni fnt_Outline nazev vybrane profese.
+        // Remake pouziva Y=116 a stred TB_WIDTH.
+        if (
+            selected >= 0 &&
+            selected < SCHOOL_PROFESSION_COUNT &&
+            schoolResources.professionText[selected]
+        ) {
+            SDL_Texture* professionLabel =
+                schoolResources.professionText[selected];
+
+            int labelWidth = 0;
+            int labelHeight = 0;
+
+            SDL_QueryTexture(
+                professionLabel,
+                nullptr,
+                nullptr,
+                &labelWidth,
+                &labelHeight
+            );
+
+            SDL_Rect labelDestination = {
+                panelX +
+                    (contentWidth - labelWidth) / 2,
+                panelY + 116 +
+                    (20 - labelHeight) / 2,
+                labelWidth,
+                labelHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                professionLabel,
+                nullptr,
+                &labelDestination
+            );
+        }
+
         int previous = selected - 1;
         int next = selected + 1;
 
@@ -901,31 +1519,10 @@ void renderGameUI(
                 i == 1 &&
                 !ui.schoolQueueFocus;
 
-            SDL_SetRenderDrawColor(
-                renderer,
-                portraitFocused ? 104 : 65,
-                portraitFocused ? 80 : 54,
-                portraitFocused ? 42 : 35,
-                255
-            );
-
-            SDL_RenderFillRect(
-                renderer,
-                &portraits[i].area
-            );
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                portraitFocused ? 224 : 124,
-                portraitFocused ? 184 : 101,
-                portraitFocused ? 97 : 61,
-                255
-            );
-
-            SDL_RenderDrawRect(
-                renderer,
-                &portraits[i].area
-            );
+            // Original KaM selection style:
+            // zvolena profese zustava plne jasna,
+            // sousedni profese jsou pouze ztlumene.
+            // Zadny dodatecny focus ramecek.
 
             if (!portraits[i].enabled)
                 continue;
@@ -1008,11 +1605,35 @@ void renderGameUI(
                 drawHeight
             };
 
+            // Originalni vyber je zalozen na jasu:
+            // prostredni aktivni profese 100 %,
+            // predchozi/dalsi profese cca 45 %.
+            const Uint8 portraitBrightness =
+                portraitFocused
+                    ? 255
+                    : 115;
+
+            SDL_SetTextureColorMod(
+                texture,
+                portraitBrightness,
+                portraitBrightness,
+                portraitBrightness
+            );
+
             SDL_RenderCopy(
                 renderer,
                 texture,
                 nullptr,
                 &destination
+            );
+
+            // Texture se pouziva znovu i na dalsich mistech,
+            // proto vzdy vratime plny jas.
+            SDL_SetTextureColorMod(
+                texture,
+                255,
+                255,
+                255
             );
         }
 
@@ -1636,6 +2257,95 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/school/wares/gold.bmp"
         );
 
+    // Originalni GUI sprite 41 = question mark.
+    resources.questionIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/school/queue/question.bmp"
+        );
+
+    resources.deliveryOn =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/house/header/delivery_on.bmp"
+        );
+
+    resources.deliveryOff =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/house/header/delivery_off.bmp"
+        );
+
+    resources.repairOn =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/house/header/repair_on.bmp"
+        );
+
+    resources.repairOff =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/house/header/repair_off.bmp"
+        );
+
+    resources.houseWorker =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/house/header/worker.bmp"
+        );
+
+    resources.needsText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/school/text/needs.bmp"
+        );
+
+    resources.goldText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/school/text/gold.bmp"
+        );
+
+    static const char* professionTextFiles[
+        SCHOOL_PROFESSION_COUNT
+    ] = {
+        "serf",
+        "worker",
+        "stonecutter",
+        "woodcutter",
+        "lamberjack",
+        "fisher",
+        "farmer",
+        "baker",
+        "animal_breeder",
+        "butcher",
+        "miner",
+        "metallurgist",
+        "smith",
+        "recruit"
+    };
+
+    for (
+        int i = 0;
+        i < SCHOOL_PROFESSION_COUNT;
+        ++i
+    ) {
+        char textPath[256];
+
+        snprintf(
+            textPath,
+            sizeof(textPath),
+            "app0:assets/ui/school/text/professions/%s.bmp",
+            professionTextFiles[i]
+        );
+
+        resources.professionText[i] =
+            loadSchoolUITexture(
+                renderer,
+                textPath
+            );
+    }
+
     static const char* professionNames[
         SCHOOL_PROFESSION_COUNT
     ] = {
@@ -1747,6 +2457,56 @@ void destroySchoolUIResources(
         );
     }
 
+    if (resources->questionIcon) {
+        SDL_DestroyTexture(
+            resources->questionIcon
+        );
+    }
+
+    if (resources->deliveryOn) {
+        SDL_DestroyTexture(resources->deliveryOn);
+    }
+
+    if (resources->deliveryOff) {
+        SDL_DestroyTexture(resources->deliveryOff);
+    }
+
+    if (resources->repairOn) {
+        SDL_DestroyTexture(resources->repairOn);
+    }
+
+    if (resources->repairOff) {
+        SDL_DestroyTexture(resources->repairOff);
+    }
+
+    if (resources->houseWorker) {
+        SDL_DestroyTexture(resources->houseWorker);
+    }
+
+    if (resources->needsText) {
+        SDL_DestroyTexture(
+            resources->needsText
+        );
+    }
+
+    if (resources->goldText) {
+        SDL_DestroyTexture(
+            resources->goldText
+        );
+    }
+
+    for (
+        int i = 0;
+        i < SCHOOL_PROFESSION_COUNT;
+        ++i
+    ) {
+        if (resources->professionText[i]) {
+            SDL_DestroyTexture(
+                resources->professionText[i]
+            );
+        }
+    }
+
     for (
         int i = 0;
         i < SCHOOL_PROFESSION_COUNT;
@@ -1766,6 +2526,7 @@ void destroySchoolUIResources(
     }
 
     *resources = {};
+
 }
 
 

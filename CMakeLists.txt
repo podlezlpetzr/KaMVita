@@ -466,4 +466,99 @@ vita_create_vpk(
         assets/ui/school/wares/gold.bmp
         assets/ui/school/wares/gold.bmp
 
+    FILE
+        assets/ui/school/text/needs.bmp
+        assets/ui/school/text/needs.bmp
+
+    FILE
+        assets/ui/school/text/gold.bmp
+        assets/ui/school/text/gold.bmp
+
+    FILE
+        assets/ui/school/text/professions/serf.bmp
+        assets/ui/school/text/professions/serf.bmp
+
+    FILE
+        assets/ui/school/text/professions/worker.bmp
+        assets/ui/school/text/professions/worker.bmp
+
+    FILE
+        assets/ui/school/text/professions/stonecutter.bmp
+        assets/ui/school/text/professions/stonecutter.bmp
+
+    FILE
+        assets/ui/school/text/professions/woodcutter.bmp
+        assets/ui/school/text/professions/woodcutter.bmp
+
+    FILE
+        assets/ui/school/text/professions/lamberjack.bmp
+        assets/ui/school/text/professions/lamberjack.bmp
+
+    FILE
+        assets/ui/school/text/professions/fisher.bmp
+        assets/ui/school/text/professions/fisher.bmp
+
+    FILE
+        assets/ui/school/text/professions/farmer.bmp
+        assets/ui/school/text/professions/farmer.bmp
+
+    FILE
+        assets/ui/school/text/professions/baker.bmp
+        assets/ui/school/text/professions/baker.bmp
+
+    FILE
+        assets/ui/school/text/professions/animal_breeder.bmp
+        assets/ui/school/text/professions/animal_breeder.bmp
+
+    FILE
+        assets/ui/school/text/professions/butcher.bmp
+        assets/ui/school/text/professions/butcher.bmp
+
+    FILE
+        assets/ui/school/text/professions/miner.bmp
+        assets/ui/school/text/professions/miner.bmp
+
+    FILE
+        assets/ui/school/text/professions/metallurgist.bmp
+        assets/ui/school/text/professions/metallurgist.bmp
+
+    FILE
+        assets/ui/school/text/professions/smith.bmp
+        assets/ui/school/text/professions/smith.bmp
+
+    FILE
+        assets/ui/school/text/professions/recruit.bmp
+        assets/ui/school/text/professions/recruit.bmp
+
+
+    FILE
+        assets/ui/school/queue/question.bmp
+        assets/ui/school/queue/question.bmp
+
+
+    FILE
+        assets/ui/house/header/delivery_on.bmp
+        assets/ui/house/header/delivery_on.bmp
+
+
+    FILE
+        assets/ui/house/header/delivery_off.bmp
+        assets/ui/house/header/delivery_off.bmp
+
+
+    FILE
+        assets/ui/house/header/repair_on.bmp
+        assets/ui/house/header/repair_on.bmp
+
+
+    FILE
+        assets/ui/house/header/repair_off.bmp
+        assets/ui/house/header/repair_off.bmp
+
+
+    FILE
+        assets/ui/house/header/worker.bmp
+        assets/ui/house/header/worker.bmp
+
+
 )

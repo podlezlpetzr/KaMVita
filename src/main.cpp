@@ -30,6 +30,107 @@ struct SaveHeader {
 };
 
 
+struct BuildingSaveV5 {
+    int tileX;
+    int tileY;
+    BuildingType type;
+    int constructionProgress;
+    int woodDelivered;
+    int stoneDelivered;
+    int woodStep;
+    int stoneStep;
+    int schoolQueue[6];
+    int schoolTrainingStep;
+    int schoolIdleStep;
+    int schoolGold;
+    bool schoolTrainingActive;
+    bool schoolFinishingTraining;
+    bool active;
+};
+
+static_assert(
+    sizeof(BuildingSaveV5) == 72,
+    "BuildingSaveV5 musi odpovidat puvodnimu save formatu"
+);
+
+
+static int getDefaultBuildingMaxHealth(
+    BuildingType type
+)
+{
+    return (
+        getBuildingWoodCost(type) +
+        getBuildingStoneCost(type)
+    ) * 50;
+}
+
+
+static void initializeHouseRuntimeState(
+    Building* building
+)
+{
+    if (!building)
+        return;
+
+    building->maxHealth =
+        getDefaultBuildingMaxHealth(
+            building->type
+        );
+
+    if (building->maxHealth < 1)
+        building->maxHealth = 1;
+
+    building->health = building->maxHealth;
+    building->repairEnabled = false;
+    building->wareDeliveryEnabled = true;
+}
+
+
+static Building migrateBuildingSaveV5(
+    const BuildingSaveV5& old
+)
+{
+    Building building = {};
+
+    building.tileX = old.tileX;
+    building.tileY = old.tileY;
+    building.type = old.type;
+    building.constructionProgress =
+        old.constructionProgress;
+    building.woodDelivered = old.woodDelivered;
+    building.stoneDelivered = old.stoneDelivered;
+    building.woodStep = old.woodStep;
+    building.stoneStep = old.stoneStep;
+
+    for (
+        int i = 0;
+        i < SCHOOL_QUEUE_SIZE;
+        ++i
+    ) {
+        building.schoolQueue[i] =
+            old.schoolQueue[i];
+    }
+
+    building.schoolTrainingStep =
+        old.schoolTrainingStep;
+    building.schoolIdleStep =
+        old.schoolIdleStep;
+    building.schoolGold =
+        old.schoolGold;
+    building.schoolTrainingActive =
+        old.schoolTrainingActive;
+    building.schoolFinishingTraining =
+        old.schoolFinishingTraining;
+    building.active = old.active;
+
+    initializeHouseRuntimeState(
+        &building
+    );
+
+    return building;
+}
+
+
 
 
 static bool saveGame(const Building* buildings, int buildingCount)
@@ -42,7 +143,7 @@ static bool saveGame(const Building* buildings, int buildingCount)
 
     SaveHeader header;
     header.magic = 0x4B414D56;
-    header.version = 5;
+    header.version = 6;
     header.buildingCount = buildingCount;
 
     if (fwrite(&header, sizeof(header), 1, file) != 1) {
@@ -59,43 +160,101 @@ static bool saveGame(const Building* buildings, int buildingCount)
     return true;
 }
 
-static bool loadGame(Building* buildings, int* buildingCount)
+static bool loadGame(
+    Building* buildings,
+    int* buildingCount
+)
 {
-    FILE* file = fopen("ux0:data/kamvita/save.dat", "rb");
+    FILE* file =
+        fopen(
+            "ux0:data/kamvita/save.dat",
+            "rb"
+        );
+
     if (!file)
         return false;
 
     SaveHeader header = {};
 
-    if (fread(&header, sizeof(header), 1, file) != 1) {
+    if (
+        fread(
+            &header,
+            sizeof(header),
+            1,
+            file
+        ) != 1
+    ) {
         fclose(file);
         return false;
     }
 
-    if (header.magic != 0x4B414D56 ||
-        (header.version != 4 &&
-         header.version != 5) ||
+    if (
+        header.magic != 0x4B414D56 ||
+        (
+            header.version != 4 &&
+            header.version != 5 &&
+            header.version != 6
+        ) ||
         header.buildingCount < 0 ||
-        header.buildingCount > MAX_BUILDINGS) {
+        header.buildingCount > MAX_BUILDINGS
+    ) {
         fclose(file);
         return false;
     }
 
     Building loadedBuildings[MAX_BUILDINGS] = {};
 
-    if (fread(loadedBuildings, sizeof(Building), MAX_BUILDINGS, file)
-        != MAX_BUILDINGS) {
-        fclose(file);
-        return false;
+    if (header.version == 6) {
+        if (
+            fread(
+                loadedBuildings,
+                sizeof(Building),
+                MAX_BUILDINGS,
+                file
+            ) != MAX_BUILDINGS
+        ) {
+            fclose(file);
+            return false;
+        }
+    } else {
+        BuildingSaveV5 legacyBuildings[
+            MAX_BUILDINGS
+        ] = {};
+
+        if (
+            fread(
+                legacyBuildings,
+                sizeof(BuildingSaveV5),
+                MAX_BUILDINGS,
+                file
+            ) != MAX_BUILDINGS
+        ) {
+            fclose(file);
+            return false;
+        }
+
+        for (
+            int i = 0;
+            i < MAX_BUILDINGS;
+            ++i
+        ) {
+            loadedBuildings[i] =
+                migrateBuildingSaveV5(
+                    legacyBuildings[i]
+                );
+        }
     }
 
     fclose(file);
 
-    // Save v4 obsahoval School pole, ale fronta jeste
-    // nebyla aktivne pouzivana a prazdne sloty byly nuly.
-    // Od v5 je prazdny slot vzdy -1.
+    // Save v4 mel School frontu pred zavedenim
+    // aktivniho queue systemu.
     if (header.version == 4) {
-        for (int i = 0; i < MAX_BUILDINGS; ++i) {
+        for (
+            int i = 0;
+            i < MAX_BUILDINGS;
+            ++i
+        ) {
             if (
                 loadedBuildings[i].active &&
                 loadedBuildings[i].type ==
@@ -110,24 +269,61 @@ static bool loadGame(Building* buildings, int* buildingCount)
                         .schoolQueue[queueIndex] = -1;
                 }
 
-                loadedBuildings[i].schoolTrainingStep = 0;
-                loadedBuildings[i].schoolIdleStep = 0;
-                loadedBuildings[i].schoolTrainingActive = false;
-                loadedBuildings[i].schoolFinishingTraining = false;
+                loadedBuildings[i]
+                    .schoolTrainingStep = 0;
+
+                loadedBuildings[i]
+                    .schoolIdleStep = 0;
+
+                loadedBuildings[i]
+                    .schoolTrainingActive = false;
+
+                loadedBuildings[i]
+                    .schoolFinishingTraining = false;
             }
         }
     }
 
-    for (int i = 0; i < MAX_BUILDINGS; ++i) {
+    for (
+        int i = 0;
+        i < MAX_BUILDINGS;
+        ++i
+    ) {
         if (loadedBuildings[i].active) {
             bool validPosition =
                 loadedBuildings[i].tileX >= 0 &&
                 loadedBuildings[i].tileY >= 0 &&
-                loadedBuildings[i].tileX + 2 < MAP_WIDTH &&
-                loadedBuildings[i].tileY + 2 < MAP_HEIGHT;
+                loadedBuildings[i].tileX + 2 <
+                    MAP_WIDTH &&
+                loadedBuildings[i].tileY + 2 <
+                    MAP_HEIGHT;
 
-            if (!validPosition)
+            if (!validPosition) {
                 loadedBuildings[i].active = false;
+            }
+
+            // Ochrana poskozeneho save v6.
+            if (
+                loadedBuildings[i].maxHealth < 1
+            ) {
+                initializeHouseRuntimeState(
+                    &loadedBuildings[i]
+                );
+            }
+
+            if (
+                loadedBuildings[i].health < 0
+            ) {
+                loadedBuildings[i].health = 0;
+            }
+
+            if (
+                loadedBuildings[i].health >
+                    loadedBuildings[i].maxHealth
+            ) {
+                loadedBuildings[i].health =
+                    loadedBuildings[i].maxHealth;
+            }
         }
 
         buildings[i] = loadedBuildings[i];
@@ -259,6 +455,10 @@ int main(int argc, char* argv[])
                 BuildingType::Store
             );
 
+        initializeHouseRuntimeState(
+            &buildings[0]
+        );
+
         // SCHOOL
         buildings[1] = {};
         buildings[1].active = true;
@@ -287,6 +487,10 @@ int main(int argc, char* argv[])
             getBuildingStoneCost(
                 BuildingType::School
             );
+
+        initializeHouseRuntimeState(
+            &buildings[1]
+        );
 
         for (
             int queueIndex = 0;
@@ -500,6 +704,62 @@ int main(int argc, char* argv[])
                     0,
                     1
                 );
+            }
+        }
+
+        // Touch ovladani originalniho House headeru.
+        if (
+            gameUI.section == GameUISection::School &&
+            touchTapped &&
+            gameUI.selectedSchoolBuilding >= 0 &&
+            gameUI.selectedSchoolBuilding < buildingCount
+        ) {
+            Building& house =
+                buildings[
+                    gameUI.selectedSchoolBuilding
+                ];
+
+            // Zamknuty School layout:
+            // panelX=6, panelY=274, House top=198.
+            const int houseHeaderY = 240;
+
+            SDL_Rect deliveryArea = {
+                6,
+                houseHeaderY,
+                30,
+                30
+            };
+
+            SDL_Rect repairArea = {
+                36,
+                houseHeaderY,
+                30,
+                30
+            };
+
+            auto insideHouseHeader = [
+                touchStartX,
+                touchStartY
+            ](const SDL_Rect& area) -> bool {
+                return
+                    touchStartX >= area.x &&
+                    touchStartX < area.x + area.w &&
+                    touchStartY >= area.y &&
+                    touchStartY < area.y + area.h;
+            };
+
+            if (insideHouseHeader(deliveryArea)) {
+                house.wareDeliveryEnabled =
+                    !house.wareDeliveryEnabled;
+
+                touchTapped = false;
+            } else if (
+                insideHouseHeader(repairArea)
+            ) {
+                house.repairEnabled =
+                    !house.repairEnabled;
+
+                touchTapped = false;
             }
         }
 
@@ -1647,6 +1907,11 @@ int main(int argc, char* argv[])
                 buildings[freeSlot].stoneDelivered = 0;
                 buildings[freeSlot].woodStep = 0;
                 buildings[freeSlot].stoneStep = 0;
+
+                initializeHouseRuntimeState(
+                    &buildings[freeSlot]
+                );
+
                 buildings[freeSlot].active = true;
 
                 // Po polozeni planu uz nechceme

@@ -23,6 +23,16 @@ struct Building {
     int woodStep;
     int stoneStep;
 
+    // House runtime stav podle puvodniho KaM.
+    // MaxHealth = (WoodCost + StoneCost) * 50.
+    int health;
+    int maxHealth;
+
+    // Originalni vychozi stavy:
+    // repair OFF, ware delivery ON.
+    bool repairEnabled;
+    bool wareDeliveryEnabled;
+
     // School: originalni fronta KaM.
     // [0] = prave trenovana jednotka
     // [1..5] = cekajici jednotky

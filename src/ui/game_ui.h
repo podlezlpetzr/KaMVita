@@ -88,6 +88,19 @@ struct SchoolUIResources {
 
     // Originalni KaM GUI sprite 358 = Gold.
     SDL_Texture* goldIcon;
+    SDL_Texture* questionIcon;
+
+    // Originalni House header z GUI.RX.
+    SDL_Texture* deliveryOn;
+    SDL_Texture* deliveryOff;
+    SDL_Texture* repairOn;
+    SDL_Texture* repairOff;
+    SDL_Texture* houseWorker;
+
+    // Originalni texty generovane z KaM FNTX fontu.
+    SDL_Texture* needsText;
+    SDL_Texture* goldText;
+    SDL_Texture* professionText[SCHOOL_PROFESSION_COUNT];
 
     SchoolProfessionUIResources
         professions[SCHOOL_PROFESSION_COUNT];

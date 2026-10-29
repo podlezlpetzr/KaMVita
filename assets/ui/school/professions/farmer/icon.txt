@@ -1,0 +1,5 @@
+id=145
+width=19
+height=24
+pivot_x=-9
+pivot_y=-12
