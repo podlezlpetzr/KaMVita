@@ -984,4 +984,28 @@ vita_create_vpk(
         assets/ui/build/text/demolish.bmp
         assets/ui/build/text/demolish.bmp
 
+    FILE
+        assets/terrain/fields/runtime/corn_empty.bmp
+        assets/terrain/fields/runtime/corn_empty.bmp
+
+    FILE
+        assets/terrain/fields/runtime/corn_sown.bmp
+        assets/terrain/fields/runtime/corn_sown.bmp
+
+    FILE
+        assets/terrain/fields/runtime/corn_young.bmp
+        assets/terrain/fields/runtime/corn_young.bmp
+
+    FILE
+        assets/terrain/fields/runtime/corn_ground.bmp
+        assets/terrain/fields/runtime/corn_ground.bmp
+
+    FILE
+        assets/terrain/fields/runtime/corn_cut.bmp
+        assets/terrain/fields/runtime/corn_cut.bmp
+
+    FILE
+        assets/terrain/fields/runtime/wine_ground.bmp
+        assets/terrain/fields/runtime/wine_ground.bmp
+
 )

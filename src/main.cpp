@@ -2854,36 +2854,51 @@ int main(int argc, char* argv[])
 
                 if (
                     landPlan ==
+                        LandPlanState::FieldComplete ||
+                    landPlan ==
+                        LandPlanState::WineComplete
+                ) {
+                    SDL_Texture* completedTexture =
+                        landPlan ==
+                            LandPlanState::FieldComplete
+                                ? terrain.cornEmpty
+                                : terrain.wineGround;
+
+                    if (completedTexture) {
+                        // Originalni KaM terrain:
+                        //
+                        // Field stage 0 = Terrain 62
+                        // Wine ground   = Terrain 55
+                        //
+                        // Assety jsou nativne 32x32,
+                        // stejne jako KaMVita TILE_SIZE.
+                        SDL_RenderCopy(
+                            renderer,
+                            completedTexture,
+                            nullptr,
+                            &fieldPlanRect
+                        );
+                    }
+
+                    // Hotovy teren uz nema barevny
+                    // planovaci overlay.
+                    continue;
+                }
+
+                // Nedokoncene Field/Wine zustavaji
+                // zatim jako jednoznacny planning overlay.
+                if (
+                    landPlan ==
                         LandPlanState::Field
                 ) {
-                    // Field plan.
                     SDL_SetRenderDrawColor(
                         renderer,
                         190, 165, 45, 72
                     );
-                } else if (
-                    landPlan ==
-                        LandPlanState::Wine
-                ) {
-                    // Wine plan.
+                } else {
                     SDL_SetRenderDrawColor(
                         renderer,
                         125, 45, 95, 82
-                    );
-                } else if (
-                    landPlan ==
-                        LandPlanState::FieldComplete
-                ) {
-                    // Hotove Field.
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        150, 126, 28, 210
-                    );
-                } else {
-                    // Hotove Wine.
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        82, 112, 40, 210
                     );
                 }
 
@@ -2900,17 +2915,11 @@ int main(int argc, char* argv[])
                         renderer,
                         238, 211, 76, 210
                     );
-                } else if (
-                    landPlan ==
-                        LandPlanState::Wine
-                ) {
+                } else {
                     SDL_SetRenderDrawColor(
                         renderer,
                         194, 92, 151, 220
                     );
-                } else {
-                    // Hotovy teren uz nema planovaci ramecek.
-                    continue;
                 }
 
                 SDL_RenderDrawRect(

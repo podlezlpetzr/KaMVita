@@ -195,6 +195,42 @@ TerrainResources loadTerrainResources(SDL_Renderer* renderer)
         "app0:assets/terrain/roads/original/road_254.bmp"
     );
 
+    terrain.cornEmpty =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_empty.bmp"
+        );
+
+    terrain.cornSown =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_sown.bmp"
+        );
+
+    terrain.cornYoung =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_young.bmp"
+        );
+
+    terrain.cornGround =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_ground.bmp"
+        );
+
+    terrain.cornCut =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_cut.bmp"
+        );
+
+    terrain.wineGround =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/wine_ground.bmp"
+        );
+
     return terrain;
 }
 
@@ -239,6 +275,24 @@ void destroyTerrainResources(TerrainResources* terrain)
     if (terrain->road254)
         SDL_DestroyTexture(terrain->road254);
 
+    if (terrain->cornEmpty)
+        SDL_DestroyTexture(terrain->cornEmpty);
+
+    if (terrain->cornSown)
+        SDL_DestroyTexture(terrain->cornSown);
+
+    if (terrain->cornYoung)
+        SDL_DestroyTexture(terrain->cornYoung);
+
+    if (terrain->cornGround)
+        SDL_DestroyTexture(terrain->cornGround);
+
+    if (terrain->cornCut)
+        SDL_DestroyTexture(terrain->cornCut);
+
+    if (terrain->wineGround)
+        SDL_DestroyTexture(terrain->wineGround);
+
     terrain->grass = nullptr;
     terrain->water = nullptr;
     terrain->dirt = nullptr;
@@ -252,6 +306,13 @@ void destroyTerrainResources(TerrainResources* terrain)
     terrain->road250 = nullptr;
     terrain->road252 = nullptr;
     terrain->road254 = nullptr;
+
+    terrain->cornEmpty = nullptr;
+    terrain->cornSown = nullptr;
+    terrain->cornYoung = nullptr;
+    terrain->cornGround = nullptr;
+    terrain->cornCut = nullptr;
+    terrain->wineGround = nullptr;
 }
 
 void renderTerrain(

@@ -17,6 +17,25 @@ struct TerrainResources {
     SDL_Texture* road250;
     SDL_Texture* road252;
     SDL_Texture* road254;
+
+    // Originalni KaM Field terrain stages.
+    //
+    // SetField(ft_Corn):
+    // Terrain 62 -> cornEmpty
+    // Terrain 61 -> cornSown
+    // Terrain 59 -> cornYoung
+    // Terrain 60 -> cornGround
+    // Terrain 63 -> cornCut
+    SDL_Texture* cornEmpty;
+    SDL_Texture* cornSown;
+    SDL_Texture* cornYoung;
+    SDL_Texture* cornGround;
+    SDL_Texture* cornCut;
+
+    // SetField(ft_Wine) pouziva Terrain 55
+    // pro vsechny Wine stages. Grapes Obj 54..57
+    // budou samostatna overlay vrstva.
+    SDL_Texture* wineGround;
 };
 
 TerrainResources loadTerrainResources(SDL_Renderer* renderer);
