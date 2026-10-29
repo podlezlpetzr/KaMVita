@@ -342,6 +342,7 @@ void renderGameUI(
         renderGameUIRatios(
             renderer,
             schoolResources,
+            houseIcons,
             ui,
             wareDistribution
         );
@@ -2624,35 +2625,6 @@ SchoolUIResources loadSchoolUIResources(
             );
     }
 
-    static const char* ratioHouseFiles[9] = {
-        "weapon_smithy",
-        "armor_smithy",
-        "iron_smithy",
-        "metallurgist",
-        "armor_workshop",
-        "weapon_workshop",
-        "mill",
-        "swine",
-        "stables"
-    };
-
-    for (int i = 0; i < 9; ++i) {
-        char path[256];
-
-        snprintf(
-            path,
-            sizeof(path),
-            "app0:assets/ui/ratios/houses/%s.bmp",
-            ratioHouseFiles[i]
-        );
-
-        resources.ratiosHouseIcons[i] =
-            loadSchoolUITexture(
-                renderer,
-                path
-            );
-    }
-
     resources.ratiosTrackbarThumb =
         loadSchoolUITexture(
             renderer,
@@ -2895,14 +2867,6 @@ void destroySchoolUIResources(
         if (resources->ratiosWareIcons[i]) {
             SDL_DestroyTexture(
                 resources->ratiosWareIcons[i]
-            );
-        }
-    }
-
-    for (int i = 0; i < 9; ++i) {
-        if (resources->ratiosHouseIcons[i]) {
-            SDL_DestroyTexture(
-                resources->ratiosHouseIcons[i]
             );
         }
     }

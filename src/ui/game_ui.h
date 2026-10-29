@@ -127,7 +127,6 @@ struct SchoolUIResources {
 
     // Originalni Ratios 440 resources.
     SDL_Texture* ratiosWareIcons[4];
-    SDL_Texture* ratiosHouseIcons[9];
     SDL_Texture* ratiosTrackbarThumb;
 
     // Originalni texty generovane z KaM FNTX fontu.
