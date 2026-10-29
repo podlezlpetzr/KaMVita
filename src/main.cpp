@@ -2427,9 +2427,11 @@ int main(int argc, char* argv[])
         // -------------------------------------------------
         // Remove tool GUI 340
         //
-        // Prvni bezpecna verze rusi pouze:
+        // Bezpecny Remove rusi:
         // - nedokoncene stavebni plany,
-        // - RoadState::Plan.
+        // - RoadState::Plan,
+        // - Field plan,
+        // - Wine plan.
         //
         // Hotove buildings a RoadState::Complete chrani.
         // -------------------------------------------------
@@ -2512,14 +2514,30 @@ int main(int argc, char* argv[])
                 break;
             }
 
-            // Pokud pod kurzorem nebyl house plan,
-            // zrus pouze nedokoncenou planovanou cestu.
+            // Pokud pod kurzorem nebyl house plan:
+            //
+            // 1. zrus RoadState::Plan,
+            // 2. jinak zrus Field/Wine plan.
+            //
+            // Hotova cesta zustava chranena.
             if (!removedBuildingPlan) {
                 RoadState& road =
                     roads[hoverTileY][hoverTileX];
 
                 if (road == RoadState::Plan) {
                     road = RoadState::None;
+                } else if (
+                    landPlans[
+                        hoverTileY
+                    ][
+                        hoverTileX
+                    ] != LandPlanState::None
+                ) {
+                    landPlans[
+                        hoverTileY
+                    ][
+                        hoverTileX
+                    ] = LandPlanState::None;
                 }
             }
         }
