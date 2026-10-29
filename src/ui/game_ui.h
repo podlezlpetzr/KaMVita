@@ -3,11 +3,15 @@
 #include <SDL2/SDL.h>
 
 #include "../game/buildings.h"
+#include "../game/units.h"
 
 static constexpr int GAME_UI_PANEL_WIDTH = 220;
 
 enum class GameUISection {
     Build,
+    Ratios,
+    Statistics,
+    Options,
     School
 };
 
@@ -51,6 +55,12 @@ struct GameUIState {
     bool buildSectionActive;
 
     GameUISection section;
+
+    // Originalni hlavni toolbar GUI 439..442:
+    // 0 Build, 1 Ratios, 2 Statistics, 3 Options.
+    int toolbarSelection;
+    bool toolbarFocus;
+
     GameUISchoolSelection schoolSelection;
 
     // False: ovladani carouselu profesi.
@@ -96,6 +106,12 @@ struct SchoolUIResources {
     SDL_Texture* repairOn;
     SDL_Texture* repairOff;
     SDL_Texture* houseWorker;
+    SDL_Texture* schoolHouseText;
+
+    // Statistics 441: originalni game.fntx cisla.
+    // Kazdy atlas ma 33 bunek 32x18 pro hodnoty 0..32.
+    SDL_Texture* statisticsCounts;
+    SDL_Texture* statisticsWipCounts;
 
     // Originalni texty generovane z KaM FNTX fontu.
     SDL_Texture* needsText;
@@ -126,6 +142,8 @@ void renderGameUI(
     const GameUIState& ui,
     const Building* buildings,
     int buildingCount,
+    const Unit* units,
+    int unitCount,
     float cursorX,
     float cursorY
 );

@@ -31,6 +31,7 @@ add_executable(${PROJECT_NAME}
     src/game/buildings.cpp
     src/game/units.cpp
     src/ui/game_ui.cpp
+    src/ui/game_ui_statistics.cpp
 )
 
 target_link_options(${PROJECT_NAME}
@@ -559,6 +560,21 @@ vita_create_vpk(
     FILE
         assets/ui/house/header/worker.bmp
         assets/ui/house/header/worker.bmp
+
+
+    FILE
+        assets/ui/house/text/school_house.bmp
+        assets/ui/house/text/school_house.bmp
+
+
+    FILE
+        assets/ui/statistics/counts.bmp
+        assets/ui/statistics/counts.bmp
+
+
+    FILE
+        assets/ui/statistics/wip_counts.bmp
+        assets/ui/statistics/wip_counts.bmp
 
 
 )

@@ -1,4 +1,5 @@
 #include "game_ui.h"
+#include "game_ui_statistics.h"
 #include <cstdio>
 
 void initGameUI(
@@ -14,6 +15,8 @@ void initGameUI(
     ui->buildSectionActive = true;
 
     ui->section = GameUISection::Build;
+    ui->toolbarSelection = 0;
+    ui->toolbarFocus = false;
 
     ui->schoolSelection =
         GameUISchoolSelection::Serf;
@@ -31,6 +34,8 @@ void renderGameUI(
     const GameUIState& ui,
     const Building* buildings,
     int buildingCount,
+    const Unit* units,
+    int unitCount,
     float cursorX,
     float cursorY
 )
@@ -128,6 +133,221 @@ void renderGameUI(
         );
     }
 
+    // =====================================================
+    // ORIGINAL KAM MAIN TOOLBAR
+    // GUI 439 / 440 / 441 / 442
+    // Original: 42x36, horizontalni krok 46 px.
+    // =====================================================
+
+    {
+        const int toolbarX = 6;
+        const int toolbarY = 194;
+
+        for (int i = 0; i < 4; ++i) {
+            SDL_Rect buttonArea = {
+                toolbarX + i * 46,
+                toolbarY,
+                42,
+                36
+            };
+
+            // Autenticky bsGame kamen.
+            if (schoolResources.buttonStone) {
+                SDL_Rect stoneSource = {
+                    12 + i * 44,
+                    122,
+                    buttonArea.w,
+                    buttonArea.h
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.buttonStone,
+                    &stoneSource,
+                    &buttonArea
+                );
+            }
+
+            // Jemny bevel.
+            SDL_SetRenderDrawColor(
+                renderer,
+                226, 216, 190, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                buttonArea.x,
+                buttonArea.y,
+                buttonArea.x + buttonArea.w - 1,
+                buttonArea.y
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                buttonArea.x,
+                buttonArea.y,
+                buttonArea.x,
+                buttonArea.y + buttonArea.h - 1
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                43, 36, 29, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                buttonArea.x,
+                buttonArea.y + buttonArea.h - 1,
+                buttonArea.x + buttonArea.w - 1,
+                buttonArea.y + buttonArea.h - 1
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                buttonArea.x + buttonArea.w - 1,
+                buttonArea.y,
+                buttonArea.x + buttonArea.w - 1,
+                buttonArea.y + buttonArea.h - 1
+            );
+
+            // Aktivni hlavni sekce je oznacena pouze
+            // jemnym zapustenim. Rozmery a pozice toolbaru
+            // zustavaji presne beze zmeny.
+            bool toolbarButtonSelected =
+                ui.section != GameUISection::School &&
+                ui.toolbarSelection == i;
+
+            if (toolbarButtonSelected) {
+                SDL_SetRenderDrawBlendMode(
+                    renderer,
+                    SDL_BLENDMODE_BLEND
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    55, 44, 31, 70
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &buttonArea
+                );
+
+                SDL_SetRenderDrawBlendMode(
+                    renderer,
+                    SDL_BLENDMODE_NONE
+                );
+            }
+
+            // Originalni GUI 439..442 se uz nacitaji
+            // v mainButtons[0..3].
+            SDL_Texture* glyph =
+                schoolResources.mainButtons[i];
+
+            bool toolbarButtonActive = false;
+
+            switch (i) {
+                case 0:
+                    toolbarButtonActive =
+                        ui.section ==
+                            GameUISection::Build;
+                    break;
+
+                case 1:
+                    toolbarButtonActive =
+                        ui.section ==
+                            GameUISection::Ratios;
+                    break;
+
+                case 2:
+                    toolbarButtonActive =
+                        ui.section ==
+                            GameUISection::Statistics;
+                    break;
+
+                case 3:
+                    toolbarButtonActive =
+                        ui.section ==
+                            GameUISection::Options;
+                    break;
+
+                default:
+                    break;
+            }
+
+            if (glyph) {
+                const Uint8 toolbarBrightness =
+                    toolbarButtonActive
+                        ? 255
+                        : 185;
+
+                SDL_SetTextureColorMod(
+                    glyph,
+                    toolbarBrightness,
+                    toolbarBrightness,
+                    toolbarBrightness
+                );
+                int glyphWidth = 0;
+                int glyphHeight = 0;
+
+                SDL_QueryTexture(
+                    glyph,
+                    nullptr,
+                    nullptr,
+                    &glyphWidth,
+                    &glyphHeight
+                );
+
+                SDL_Rect glyphDestination = {
+                    buttonArea.x +
+                        (buttonArea.w - glyphWidth) / 2,
+                    buttonArea.y +
+                        (buttonArea.h - glyphHeight) / 2,
+                    glyphWidth,
+                    glyphHeight
+                };
+
+                // Build je skutecne funkcni.
+                // Ostatni zustavaji normalne viditelne,
+                // dokud nebudou mit vlastni sekce.
+                SDL_RenderCopy(
+                    renderer,
+                    glyph,
+                    nullptr,
+                    &glyphDestination
+                );
+
+                SDL_SetTextureColorMod(
+                    glyph,
+                    255,
+                    255,
+                    255
+                );
+            }
+        }
+    }
+
+    if (
+        ui.section ==
+            GameUISection::Statistics
+    ) {
+        const GameUIStatistics statistics =
+            calculateGameUIStatistics(
+                buildings,
+                buildingCount,
+                units,
+                unitCount
+            );
+
+        renderGameUIStatistics(
+            renderer,
+            resources,
+            schoolResources,
+            statistics
+        );
+    }
+
     // School GUI podle puvodniho KaM.
     if (ui.section == GameUISection::School) {
         // Originalni obsah School panelu ma sirku 180 px
@@ -174,6 +394,36 @@ void renderGameUI(
         // Pozadi poskytuje primo autenticky sidebar 404.
         (void)needsArea;
 
+        // Originalni fnt_Outline nazev budovy.
+        // Vita: absolutni Y=224, centrovano v 180px School obsahu.
+        if (schoolResources.schoolHouseText) {
+            int titleWidth = 0;
+            int titleHeight = 0;
+
+            SDL_QueryTexture(
+                schoolResources.schoolHouseText,
+                nullptr,
+                nullptr,
+                &titleWidth,
+                &titleHeight
+            );
+
+            SDL_Rect titleDestination = {
+                panelX +
+                    (contentWidth - titleWidth) / 2,
+                229,
+                titleWidth,
+                titleHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.schoolHouseText,
+                nullptr,
+                &titleDestination
+            );
+        }
+
         // =================================================
         // ORIGINAL KaM HOUSE HEADER
         //
@@ -188,7 +438,12 @@ void renderGameUI(
         // =================================================
 
         const int houseTop = panelY - 76;
-        const int houseControlsY = houseTop + 42;
+
+        // Vita layout:
+        // na Y=224 bude originalni nazev budovy.
+        // House controls jsou proto o 4 px nize nez
+        // puvodni House +42, aby pod titulkem dychaly.
+        const int houseControlsY = houseTop + 51;
 
         SDL_Rect deliveryButton = {
             panelX,
@@ -220,7 +475,7 @@ void renderGameUI(
 
         SDL_Rect healthBar = {
             panelX + 120,
-            houseTop + 57,
+            houseTop + 66,
             55,
             15
         };
@@ -2294,6 +2549,25 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/house/header/worker.bmp"
         );
 
+    // Originalni fnt_Outline nazev budovy.
+    resources.schoolHouseText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/house/text/school_house.bmp"
+        );
+
+    resources.statisticsCounts =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/statistics/counts.bmp"
+        );
+
+    resources.statisticsWipCounts =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/statistics/wip_counts.bmp"
+        );
+
     resources.needsText =
         loadSchoolUITexture(
             renderer,
@@ -2481,6 +2755,24 @@ void destroySchoolUIResources(
 
     if (resources->houseWorker) {
         SDL_DestroyTexture(resources->houseWorker);
+    }
+
+    if (resources->schoolHouseText) {
+        SDL_DestroyTexture(
+            resources->schoolHouseText
+        );
+    }
+
+    if (resources->statisticsCounts) {
+        SDL_DestroyTexture(
+            resources->statisticsCounts
+        );
+    }
+
+    if (resources->statisticsWipCounts) {
+        SDL_DestroyTexture(
+            resources->statisticsWipCounts
+        );
     }
 
     if (resources->needsText) {

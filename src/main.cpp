@@ -707,6 +707,90 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Originalni hlavni KaM toolbar 439..442.
+        // Kazdy glyph prepina skutecnou GameUISection.
+        if (touchTapped) {
+            const int toolbarX = 6;
+            const int toolbarY = 194;
+            const int toolbarStep = 46;
+            const int toolbarButtonWidth = 42;
+            const int toolbarButtonHeight = 36;
+
+            for (
+                int toolbarIndex = 0;
+                toolbarIndex < 4;
+                ++toolbarIndex
+            ) {
+                SDL_Rect toolbarArea = {
+                    toolbarX +
+                        toolbarIndex * toolbarStep,
+                    toolbarY,
+                    toolbarButtonWidth,
+                    toolbarButtonHeight
+                };
+
+                bool insideToolbarButton =
+                    touchStartX >= toolbarArea.x &&
+                    touchStartX <
+                        toolbarArea.x +
+                            toolbarArea.w &&
+                    touchStartY >= toolbarArea.y &&
+                    touchStartY <
+                        toolbarArea.y +
+                            toolbarArea.h;
+
+                if (!insideToolbarButton)
+                    continue;
+
+                gameUI.toolbarSelection =
+                    toolbarIndex;
+
+                gameUI.toolbarFocus = true;
+                gameUI.schoolQueueFocus = false;
+                gameUI.schoolQueueSelection = 0;
+
+                switch (toolbarIndex) {
+                    case 0:
+                        gameUI.section =
+                            GameUISection::Build;
+
+                        gameUI.buildSectionActive =
+                            true;
+                        break;
+
+                    case 1:
+                        gameUI.section =
+                            GameUISection::Ratios;
+
+                        gameUI.buildSectionActive =
+                            false;
+                        break;
+
+                    case 2:
+                        gameUI.section =
+                            GameUISection::Statistics;
+
+                        gameUI.buildSectionActive =
+                            false;
+                        break;
+
+                    case 3:
+                        gameUI.section =
+                            GameUISection::Options;
+
+                        gameUI.buildSectionActive =
+                            false;
+                        break;
+
+                    default:
+                        break;
+                }
+
+                touchTapped = false;
+                break;
+            }
+        }
+
         // Touch ovladani originalniho House headeru.
         if (
             gameUI.section == GameUISection::School &&
@@ -721,7 +805,7 @@ int main(int argc, char* argv[])
 
             // Zamknuty School layout:
             // panelX=6, panelY=274, House top=198.
-            const int houseHeaderY = 240;
+            const int houseHeaderY = 249;
 
             SDL_Rect deliveryArea = {
                 6,
@@ -2679,6 +2763,8 @@ int main(int argc, char* argv[])
             gameUI,
             buildings,
             buildingCount,
+            units,
+            unitCount,
             cursorX,
             cursorY
         );
