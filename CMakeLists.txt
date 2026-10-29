@@ -605,49 +605,22 @@ vita_create_vpk(
         assets/ui/ratios/trackbar_thumb.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/weapon_smithy.bmp
-        assets/ui/ratios/houses/weapon_smithy.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/armor_smithy.bmp
-        assets/ui/ratios/houses/armor_smithy.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/iron_smithy.bmp
-        assets/ui/ratios/houses/iron_smithy.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/metallurgist.bmp
-        assets/ui/ratios/houses/metallurgist.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/armor_workshop.bmp
-        assets/ui/ratios/houses/armor_workshop.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/weapon_workshop.bmp
-        assets/ui/ratios/houses/weapon_workshop.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/mill.bmp
-        assets/ui/ratios/houses/mill.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/swine.bmp
-        assets/ui/ratios/houses/swine.bmp
 
 
-    FILE
-        assets/ui/ratios/houses/stables.bmp
-        assets/ui/ratios/houses/stables.bmp
 
 
     FILE

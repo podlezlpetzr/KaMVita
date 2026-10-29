@@ -55,36 +55,59 @@ WareRatioType activeWare(
 
 
 SDL_Texture* targetIcon(
-    const SchoolUIResources& resources,
+    const HouseIconResources& houseIcons,
     int tab,
     int row
 )
 {
-    static const int iconTable[4][4] = {
-        {0, 1, -1, -1},
-        {2, 3, 0, 1},
-        {4, 5, -1, -1},
-        {6, 7, 8, -1}
+    // Presne ResRatioHouse mapovani z
+    // KM_GUIGameRatios.pas.
+    static const HouseIconType houseTable[4][4] = {
+        {
+            HouseIconType::WeaponSmithy,
+            HouseIconType::ArmorSmithy,
+            HouseIconType::Count,
+            HouseIconType::Count
+        },
+        {
+            HouseIconType::IronSmithy,
+            HouseIconType::Metallurgist,
+            HouseIconType::WeaponSmithy,
+            HouseIconType::ArmorSmithy
+        },
+        {
+            HouseIconType::ArmorWorkshop,
+            HouseIconType::WeaponWorkshop,
+            HouseIconType::Count,
+            HouseIconType::Count
+        },
+        {
+            HouseIconType::Mill,
+            HouseIconType::Swine,
+            HouseIconType::Stables,
+            HouseIconType::Count
+        }
     };
 
     if (
         tab < 0 ||
-        tab >= 4 ||
+        tab >= WARE_RATIO_TAB_COUNT ||
         row < 0 ||
-        row >= 4
+        row >= WARE_RATIO_TARGET_COUNT
     ) {
         return nullptr;
     }
 
-    const int iconIndex =
-        iconTable[tab][row];
+    const HouseIconType type =
+        houseTable[tab][row];
 
-    if (iconIndex < 0)
+    if (type == HouseIconType::Count)
         return nullptr;
 
-    return resources.ratiosHouseIcons[
-        iconIndex
-    ];
+    return getHouseIcon(
+        houseIcons,
+        type
+    );
 }
 
 
@@ -301,6 +324,7 @@ void renderTrackBar(
 void renderGameUIRatios(
     SDL_Renderer* renderer,
     const SchoolUIResources& resources,
+    const HouseIconResources& houseIcons,
     const GameUIState& ui,
     const WareDistribution& distribution
 )
@@ -410,7 +434,7 @@ void renderGameUIRatios(
         renderCentered(
             renderer,
             targetIcon(
-                resources,
+                houseIcons,
                 ui.ratiosTab,
                 row
             ),
