@@ -764,4 +764,28 @@ vita_create_vpk(
         assets/ui/houses/icons/woodcutter.bmp
         assets/ui/houses/icons/woodcutter.bmp
 
+    FILE
+        assets/ui/build/actions/road.bmp
+        assets/ui/build/actions/road.bmp
+
+    FILE
+        assets/ui/build/actions/wine.bmp
+        assets/ui/build/actions/wine.bmp
+
+    FILE
+        assets/ui/build/actions/field.bmp
+        assets/ui/build/actions/field.bmp
+
+    FILE
+        assets/ui/build/actions/cancel.bmp
+        assets/ui/build/actions/cancel.bmp
+
+    FILE
+        assets/ui/build/wares/stone.bmp
+        assets/ui/build/wares/stone.bmp
+
+    FILE
+        assets/ui/build/wares/wood.bmp
+        assets/ui/build/wares/wood.bmp
+
 )
