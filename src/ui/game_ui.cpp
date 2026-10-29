@@ -2382,6 +2382,185 @@ void renderGameUI(
         // Puvodni GUIHouseOrder[27]
         // -------------------------------------------------
 
+        // ===============================================
+        // ORIGINALNI KaM BUILD TOOL ROW
+        //
+        // KM_GUIGameBuild.pas:
+        // Road   335  X=0
+        // Field  337  X=37
+        // Wine   336  X=74
+        // Remove 340  X=148
+        //
+        // Vita content origin X=6.
+        // Field/Wine/Remove jsou zatim pouze autenticky
+        // zobrazene. Herni logiku zatim nema KaMVita.
+        // ===============================================
+
+        SDL_Texture* buildToolIcons[4] = {
+            schoolResources.buildRoadIcon,
+            schoolResources.buildFieldIcon,
+            schoolResources.buildWineIcon,
+            schoolResources.buildRemoveIcon
+        };
+
+        const int buildToolX[4] = {
+            6,
+            43,
+            80,
+            154
+        };
+
+        const int buildToolY = 282;
+        const int buildToolSize = 33;
+
+        for (
+            int toolIndex = 0;
+            toolIndex < 4;
+            ++toolIndex
+        ) {
+            SDL_Rect button = {
+                buildToolX[toolIndex],
+                buildToolY,
+                buildToolSize,
+                buildToolSize
+            };
+
+            const bool implemented =
+                toolIndex == 0;
+
+            const bool selected =
+                implemented &&
+                ui.buildSelection ==
+                    GameUIBuildSelection::Road;
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_BLEND
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                selected ? 103 : 49,
+                selected ? 84 : 42,
+                selected ? 48 : 32,
+                selected ? 205 : 125
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &button
+            );
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
+
+            // Horni a levy okraj ButtonFlat.
+            SDL_SetRenderDrawColor(
+                renderer,
+                35,
+                30,
+                25,
+                255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                button.x,
+                button.y,
+                button.x + button.w - 1,
+                button.y
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                button.x,
+                button.y,
+                button.x,
+                button.y + button.h - 1
+            );
+
+            // Spodni a pravy okraj.
+            SDL_SetRenderDrawColor(
+                renderer,
+                selected ? 230 : 171,
+                selected ? 194 : 154,
+                selected ? 100 : 121,
+                255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                button.x,
+                button.y + button.h - 1,
+                button.x + button.w - 1,
+                button.y + button.h - 1
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                button.x + button.w - 1,
+                button.y,
+                button.x + button.w - 1,
+                button.y + button.h - 1
+            );
+
+            SDL_Texture* icon =
+                buildToolIcons[toolIndex];
+
+            if (!icon)
+                continue;
+
+            // Road je funkcni.
+            // Ostatni nastroje jsou zatim disabled.
+            const Uint8 brightness =
+                implemented
+                    ? 255
+                    : 115;
+
+            SDL_SetTextureColorMod(
+                icon,
+                brightness,
+                brightness,
+                brightness
+            );
+
+            int width = 0;
+            int height = 0;
+
+            SDL_QueryTexture(
+                icon,
+                nullptr,
+                nullptr,
+                &width,
+                &height
+            );
+
+            SDL_Rect destination = {
+                button.x +
+                    (button.w - width) / 2,
+                button.y +
+                    (button.h - height) / 2,
+                width,
+                height
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                icon,
+                nullptr,
+                &destination
+            );
+
+            SDL_SetTextureColorMod(
+                icon,
+                255,
+                255,
+                255
+            );
+        }
+
         for (
             int houseIndex = 0;
             houseIndex < GUI_HOUSE_COUNT;
@@ -2806,12 +2985,30 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/ratios/trackbar_thumb.bmp"
         );
 
-    // Road neni HouseType a proto zustava
-    // samostatnym Build resource GUI 335.
+    // Road/Field/Wine/Remove nejsou HouseType.
+    // Proto zustavaji samostatnymi Build resources.
     resources.buildRoadIcon =
         loadSchoolUITexture(
             renderer,
             "app0:assets/ui/build/original/road.bmp"
+        );
+
+    resources.buildFieldIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/tools/field.bmp"
+        );
+
+    resources.buildWineIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/tools/wine.bmp"
+        );
+
+    resources.buildRemoveIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/tools/remove.bmp"
         );
 
     resources.statisticsCounts =
@@ -3041,6 +3238,30 @@ void destroySchoolUIResources(
         );
 
         resources->buildRoadIcon = nullptr;
+    }
+
+    if (resources->buildFieldIcon) {
+        SDL_DestroyTexture(
+            resources->buildFieldIcon
+        );
+
+        resources->buildFieldIcon = nullptr;
+    }
+
+    if (resources->buildWineIcon) {
+        SDL_DestroyTexture(
+            resources->buildWineIcon
+        );
+
+        resources->buildWineIcon = nullptr;
+    }
+
+    if (resources->buildRemoveIcon) {
+        SDL_DestroyTexture(
+            resources->buildRemoveIcon
+        );
+
+        resources->buildRemoveIcon = nullptr;
     }
 
     if (resources->statisticsCounts) {

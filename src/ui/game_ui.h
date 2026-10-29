@@ -125,6 +125,14 @@ struct SchoolUIResources {
     // HouseIconResources.
     SDL_Texture* buildRoadIcon;
 
+    // Originalni KaM Build tools mimo House katalog:
+    // 337 = Field
+    // 336 = Wine
+    // 340 = Remove
+    SDL_Texture* buildFieldIcon;
+    SDL_Texture* buildWineIcon;
+    SDL_Texture* buildRemoveIcon;
+
     // Originalni Ratios 440 resources.
     SDL_Texture* ratiosWareIcons[4];
     SDL_Texture* ratiosTrackbarThumb;

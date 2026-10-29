@@ -816,4 +816,16 @@ vita_create_vpk(
         assets/ui/build/controls/wood.bmp
         assets/ui/build/controls/wood.bmp
 
+    FILE
+        assets/ui/build/tools/field.bmp
+        assets/ui/build/tools/field.bmp
+
+    FILE
+        assets/ui/build/tools/wine.bmp
+        assets/ui/build/tools/wine.bmp
+
+    FILE
+        assets/ui/build/tools/remove.bmp
+        assets/ui/build/tools/remove.bmp
+
 )
