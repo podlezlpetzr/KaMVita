@@ -36,6 +36,7 @@ void renderGameUI(
     SDL_Renderer* renderer,
     const BuildingResources& resources,
     const SchoolUIResources& schoolResources,
+    const HouseIconResources& houseIcons,
     const GameUIState& ui,
     const Building* buildings,
     int buildingCount,
@@ -2385,6 +2386,11 @@ void renderGameUI(
         GAME_UI_PANEL_WIDTH - 1,
         543
     );
+
+    // House katalog je od tohoto checkpointu soucasti
+    // centralniho Game UI API. Jednotlive panely se na nej
+    // prepoji v nasledujicim samostatnem rezu.
+    (void)houseIcons;
 
     // cursorX/cursorY zatim pouze soucast API.
     (void)cursorX;

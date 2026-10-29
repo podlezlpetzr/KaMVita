@@ -5,6 +5,7 @@
 #include "../game/buildings.h"
 #include "../game/units.h"
 #include "../game/ware_distribution.h"
+#include "house_icons.h"
 
 static constexpr int GAME_UI_PANEL_WIDTH = 220;
 
@@ -155,6 +156,7 @@ void renderGameUI(
     SDL_Renderer* renderer,
     const BuildingResources& buildingResources,
     const SchoolUIResources& schoolResources,
+    const HouseIconResources& houseIcons,
     const GameUIState& ui,
     const Building* buildings,
     int buildingCount,

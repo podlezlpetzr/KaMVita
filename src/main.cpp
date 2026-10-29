@@ -3,6 +3,7 @@
 #include "game/units.h"
 #include "ui/game_ui.h"
 #include "ui/game_ui_ratios.h"
+#include "ui/house_icons.h"
 #include "game/ware_distribution.h"
 #include <algorithm>
 #include <vector>
@@ -485,6 +486,11 @@ int main(int argc, char* argv[])
 
     SchoolUIResources schoolUIResources =
         loadSchoolUIResources(renderer);
+
+    // Vsech 29 originalnich House GUI ikon
+    // se nacita centralne pouze jednou.
+    HouseIconResources houseIconResources =
+        loadHouseIconResources(renderer);
 
     GameUIState gameUI = {};
     initGameUI(&gameUI);
@@ -2916,6 +2922,7 @@ int main(int argc, char* argv[])
             renderer,
             buildingResources,
             schoolUIResources,
+            houseIconResources,
             gameUI,
             buildings,
             buildingCount,
@@ -2941,6 +2948,12 @@ int main(int argc, char* argv[])
         SDL_Delay(16);
     }
 
+
+    // House textury musi byt uvolneny jeste pred
+    // znicenim SDL rendereru.
+    destroyHouseIconResources(
+        &houseIconResources
+    );
 
     destroyUnitResources(&unitResources);
     destroyBuildingResources(&buildingResources);
