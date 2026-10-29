@@ -120,10 +120,10 @@ struct SchoolUIResources {
     SDL_Texture* statisticsCounts;
     SDL_Texture* statisticsWipCounts;
 
-    // Originalni KaM Build GUI:
-    // 335 Road, 312 Store, 308 Bakery,
-    // 309 Farm, 314 School.
-    SDL_Texture* buildOriginalIcons[5];
+    // Originalni KaM Build Road GUI 335.
+    // House ikony uz centralne poskytuje
+    // HouseIconResources.
+    SDL_Texture* buildRoadIcon;
 
     // Originalni Ratios 440 resources.
     SDL_Texture* ratiosWareIcons[4];

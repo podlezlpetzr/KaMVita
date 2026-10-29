@@ -2347,7 +2347,7 @@ void renderGameUI(
         );
 
         SDL_Texture* roadIcon =
-            schoolResources.buildOriginalIcons[0];
+            schoolResources.buildRoadIcon;
 
         if (roadIcon) {
             int width = 0;
@@ -2806,30 +2806,13 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/ratios/trackbar_thumb.bmp"
         );
 
-    static const char* buildOriginalFiles[5] = {
-        "road",
-        "store",
-        "bakery",
-        "farm",
-        "school"
-    };
-
-    for (int i = 0; i < 5; ++i) {
-        char path[256];
-
-        snprintf(
-            path,
-            sizeof(path),
-            "app0:assets/ui/build/original/%s.bmp",
-            buildOriginalFiles[i]
+    // Road neni HouseType a proto zustava
+    // samostatnym Build resource GUI 335.
+    resources.buildRoadIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/original/road.bmp"
         );
-
-        resources.buildOriginalIcons[i] =
-            loadSchoolUITexture(
-                renderer,
-                path
-            );
-    }
 
     resources.statisticsCounts =
         loadSchoolUITexture(
@@ -3052,12 +3035,12 @@ void destroySchoolUIResources(
         );
     }
 
-    for (int i = 0; i < 5; ++i) {
-        if (resources->buildOriginalIcons[i]) {
-            SDL_DestroyTexture(
-                resources->buildOriginalIcons[i]
-            );
-        }
+    if (resources->buildRoadIcon) {
+        SDL_DestroyTexture(
+            resources->buildRoadIcon
+        );
+
+        resources->buildRoadIcon = nullptr;
     }
 
     if (resources->statisticsCounts) {
