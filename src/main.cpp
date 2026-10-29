@@ -2310,6 +2310,121 @@ int main(int argc, char* argv[])
 
 
         // -------------------------------------------------
+        // Wine tool GUI 336
+        //
+        // Pouziva stejnou LandPlanState vrstvu jako Field.
+        //
+        // Square:
+        // None  -> Wine
+        // Wine  -> None
+        // Field -> Wine
+        //
+        // Wine plan nesmi prekryvat:
+        // - aktivni building footprint,
+        // - zadny RoadState.
+        // -------------------------------------------------
+
+        if (
+            !buildMenuOpen &&
+            activeBuildTool == BuildTool::Wine &&
+            squarePressed &&
+            hoverTileX >= 0 &&
+            hoverTileX < MAP_WIDTH &&
+            hoverTileY >= 0 &&
+            hoverTileY < MAP_HEIGHT
+        ) {
+            bool blockedByBuilding = false;
+
+            for (
+                int buildingIndex = 0;
+                buildingIndex < buildingCount;
+                ++buildingIndex
+            ) {
+                const Building& building =
+                    buildings[buildingIndex];
+
+                if (!building.active)
+                    continue;
+
+                const int localX =
+                    hoverTileX -
+                    building.tileX;
+
+                const int localY =
+                    hoverTileY -
+                    building.tileY;
+
+                if (
+                    localX < 0 ||
+                    localY < 0
+                ) {
+                    continue;
+                }
+
+                const int width =
+                    getBuildingWidth(
+                        building.type
+                    );
+
+                const int height =
+                    getBuildingHeight(
+                        building.type
+                    );
+
+                if (
+                    localX >= width ||
+                    localY >= height
+                ) {
+                    continue;
+                }
+
+                if (
+                    getBuildingPlanValue(
+                        building.type,
+                        localX,
+                        localY
+                    ) != 0
+                ) {
+                    blockedByBuilding = true;
+                    break;
+                }
+            }
+
+            const bool blockedByRoad =
+                roads[
+                    hoverTileY
+                ][
+                    hoverTileX
+                ] != RoadState::None;
+
+            if (
+                !blockedByBuilding &&
+                !blockedByRoad
+            ) {
+                LandPlanState& plan =
+                    landPlans[
+                        hoverTileY
+                    ][
+                        hoverTileX
+                    ];
+
+                if (
+                    plan ==
+                    LandPlanState::Wine
+                ) {
+                    plan =
+                        LandPlanState::None;
+                } else {
+                    // None -> Wine
+                    // Field -> Wine
+                    plan =
+                        LandPlanState::Wine;
+                }
+            }
+        }
+
+
+        // -------------------------------------------------
         // Remove tool GUI 340
         //
         // Prvni bezpecna verze rusi pouze:
@@ -2552,7 +2667,7 @@ int main(int argc, char* argv[])
 
 
         // -------------------------------------------------
-        // Field planning overlay
+        // Field / Wine planning overlay
         //
         // Docasny diagnosticky visual pro Field plan.
         // Originalni KaM plan rendering prijde az po
@@ -2574,12 +2689,16 @@ int main(int argc, char* argv[])
                 fieldX < MAP_WIDTH;
                 ++fieldX
             ) {
-                if (
+                const LandPlanState landPlan =
                     landPlans[
                         fieldY
                     ][
                         fieldX
-                    ] != LandPlanState::Field
+                    ];
+
+                if (
+                    landPlan ==
+                    LandPlanState::None
                 ) {
                     continue;
                 }
@@ -2593,28 +2712,54 @@ int main(int argc, char* argv[])
                     TILE_SIZE
                 };
 
-                // Jemna zlutozelena vypln.
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    190,
-                    165,
-                    45,
-                    72
-                );
+                if (
+                    landPlan ==
+                    LandPlanState::Field
+                ) {
+                    // Field: zlutozelena.
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        190,
+                        165,
+                        45,
+                        72
+                    );
+                } else {
+                    // Wine: vinove/fialova.
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        125,
+                        45,
+                        95,
+                        82
+                    );
+                }
 
                 SDL_RenderFillRect(
                     renderer,
                     &fieldPlanRect
                 );
 
-                // Vyraznejsi obrys planu.
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    238,
-                    211,
-                    76,
-                    210
-                );
+                if (
+                    landPlan ==
+                    LandPlanState::Field
+                ) {
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        238,
+                        211,
+                        76,
+                        210
+                    );
+                } else {
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        194,
+                        92,
+                        151,
+                        220
+                    );
+                }
 
                 SDL_RenderDrawRect(
                     renderer,
