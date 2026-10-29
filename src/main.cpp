@@ -3031,6 +3031,13 @@ int main(int argc, char* argv[])
         &houseIconResources
     );
 
+    // SchoolUIResources obsahuje sidebar, toolbar,
+    // Ratios ware ikony, Statistics atlasy a School GUI.
+    // Vsechny textury uvolnime pred SDL rendererem.
+    destroySchoolUIResources(
+        &schoolUIResources
+    );
+
     destroyUnitResources(&unitResources);
     destroyBuildingResources(&buildingResources);
     destroyTerrainResources(&terrain);
