@@ -71,6 +71,24 @@ struct SchoolProfessionUIResources {
 };
 
 struct SchoolUIResources {
+    // Autenticke casti leveho sidebaru z KaM GUI.RX:
+    // sprite 407 = horni cast 224x200
+    // sprite 554 = prostredni cast 224x168
+    SDL_Texture* sidebarTop;
+    SDL_Texture* sidebarMiddle;
+    SDL_Texture* sidebarBottom;
+
+    // Originalni KaM bsGame button resources.
+    SDL_Texture* buttonStone;
+    SDL_Texture* mainButtons[5];
+
+    // School bsGame glyphy z GUI.RX:
+    // 35 = previous, 42 = train, 36 = next.
+    SDL_Texture* schoolButtons[3];
+
+    // Originalni KaM GUI sprite 358 = Gold.
+    SDL_Texture* goldIcon;
+
     SchoolProfessionUIResources
         professions[SCHOOL_PROFESSION_COUNT];
 };

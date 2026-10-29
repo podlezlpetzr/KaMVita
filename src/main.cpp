@@ -503,6 +503,84 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Touch ovladani spodnich School tlacitek.
+        //
+        // Renderer:
+        // panelX = 6
+        // panelY = 274
+        // LEFT  = 6,   496, 54x40
+        // TRAIN = 68,  496, 54x40
+        // RIGHT = 130, 496, 54x40
+        //
+        // Touch pouziva stejne akce jako gamepad.
+        if (
+            gameUI.section == GameUISection::School &&
+            touchTapped &&
+            !gameUI.schoolQueueFocus
+        ) {
+            const int schoolButtonY = 274 + 222;
+
+            SDL_Rect schoolLeftButton = {
+                6,
+                schoolButtonY,
+                54,
+                40
+            };
+
+            SDL_Rect schoolTrainButton = {
+                6 + 62,
+                schoolButtonY,
+                54,
+                40
+            };
+
+            SDL_Rect schoolRightButton = {
+                6 + 124,
+                schoolButtonY,
+                54,
+                40
+            };
+
+            auto touchInside = [
+                touchStartX,
+                touchStartY
+            ](const SDL_Rect& area) -> bool {
+                return
+                    touchStartX >= area.x &&
+                    touchStartX <
+                        area.x + area.w &&
+                    touchStartY >= area.y &&
+                    touchStartY <
+                        area.y + area.h;
+            };
+
+            if (touchInside(schoolLeftButton)) {
+                moveSchoolUISelection(
+                    &gameUI,
+                    -1
+                );
+
+                touchTapped = false;
+            } else if (
+                touchInside(schoolRightButton)
+            ) {
+                moveSchoolUISelection(
+                    &gameUI,
+                    1
+                );
+
+                touchTapped = false;
+            } else if (
+                touchInside(schoolTrainButton)
+            ) {
+                // Pouzij existujici a overenou TRAIN cestu.
+                crossPressed = true;
+
+                touchTapped = false;
+            }
+        }
+
+
         // TRAIN ve School GUI.
         // Tento rez pouze radi profesi do fronty.
         // Samotny casovy vycvik a spawn po completion
@@ -585,12 +663,11 @@ int main(int argc, char* argv[])
             gameUI.section == GameUISection::School &&
             touchTapped
         ) {
-            const int schoolPanelX =
-                (GAME_UI_PANEL_WIDTH - 180) / 2;
+            const int schoolPanelX = 6;
 
             SDL_Rect schoolCancelArea = {
                 schoolPanelX,
-                76 + 48,
+                274 + 48,
                 32,
                 32
             };
@@ -629,10 +706,9 @@ int main(int argc, char* argv[])
             touchTapped &&
             !schoolCancelTapped
         ) {
-            const int schoolPanelX =
-                (GAME_UI_PANEL_WIDTH - 180) / 2;
+            const int schoolPanelX = 6;
 
-            const int schoolQueueY = 76 + 80;
+            const int schoolQueueY = 274 + 80;
 
             for (
                 int waitingIndex = 0;

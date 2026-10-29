@@ -57,8 +57,19 @@ void renderGameUI(
         }
     }
 
-    // Pevny levy panel ve stylu PC KaM.
-    SDL_Rect panel = {
+    // Vita varianta autentickeho KaM sidebaru.
+    //
+    // PC Remake:
+    //   407 = top
+    //   554 = middle s logem
+    //   404 = bottom / Panel_Controls
+    //
+    // Vita ma pouze 544 px vysky. Prostredni sprite 554
+    // proto zamerne vynechavame a po horni casti 407
+    // okamzite navazujeme cistym drevenym spritem 404.
+    // Samotne originalni assety zustavaji beze zmeny.
+
+    SDL_Rect sidebarFallback = {
         0,
         0,
         GAME_UI_PANEL_WIDTH,
@@ -67,108 +78,79 @@ void renderGameUI(
 
     SDL_SetRenderDrawColor(
         renderer,
-        48, 42, 31, 255
-    );
-    SDL_RenderFillRect(renderer, &panel);
-
-    // Horni oblast pro budouci minimapu.
-    SDL_Rect minimapFrame = {
-        8,
-        8,
-        GAME_UI_PANEL_WIDTH - 16,
-        150
-    };
-
-    SDL_SetRenderDrawColor(
-        renderer,
-        96, 80, 52, 255
+        35, 29, 22, 255
     );
     SDL_RenderFillRect(
         renderer,
-        &minimapFrame
+        &sidebarFallback
     );
 
-    SDL_SetRenderDrawColor(
-        renderer,
-        185, 157, 101, 255
-    );
-    SDL_RenderDrawRect(
-        renderer,
-        &minimapFrame
-    );
+    // Horni cast 407.
+    if (schoolResources.sidebarTop) {
+        SDL_Rect topDestination = {
+            0,
+            0,
+            GAME_UI_PANEL_WIDTH,
+            200
+        };
 
-    // Prostor mezi minimapou a build sekci.
-    SDL_Rect middlePanel = {
-        8,
-        166,
-        GAME_UI_PANEL_WIDTH - 16,
-        115
-    };
+        SDL_RenderCopy(
+            renderer,
+            schoolResources.sidebarTop,
+            nullptr,
+            &topDestination
+        );
+    }
 
-    SDL_SetRenderDrawColor(
-        renderer,
-        70, 58, 40, 255
-    );
-    SDL_RenderFillRect(
-        renderer,
-        &middlePanel
-    );
+    // Od Y=200 az na spodek Vity pouzijeme sprite 404.
+    // Zdrojovy sprite ma 224x400, potrebujeme prvnich
+    // 344 px z jeho vysky.
+    if (schoolResources.sidebarBottom) {
+        SDL_Rect bottomSource = {
+            0,
+            0,
+            224,
+            344
+        };
 
-    SDL_SetRenderDrawColor(
-        renderer,
-        150, 124, 78, 255
-    );
-    SDL_RenderDrawRect(
-        renderer,
-        &middlePanel
-    );
+        SDL_Rect bottomDestination = {
+            0,
+            200,
+            GAME_UI_PANEL_WIDTH,
+            344
+        };
+
+        SDL_RenderCopy(
+            renderer,
+            schoolResources.sidebarBottom,
+            &bottomSource,
+            &bottomDestination
+        );
+    }
 
     // School GUI podle puvodniho KaM.
     if (ui.section == GameUISection::School) {
         // Originalni obsah School panelu ma sirku 180 px
         // a vysku 266 px. Na Vita panelu ho centrujeme.
-        const int panelX =
-            (GAME_UI_PANEL_WIDTH - 180) / 2;
+        // Vita layout: School je posunuta blize
+        // k levemu okraji sidebaru.
+        const int panelX = 6;
 
-        // School nahrazuje Build GUI v levem panelu.
-        // Nejdriv prekryjeme cely sidebar.
-        SDL_Rect schoolBackground = {
-            0,
-            0,
-            GAME_UI_PANEL_WIDTH,
-            544
-        };
-
-        SDL_SetRenderDrawColor(
-            renderer,
-            35, 31, 24, 255
-        );
-
-        SDL_RenderFillRect(
-            renderer,
-            &schoolBackground
-        );
-
-        SDL_SetRenderDrawColor(
-            renderer,
-            150, 124, 78, 255
-        );
-
-        SDL_RenderDrawLine(
-            renderer,
-            GAME_UI_PANEL_WIDTH - 1,
-            0,
-            GAME_UI_PANEL_WIDTH - 1,
-            543
-        );
+        // School lezi nad autentickym KaM sidebarem.
+        // Cely sidebar se proto neprekryva jednobarevnou plochou.
 
         // Puvodni School obsah zacina uvnitr
         // house panelu na Y = 76.
-        const int panelY = 76;
+        // Na PC je School uvnitr Panel_Controls a Panel_House.
+        // Vita ma pouze 544 px vysky, proto zachovame vnitrni
+        // remake layout 266 px a ukotvime ho ke spodnimu okraji.
+        const int panelY = 274;
 
         const int contentWidth = 180;
         const int contentHeight = 266;
 
+        // Vita: School uz nema vlastni nepruhledny podklad.
+        // Funkcni obsah lezi primo na autentickem dreve 404.
         SDL_Rect schoolPanel = {
             panelX - 6,
             panelY - 4,
@@ -176,25 +158,9 @@ void renderGameUI(
             contentHeight + 8
         };
 
-        SDL_SetRenderDrawColor(
-            renderer,
-            58, 47, 33, 255
-        );
-
-        SDL_RenderFillRect(
-            renderer,
-            &schoolPanel
-        );
-
-        SDL_SetRenderDrawColor(
-            renderer,
-            185, 157, 101, 255
-        );
-
-        SDL_RenderDrawRect(
-            renderer,
-            &schoolPanel
-        );
+        // schoolPanel zatim zachovavame jako layout reference,
+        // ale nekreslime jeho vypln ani ramecek.
+        (void)schoolPanel;
 
         // Horni oddeleni NEEDS / Gold.
         SDL_Rect needsArea = {
@@ -204,25 +170,9 @@ void renderGameUI(
             42
         };
 
-        SDL_SetRenderDrawColor(
-            renderer,
-            67, 55, 38, 255
-        );
-
-        SDL_RenderFillRect(
-            renderer,
-            &needsArea
-        );
-
-        SDL_SetRenderDrawColor(
-            renderer,
-            134, 109, 66, 255
-        );
-
-        SDL_RenderDrawRect(
-            renderer,
-            &needsArea
-        );
+        // NEEDS oblast zustava pouze jako layout reference.
+        // Pozadi poskytuje primo autenticky sidebar 404.
+        (void)needsArea;
 
         // Docasny Gold symbol.
         // Funkcni pocet zlata pripojime ke konkretni School.
@@ -287,24 +237,91 @@ void renderGameUI(
             32
         };
 
+        // WIP slot ve stylu originalniho KaM.
+        // GUI 402 poskytuje kamen, okraje vytvareji
+        // zapusteny bevel.
+        if (schoolResources.buttonStone) {
+            SDL_Rect wipStoneSource = {
+                8,
+                18,
+                wipSlot.w,
+                wipSlot.h
+            };
+
+            SDL_SetTextureColorMod(
+                schoolResources.buttonStone,
+                138,
+                133,
+                119
+            );
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.buttonStone,
+                &wipStoneSource,
+                &wipSlot
+            );
+
+            SDL_SetTextureColorMod(
+                schoolResources.buttonStone,
+                255,
+                255,
+                255
+            );
+        } else {
+            SDL_SetRenderDrawColor(
+                renderer,
+                49, 45, 37, 255
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &wipSlot
+            );
+        }
+
+        // Zasunutý bevel: tmavy vrch/levy okraj.
         SDL_SetRenderDrawColor(
             renderer,
-            45, 37, 28, 255
+            34, 29, 24, 255
         );
 
-        SDL_RenderFillRect(
+        SDL_RenderDrawLine(
             renderer,
-            &wipSlot
+            wipSlot.x,
+            wipSlot.y,
+            wipSlot.x + wipSlot.w - 1,
+            wipSlot.y
         );
 
+        SDL_RenderDrawLine(
+            renderer,
+            wipSlot.x,
+            wipSlot.y,
+            wipSlot.x,
+            wipSlot.y + wipSlot.h - 1
+        );
+
+        // Svetly spodni/pravy okraj.
         SDL_SetRenderDrawColor(
             renderer,
-            154, 126, 77, 255
+            181, 169, 139, 255
         );
 
-        SDL_RenderDrawRect(
+        SDL_RenderDrawLine(
             renderer,
-            &wipSlot
+            wipSlot.x,
+            wipSlot.y + wipSlot.h - 1,
+            wipSlot.x + wipSlot.w - 1,
+            wipSlot.y + wipSlot.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            wipSlot.x + wipSlot.w - 1,
+            wipSlot.y,
+            wipSlot.x + wipSlot.w - 1,
+            wipSlot.y + wipSlot.h - 1
         );
 
         if (selectedSchool) {
@@ -419,9 +436,8 @@ void renderGameUI(
             );
         }
 
-        // Progress vycviku.
-        // Dvojity ramecek vytvari zapusteny vzhled
-        // odpovidajici zbytku School panelu.
+        // Progress vycviku podle KaM Remake
+        // TKMRenderUI.WritePercentBar.
         SDL_Rect progressOuter = {
             panelX + 34,
             panelY + 54,
@@ -429,9 +445,10 @@ void renderGameUI(
             20
         };
 
+        // Základ progress baru.
         SDL_SetRenderDrawColor(
             renderer,
-            34, 28, 22, 255
+            48, 43, 35, 255
         );
 
         SDL_RenderFillRect(
@@ -439,41 +456,55 @@ void renderGameUI(
             &progressOuter
         );
 
+        // Zasunutý bevel.
         SDL_SetRenderDrawColor(
             renderer,
-            154, 126, 77, 255
+            30, 26, 22, 255
         );
 
-        SDL_RenderDrawRect(
+        SDL_RenderDrawLine(
             renderer,
-            &progressOuter
+            progressOuter.x,
+            progressOuter.y,
+            progressOuter.x +
+                progressOuter.w - 1,
+            progressOuter.y
         );
 
-        SDL_Rect progressInner = {
-            progressOuter.x + 2,
-            progressOuter.y + 2,
-            progressOuter.w - 4,
-            progressOuter.h - 4
-        };
-
-        SDL_SetRenderDrawColor(
+        SDL_RenderDrawLine(
             renderer,
-            55, 43, 29, 255
-        );
-
-        SDL_RenderFillRect(
-            renderer,
-            &progressInner
+            progressOuter.x,
+            progressOuter.y,
+            progressOuter.x,
+            progressOuter.y +
+                progressOuter.h - 1
         );
 
         SDL_SetRenderDrawColor(
             renderer,
-            91, 70, 43, 255
+            178, 166, 137, 255
         );
 
-        SDL_RenderDrawRect(
+        SDL_RenderDrawLine(
             renderer,
-            &progressInner
+            progressOuter.x,
+            progressOuter.y +
+                progressOuter.h - 1,
+            progressOuter.x +
+                progressOuter.w - 1,
+            progressOuter.y +
+                progressOuter.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            progressOuter.x +
+                progressOuter.w - 1,
+            progressOuter.y,
+            progressOuter.x +
+                progressOuter.w - 1,
+            progressOuter.y +
+                progressOuter.h - 1
         );
 
         int trainingStep = 0;
@@ -485,40 +516,59 @@ void renderGameUI(
             if (trainingStep < 0)
                 trainingStep = 0;
 
-            if (trainingStep > SCHOOL_TRAINING_STEPS) {
+            if (
+                trainingStep >
+                SCHOOL_TRAINING_STEPS
+            ) {
                 trainingStep =
                     SCHOOL_TRAINING_STEPS;
             }
         }
 
+        // Remake:
+        // Round((width - 2) * progress) + 2.
         int progressWidth =
             (
-                (progressInner.w - 2) *
+                (progressOuter.w - 2) *
                 trainingStep
             ) /
-            SCHOOL_TRAINING_STEPS;
+            SCHOOL_TRAINING_STEPS + 2;
+
+        if (trainingStep <= 0)
+            progressWidth = 0;
+
+        if (
+            progressWidth >
+            progressOuter.w - 2
+        ) {
+            progressWidth =
+                progressOuter.w - 2;
+        }
 
         SDL_Rect progressFill = {
-            progressInner.x + 1,
-            progressInner.y + 1,
+            progressOuter.x + 1,
+            progressOuter.y + 1,
             progressWidth,
-            progressInner.h - 2
+            progressOuter.h - 2
         };
 
-        SDL_SetRenderDrawColor(
-            renderer,
-            176, 124, 40, 255
-        );
-
+        // BAR_COLOR_GREEN z KaM Remake:
+        // RGB 0, 170, 38.
         if (progressFill.w > 0) {
+            SDL_SetRenderDrawColor(
+                renderer,
+                0, 170, 38, 255
+            );
+
             SDL_RenderFillRect(
                 renderer,
                 &progressFill
             );
 
+            // Vnitřní stín nahoře a vlevo.
             SDL_SetRenderDrawColor(
                 renderer,
-                229, 181, 72, 255
+                0, 69, 16, 255
             );
 
             SDL_RenderDrawLine(
@@ -528,6 +578,32 @@ void renderGameUI(
                 progressFill.x +
                     progressFill.w - 1,
                 progressFill.y
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                progressFill.x,
+                progressFill.y,
+                progressFill.x,
+                progressFill.y +
+                    progressFill.h - 1
+            );
+
+            // Jemné světlo na spodní hraně výplně.
+            SDL_SetRenderDrawColor(
+                renderer,
+                38, 205, 68, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                progressFill.x,
+                progressFill.y +
+                    progressFill.h - 1,
+                progressFill.x +
+                    progressFill.w - 1,
+                progressFill.y +
+                    progressFill.h - 1
             );
         }
 
@@ -540,24 +616,98 @@ void renderGameUI(
                 32
             };
 
+            // Queue slot ve stylu originalniho KaM.
+            if (schoolResources.buttonStone) {
+                SDL_Rect queueStoneSource = {
+                    8 + i * 34,
+                    92,
+                    queueSlot.w,
+                    queueSlot.h
+                };
+
+                // Prázdné sloty jsou subtilnější než WIP.
+                SDL_SetTextureColorMod(
+                    schoolResources.buttonStone,
+                    115,
+                    111,
+                    100
+                );
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.buttonStone,
+                    &queueStoneSource,
+                    &queueSlot
+                );
+
+                SDL_SetTextureColorMod(
+                    schoolResources.buttonStone,
+                    255,
+                    255,
+                    255
+                );
+            } else {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    45, 41, 34, 255
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &queueSlot
+                );
+            }
+
+            // Zasunutý tmavy vrch a levy okraj.
             SDL_SetRenderDrawColor(
                 renderer,
-                45, 37, 28, 255
+                34, 29, 24, 255
             );
 
-            SDL_RenderFillRect(
+            SDL_RenderDrawLine(
                 renderer,
-                &queueSlot
+                queueSlot.x,
+                queueSlot.y,
+                queueSlot.x +
+                    queueSlot.w - 1,
+                queueSlot.y
             );
 
+            SDL_RenderDrawLine(
+                renderer,
+                queueSlot.x,
+                queueSlot.y,
+                queueSlot.x,
+                queueSlot.y +
+                    queueSlot.h - 1
+            );
+
+            // Svetly spodni a pravy okraj.
             SDL_SetRenderDrawColor(
                 renderer,
-                135, 111, 70, 255
+                168, 157, 130, 255
             );
 
-            SDL_RenderDrawRect(
+            SDL_RenderDrawLine(
                 renderer,
-                &queueSlot
+                queueSlot.x,
+                queueSlot.y +
+                    queueSlot.h - 1,
+                queueSlot.x +
+                    queueSlot.w - 1,
+                queueSlot.y +
+                    queueSlot.h - 1
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                queueSlot.x +
+                    queueSlot.w - 1,
+                queueSlot.y,
+                queueSlot.x +
+                    queueSlot.w - 1,
+                queueSlot.y +
+                    queueSlot.h - 1
             );
 
             if (selectedSchool) {
@@ -1122,6 +1272,70 @@ void renderGameUI(
                 rightButton.y + 30
             );
         }
+
+        // ORIGINAL KAM SCHOOL GLYPHS - FINAL OVERLAY
+        // GUI 35 = previous, GUI 42 = train, GUI 36 = next.
+        // Kresli se jako posledni vrstva School panelu.
+        if (!ui.schoolQueueFocus) {
+            SDL_Texture* glyphs[3] = {
+                schoolResources.schoolButtons[0],
+                schoolResources.schoolButtons[1],
+                schoolResources.schoolButtons[2]
+            };
+
+            SDL_Rect areas[3] = {
+                leftButton,
+                trainButton,
+                rightButton
+            };
+
+            for (int i = 0; i < 3; ++i) {
+                // Nejprve prekryj stary rucne kresleny symbol.
+                if (schoolResources.buttonStone) {
+                    SDL_Rect src = {
+                        12 + i * 58,
+                        40 + i * 70,
+                        areas[i].w,
+                        areas[i].h
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        schoolResources.buttonStone,
+                        &src,
+                        &areas[i]
+                    );
+                }
+
+                if (!glyphs[i])
+                    continue;
+
+                int gw = 0;
+                int gh = 0;
+
+                SDL_QueryTexture(
+                    glyphs[i],
+                    nullptr,
+                    nullptr,
+                    &gw,
+                    &gh
+                );
+
+                SDL_Rect dst = {
+                    areas[i].x + (areas[i].w - gw) / 2,
+                    areas[i].y + (areas[i].h - gh) / 2,
+                    gw,
+                    gh
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    glyphs[i],
+                    nullptr,
+                    &dst
+                );
+            }
+        }
     }
 
     // BUILD ikony zobrazujeme pouze v Build sekci.
@@ -1344,6 +1558,84 @@ SchoolUIResources loadSchoolUIResources(
 {
     SchoolUIResources resources = {};
 
+    resources.sidebarTop =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/sidebar/sidebar_top.bmp"
+        );
+
+    resources.sidebarMiddle =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/sidebar/sidebar_middle.bmp"
+        );
+
+    resources.sidebarBottom =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/sidebar/sidebar_bottom.bmp"
+        );
+
+    resources.buttonStone =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/sidebar/buttons/gui_402.bmp"
+        );
+
+    static const char* mainButtonFiles[5] = {
+        "gui_439.bmp",
+        "gui_440.bmp",
+        "gui_441.bmp",
+        "gui_442.bmp",
+        "gui_443.bmp"
+    };
+
+    for (int i = 0; i < 5; ++i) {
+        char buttonPath[256];
+
+        snprintf(
+            buttonPath,
+            sizeof(buttonPath),
+            "app0:assets/ui/sidebar/buttons/%s",
+            mainButtonFiles[i]
+        );
+
+        resources.mainButtons[i] =
+            loadSchoolUITexture(
+                renderer,
+                buttonPath
+            );
+    }
+
+    static const char* schoolButtonFiles[3] = {
+        "previous.bmp",
+        "train.bmp",
+        "next.bmp"
+    };
+
+    for (int i = 0; i < 3; ++i) {
+        char buttonPath[256];
+
+        snprintf(
+            buttonPath,
+            sizeof(buttonPath),
+            "app0:assets/ui/school/buttons/%s",
+            schoolButtonFiles[i]
+        );
+
+        resources.schoolButtons[i] =
+            loadSchoolUITexture(
+                renderer,
+                buttonPath
+            );
+    }
+
+    resources.goldIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/school/wares/gold.bmp"
+        );
+
     static const char* professionNames[
         SCHOOL_PROFESSION_COUNT
     ] = {
@@ -1408,6 +1700,52 @@ void destroySchoolUIResources(
 {
     if (!resources)
         return;
+
+    if (resources->sidebarTop) {
+        SDL_DestroyTexture(
+            resources->sidebarTop
+        );
+    }
+
+    if (resources->sidebarMiddle) {
+        SDL_DestroyTexture(
+            resources->sidebarMiddle
+        );
+    }
+
+    if (resources->sidebarBottom) {
+        SDL_DestroyTexture(
+            resources->sidebarBottom
+        );
+    }
+
+    if (resources->buttonStone) {
+        SDL_DestroyTexture(
+            resources->buttonStone
+        );
+    }
+
+    for (int i = 0; i < 5; ++i) {
+        if (resources->mainButtons[i]) {
+            SDL_DestroyTexture(
+                resources->mainButtons[i]
+            );
+        }
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        if (resources->schoolButtons[i]) {
+            SDL_DestroyTexture(
+                resources->schoolButtons[i]
+            );
+        }
+    }
+
+    if (resources->goldIcon) {
+        SDL_DestroyTexture(
+            resources->goldIcon
+        );
+    }
 
     for (
         int i = 0;

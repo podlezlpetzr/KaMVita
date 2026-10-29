@@ -414,4 +414,56 @@ vita_create_vpk(
     FILE
         assets/ui/school/professions/worker/scroll.bmp
         assets/ui/school/professions/worker/scroll.bmp
+    FILE
+        assets/ui/sidebar/sidebar_top.bmp
+        assets/ui/sidebar/sidebar_top.bmp
+
+    FILE
+        assets/ui/sidebar/sidebar_middle.bmp
+        assets/ui/sidebar/sidebar_middle.bmp
+
+    FILE
+        assets/ui/sidebar/sidebar_bottom.bmp
+        assets/ui/sidebar/sidebar_bottom.bmp
+
+    FILE
+        assets/ui/sidebar/buttons/gui_402.bmp
+        assets/ui/sidebar/buttons/gui_402.bmp
+
+    FILE
+        assets/ui/sidebar/buttons/gui_439.bmp
+        assets/ui/sidebar/buttons/gui_439.bmp
+
+    FILE
+        assets/ui/sidebar/buttons/gui_440.bmp
+        assets/ui/sidebar/buttons/gui_440.bmp
+
+    FILE
+        assets/ui/sidebar/buttons/gui_441.bmp
+        assets/ui/sidebar/buttons/gui_441.bmp
+
+    FILE
+        assets/ui/sidebar/buttons/gui_442.bmp
+        assets/ui/sidebar/buttons/gui_442.bmp
+
+    FILE
+        assets/ui/sidebar/buttons/gui_443.bmp
+        assets/ui/sidebar/buttons/gui_443.bmp
+
+    FILE
+        assets/ui/school/buttons/previous.bmp
+        assets/ui/school/buttons/previous.bmp
+
+    FILE
+        assets/ui/school/buttons/train.bmp
+        assets/ui/school/buttons/train.bmp
+
+    FILE
+        assets/ui/school/buttons/next.bmp
+        assets/ui/school/buttons/next.bmp
+
+    FILE
+        assets/ui/school/wares/gold.bmp
+        assets/ui/school/wares/gold.bmp
+
 )
