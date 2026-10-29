@@ -92,6 +92,213 @@ static_assert(
 );
 
 
+// Ceny puvodnich domu byly overeny primo z:
+// resources/original_kam/houses.dat
+//
+// Verified layout:
+// - BeastAnim prefix: 2100 B
+// - TKMHouseDat:      1688 B
+// - WoodCost:         offset 1528
+// - StoneCost:        offset 1529
+//
+// Marketplace v puvodnim houses.dat neni a pouziva
+// Remake override Wood=5, Stone=6.
+static const HouseBuildInfo HOUSE_BUILD_INFO[
+    HOUSE_ICON_COUNT
+] = {
+    {
+        "armor_smithy",
+        "Armor Smithy",
+        4,
+        3
+    },
+    {
+        "armor_workshop",
+        "Armor Workshop",
+        4,
+        3
+    },
+    {
+        "bakery",
+        "Bakery",
+        4,
+        3
+    },
+    {
+        "barracks",
+        "Barracks",
+        6,
+        6
+    },
+    {
+        "butchers",
+        "Butcher's",
+        4,
+        3
+    },
+    {
+        "coal_mine",
+        "Coal Mine",
+        3,
+        2
+    },
+    {
+        "farm",
+        "Farm",
+        4,
+        3
+    },
+    {
+        "fisher_hut",
+        "Fisher's Hut",
+        4,
+        3
+    },
+    {
+        "gold_mine",
+        "Gold Mine",
+        3,
+        2
+    },
+    {
+        "inn",
+        "Inn",
+        6,
+        5
+    },
+    {
+        "iron_mine",
+        "Iron Mine",
+        3,
+        2
+    },
+    {
+        "iron_smithy",
+        "Iron Smithy",
+        4,
+        3
+    },
+    {
+        "marketplace",
+        "Marketplace",
+        5,
+        6
+    },
+    {
+        "metallurgist",
+        "Metallurgist's",
+        4,
+        3
+    },
+    {
+        "mill",
+        "Mill",
+        4,
+        3
+    },
+    {
+        "quarry",
+        "Quarry",
+        3,
+        2
+    },
+    {
+        "sawmill",
+        "Sawmill",
+        4,
+        3
+    },
+    {
+        "school",
+        "School",
+        6,
+        5
+    },
+    {
+        "siege_workshop",
+        "Siege Workshop",
+        4,
+        2
+    },
+    {
+        "stables",
+        "Stables",
+        6,
+        5
+    },
+    {
+        "store",
+        "Store",
+        6,
+        5
+    },
+    {
+        "swine",
+        "Swine Farm",
+        4,
+        3
+    },
+    {
+        "tannery",
+        "Tannery",
+        4,
+        3
+    },
+    {
+        "town_hall",
+        "Town Hall",
+        6,
+        5
+    },
+    {
+        "watch_tower",
+        "Watchtower",
+        3,
+        2
+    },
+    {
+        "weapon_smithy",
+        "Weapon Smithy",
+        4,
+        3
+    },
+    {
+        "weapon_workshop",
+        "Weapon Workshop",
+        4,
+        3
+    },
+    {
+        "wineyard",
+        "Wineyard",
+        4,
+        3
+    },
+    {
+        "woodcutter",
+        "Woodcutter's",
+        3,
+        2
+    }
+};
+
+
+static_assert(
+    sizeof(HOUSE_BUILD_INFO) /
+        sizeof(HOUSE_BUILD_INFO[0]) ==
+        HOUSE_ICON_COUNT,
+    "House build metadata must contain 29 entries"
+);
+
+
+static const HouseBuildInfo INVALID_HOUSE_BUILD_INFO = {
+    "invalid",
+    "Invalid",
+    0,
+    0
+};
+
+
 bool isValidHouseIconIndex(int index)
 {
     return
@@ -224,4 +431,19 @@ const char* getHouseIconName(
         return "invalid";
 
     return HOUSE_ICON_NAMES[iconIndex];
+}
+
+
+const HouseBuildInfo& getHouseBuildInfo(
+    HouseIconType type
+)
+{
+    const int iconIndex =
+        static_cast<int>(type);
+
+    if (!isValidHouseIconIndex(iconIndex)) {
+        return INVALID_HOUSE_BUILD_INFO;
+    }
+
+    return HOUSE_BUILD_INFO[iconIndex];
 }

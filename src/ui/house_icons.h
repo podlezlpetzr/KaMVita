@@ -66,6 +66,19 @@ struct HouseIconResources {
 };
 
 
+// Centralni autenticka Build metadata pro vsech
+// 29 HouseIconType.
+//
+// Ceny puvodnich KaM domu pochazeji z houses.dat.
+// Marketplace pouziva hodnoty doplnene KaM Remake.
+struct HouseBuildInfo {
+    const char* assetName;
+    const char* displayName;
+    int woodCost;
+    int stoneCost;
+};
+
+
 // Originální pořadí House tlačítek z:
 //
 // KM_InterfaceGame.pas
@@ -102,5 +115,14 @@ SDL_Texture* getHouseIcon(
 // Vrátí stabilní interní název používaný
 // pro cesty assetů a diagnostiku.
 const char* getHouseIconName(
+    HouseIconType type
+);
+
+
+// Vrati centralni Build metadata domu.
+//
+// Pri neplatnem HouseIconType vrati bezpecny
+// zaznam "Invalid" s nulovymi naklady.
+const HouseBuildInfo& getHouseBuildInfo(
     HouseIconType type
 );
