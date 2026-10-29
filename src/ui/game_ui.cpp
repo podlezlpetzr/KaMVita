@@ -2232,123 +2232,144 @@ void renderGameUI(
         }
     }
 
-    // BUILD ikony zobrazujeme pouze v Build sekci.
-    // School ma vlastni panel a nesmi byt prekryta build menu.
-    if (ui.section == GameUISection::Build) {
-        // BUILD ikony dole.
-        SDL_Texture* icons[5] = {
-            resources.roadIcon,
-            resources.storeIcon,
-            resources.bakeryIcon,
-            resources.farmIcon,
-            resources.schoolIcon
-        };
+    // =====================================================
+    // ORIGINALNI KaM BUILD BUTTONFLAT
+    //
+    // Remake:
+    // TKMButtonFlat 33x33
+    // horizontalni krok 37 px
+    //
+    // KaMVita zatim implementuje:
+    // Road, Store, Bakery, Farm, School.
+    // =====================================================
 
-        const int columns = 3;
-        const int slotSize = 58;
-        const int gap = 6;
-        const int startX = 12;
-        const int startY = 295;
+    if (ui.section == GameUISection::Build) {
+        const int buildStartX = 6;
+        const int buildStartY = 350;
+        const int buildButtonSize = 33;
+        const int buildStep = 37;
 
         for (int i = 0; i < 5; ++i) {
-            int column = i % columns;
-            int row = i / columns;
-
-            SDL_Rect slot = {
-                startX + column * (slotSize + gap),
-                startY + row * (slotSize + gap),
-                slotSize,
-                slotSize
+            SDL_Rect button = {
+                buildStartX + i * buildStep,
+                buildStartY,
+                buildButtonSize,
+                buildButtonSize
             };
 
-            bool selected =
-                (int)ui.buildSelection == i;
+            const bool selected =
+                static_cast<int>(
+                    ui.buildSelection
+                ) == i;
 
-            if (selected) {
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    181, 142, 60, 255
-                );
-            } else {
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    73, 59, 38, 255
-                );
-            }
-
-            SDL_RenderFillRect(
+            // TKMButtonFlat-like podklad.
+            SDL_SetRenderDrawBlendMode(
                 renderer,
-                &slot
+                SDL_BLENDMODE_BLEND
             );
 
             SDL_SetRenderDrawColor(
                 renderer,
-                selected ? 255 : 137,
-                selected ? 220 : 112,
-                selected ? 115 : 70,
+                selected ? 103 : 49,
+                selected ? 84 : 42,
+                selected ? 48 : 32,
+                selected ? 205 : 135
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &button
+            );
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
+
+            // Horni/levy okraj.
+            SDL_SetRenderDrawColor(
+                renderer,
+                selected ? 55 : 35,
+                selected ? 45 : 30,
+                selected ? 28 : 25,
                 255
             );
 
-            SDL_RenderDrawRect(
+            SDL_RenderDrawLine(
                 renderer,
-                &slot
+                button.x,
+                button.y,
+                button.x + button.w - 1,
+                button.y
             );
 
-            if (icons[i]) {
-                int iconWidth = 0;
-                int iconHeight = 0;
+            SDL_RenderDrawLine(
+                renderer,
+                button.x,
+                button.y,
+                button.x,
+                button.y + button.h - 1
+            );
 
-                SDL_QueryTexture(
-                    icons[i],
-                    nullptr,
-                    nullptr,
-                    &iconWidth,
-                    &iconHeight
-                );
+            // Spodni/pravy okraj.
+            SDL_SetRenderDrawColor(
+                renderer,
+                selected ? 230 : 171,
+                selected ? 194 : 154,
+                selected ? 100 : 121,
+                255
+            );
 
-                const int maxIconWidth = slot.w - 10;
-                const int maxIconHeight = slot.h - 10;
+            SDL_RenderDrawLine(
+                renderer,
+                button.x,
+                button.y + button.h - 1,
+                button.x + button.w - 1,
+                button.y + button.h - 1
+            );
 
-                float scaleX =
-                    (float)maxIconWidth / iconWidth;
+            SDL_RenderDrawLine(
+                renderer,
+                button.x + button.w - 1,
+                button.y,
+                button.x + button.w - 1,
+                button.y + button.h - 1
+            );
 
-                float scaleY =
-                    (float)maxIconHeight / iconHeight;
+            SDL_Texture* icon =
+                schoolResources.buildOriginalIcons[i];
 
-                float scale =
-                    scaleX < scaleY
-                        ? scaleX
-                        : scaleY;
+            if (!icon)
+                continue;
 
-                // Originalni male KaM ikony nezvetsovat
-                // nad jejich puvodni velikost.
-                if (scale > 1.0f)
-                    scale = 1.0f;
+            int iconWidth = 0;
+            int iconHeight = 0;
 
-                int drawWidth =
-                    (int)(iconWidth * scale);
+            SDL_QueryTexture(
+                icon,
+                nullptr,
+                nullptr,
+                &iconWidth,
+                &iconHeight
+            );
 
-                int drawHeight =
-                    (int)(iconHeight * scale);
+            // Originalni glyph se NEZVETSUJE.
+            SDL_Rect iconDestination = {
+                button.x +
+                    (button.w - iconWidth) / 2,
+                button.y +
+                    (button.h - iconHeight) / 2,
+                iconWidth,
+                iconHeight
+            };
 
-                SDL_Rect iconRect = {
-                    slot.x +
-                        (slot.w - drawWidth) / 2,
-                    slot.y +
-                        (slot.h - drawHeight) / 2,
-                    drawWidth,
-                    drawHeight
-                };
-
-                SDL_RenderCopy(
-                    renderer,
-                    icons[i],
-                    nullptr,
-                    &iconRect
-                );
-            }
+            SDL_RenderCopy(
+                renderer,
+                icon,
+                nullptr,
+                &iconDestination
+            );
         }
-
     }
 
     // Oddelovaci prava hrana GUI.
@@ -2380,31 +2401,30 @@ void moveGameUISelection(
         return;
 
     int current =
-        static_cast<int>(ui->buildSelection);
+        static_cast<int>(
+            ui->buildSelection
+        );
 
-    const int columns = 3;
+    // Aktualni KaMVita Build obsahuje pet funkcnich
+    // polozek v jedine rade podle ButtonFlat geometrie.
     const int itemCount = 5;
 
-    int column = current % columns;
-    int row = current / columns;
-
     if (deltaX < 0) {
-        if (column > 0)
-            current--;
-    } else if (deltaX > 0) {
-        if (column < columns - 1 &&
-            current + 1 < itemCount) {
-            current++;
-        }
+        --current;
+
+        if (current < 0)
+            current = itemCount - 1;
     }
 
-    if (deltaY < 0) {
-        if (row > 0)
-            current -= columns;
-    } else if (deltaY > 0) {
-        if (current + columns < itemCount)
-            current += columns;
+    if (deltaX > 0) {
+        ++current;
+
+        if (current >= itemCount)
+            current = 0;
     }
+
+    // V jedine rade nahoru/dolu nic neposouva.
+    (void)deltaY;
 
     ui->buildSelection =
         static_cast<GameUIBuildSelection>(
@@ -2633,6 +2653,31 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/ratios/trackbar_thumb.bmp"
         );
 
+    static const char* buildOriginalFiles[5] = {
+        "road",
+        "store",
+        "bakery",
+        "farm",
+        "school"
+    };
+
+    for (int i = 0; i < 5; ++i) {
+        char path[256];
+
+        snprintf(
+            path,
+            sizeof(path),
+            "app0:assets/ui/build/original/%s.bmp",
+            buildOriginalFiles[i]
+        );
+
+        resources.buildOriginalIcons[i] =
+            loadSchoolUITexture(
+                renderer,
+                path
+            );
+    }
+
     resources.statisticsCounts =
         loadSchoolUITexture(
             renderer,
@@ -2860,6 +2905,14 @@ void destroySchoolUIResources(
         SDL_DestroyTexture(
             resources->ratiosTrackbarThumb
         );
+    }
+
+    for (int i = 0; i < 5; ++i) {
+        if (resources->buildOriginalIcons[i]) {
+            SDL_DestroyTexture(
+                resources->buildOriginalIcons[i]
+            );
+        }
     }
 
     if (resources->statisticsCounts) {

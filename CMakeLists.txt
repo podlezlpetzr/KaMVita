@@ -649,4 +649,29 @@ vita_create_vpk(
         assets/ui/ratios/houses/stables.bmp
 
 
+    FILE
+        assets/ui/build/original/road.bmp
+        assets/ui/build/original/road.bmp
+
+
+    FILE
+        assets/ui/build/original/store.bmp
+        assets/ui/build/original/store.bmp
+
+
+    FILE
+        assets/ui/build/original/bakery.bmp
+        assets/ui/build/original/bakery.bmp
+
+
+    FILE
+        assets/ui/build/original/farm.bmp
+        assets/ui/build/original/farm.bmp
+
+
+    FILE
+        assets/ui/build/original/school.bmp
+        assets/ui/build/original/school.bmp
+
+
 )

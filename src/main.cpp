@@ -1705,11 +1705,12 @@ int main(int argc, char* argv[])
         // Pevny KaM BUILD panel
         // -------------------------------------------------
         if (gameUI.section == GameUISection::Build) {
-            const int uiSlotSize = 58;
-            const int uiSlotGap = 6;
-            const int uiStartX = 12;
-            const int uiStartY = 295;
-            const int uiColumns = 3;
+            // Originalni KaM TKMButtonFlat geometrie.
+            const int uiSlotSize = 33;
+            const int uiSlotGap = 4;
+            const int uiStartX = 6;
+            const int uiStartY = 350;
+            const int uiColumns = 5;
 
             int hoveredBuildItem = -1;
 
