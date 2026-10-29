@@ -1555,6 +1555,60 @@ int main(int argc, char* argv[])
                     if (!units[unitIndex].active)
                         continue;
 
+                    const bool validCursorTile =
+                        cursorTileX >= 0 &&
+                        cursorTileX < MAP_WIDTH &&
+                        cursorTileY >= 0 &&
+                        cursorTileY < MAP_HEIGHT;
+
+                    UnitWorkAction requestedWorkAction =
+                        UnitWorkAction::None;
+
+                    if (validCursorTile) {
+                        if (
+                            roads[
+                                cursorTileY
+                            ][
+                                cursorTileX
+                            ] == RoadState::Plan
+                        ) {
+                            requestedWorkAction =
+                                UnitWorkAction::DigRoad;
+                        } else if (
+                            landPlans[
+                                cursorTileY
+                            ][
+                                cursorTileX
+                            ] == LandPlanState::Field
+                        ) {
+                            requestedWorkAction =
+                                UnitWorkAction::BuildField;
+                        } else if (
+                            landPlans[
+                                cursorTileY
+                            ][
+                                cursorTileX
+                            ] == LandPlanState::Wine
+                        ) {
+                            requestedWorkAction =
+                                UnitWorkAction::BuildWine;
+                        }
+                    }
+
+                    const bool hasWorkTarget =
+                        requestedWorkAction !=
+                            UnitWorkAction::None;
+
+                    // Field, Wine a Road construction muze
+                    // vykonavat pouze skutecny Worker.
+                    if (
+                        hasWorkTarget &&
+                        units[unitIndex].type !=
+                            UnitType::Worker
+                    ) {
+                        continue;
+                    }
+
                     float targetX =
                         ((int)cursorX +
                          (int)cameraX) /
@@ -1566,10 +1620,12 @@ int main(int argc, char* argv[])
                         TILE_SIZE;
 
                     targetX =
-                        (targetX + 0.5f) * TILE_SIZE;
+                        (targetX + 0.5f) *
+                        TILE_SIZE;
 
                     targetY =
-                        (targetY + 0.5f) * TILE_SIZE;
+                        (targetY + 0.5f) *
+                        TILE_SIZE;
 
                     bool pathFound =
                         setUnitMoveTarget(
@@ -1583,50 +1639,61 @@ int main(int argc, char* argv[])
                             TILE_SIZE
                         );
 
-                    if (pathFound &&
-                        cursorTileX >= 0 &&
-                        cursorTileX < MAP_WIDTH &&
-                        cursorTileY >= 0 &&
-                        cursorTileY < MAP_HEIGHT &&
-                        roads[cursorTileY][cursorTileX] ==
-                            RoadState::Plan) {
+                    Unit& worker =
+                        units[unitIndex];
 
-                        Unit& worker =
-                            units[unitIndex];
-
+                    if (
+                        pathFound &&
+                        hasWorkTarget
+                    ) {
                         worker.targetRoadX =
                             cursorTileX;
 
                         worker.targetRoadY =
                             cursorTileY;
 
+                        worker.workAction =
+                            requestedWorkAction;
+
                         worker.workTimer = 0.0f;
+                        worker.animationFrame = 0;
+                        worker.animationTimer = 0.0f;
 
-                        int workerTileX =
-                            (int)(worker.worldX /
-                                  TILE_SIZE);
+                        const int workerTileX =
+                            (int)(
+                                worker.worldX /
+                                TILE_SIZE
+                            );
 
-                        int workerTileY =
-                            (int)(worker.worldY /
-                                  TILE_SIZE);
+                        const int workerTileY =
+                            (int)(
+                                worker.worldY /
+                                TILE_SIZE
+                            );
 
-                        // Pokud uz Worker stoji na planu,
-                        // path je prazdna. Praci proto
-                        // spustime okamzite.
-                        if (workerTileX == cursorTileX &&
-                            workerTileY == cursorTileY) {
-
+                        // Pokud Worker uz stoji na cilove
+                        // dlazdici, neni potreba walking faze.
+                        if (
+                            workerTileX ==
+                                cursorTileX &&
+                            workerTileY ==
+                                cursorTileY
+                        ) {
                             worker.state =
                                 UnitState::Working;
-
-                            // Zachovej smer, ze ktereho
-                            // Worker k praci prisel.
-                            worker.animationFrame = 0;
-                            worker.animationTimer = 0.0f;
                         }
                     } else {
-                        units[unitIndex].targetRoadX = -1;
-                        units[unitIndex].targetRoadY = -1;
+                        // Bez pracovniho planu zustava X
+                        // beznym prikazem k pohybu.
+                        worker.targetRoadX = -1;
+                        worker.targetRoadY = -1;
+                        worker.workAction =
+                            UnitWorkAction::None;
+
+                        if (!pathFound) {
+                            worker.state =
+                                UnitState::Idle;
+                        }
                     }
 
                     break;
