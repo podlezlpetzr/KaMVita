@@ -2263,98 +2263,147 @@ void renderGameUI(
         const int housesStartY = 321;
         const int contentX = 6;
 
+        // Road se vykresluje pouze v jednotnem
+        // originalnim Build tool row nize.
+
         // -------------------------------------------------
-        // Road, samostatna funkcni Build akce
+        // Puvodni GUIHouseOrder[27]
         // -------------------------------------------------
 
-        SDL_Rect roadButton = {
-            contentX,
-            actionY,
-            buttonSize,
-            buttonSize
-        };
+        // ===============================================
+        // ORIGINALNI KaM BUILD SELECTED DETAIL
+        //
+        // Remake:
+        // Label_Build
+        // Image_Build_Selected
+        // GUI 353 Wood
+        // GUI 352 Stone
+        //
+        // Hodnoty houses se ctou primo ze skutecne
+        // stavebni logiky KaMVita.
+        // ===============================================
 
-        const bool roadSelected =
-            ui.buildSelection ==
-                GameUIBuildSelection::Road;
+        SDL_Texture* selectedBuildIcon = nullptr;
+        SDL_Texture* selectedBuildName = nullptr;
 
-        SDL_SetRenderDrawBlendMode(
-            renderer,
-            SDL_BLENDMODE_BLEND
-        );
+        int selectedWoodCost = 0;
+        int selectedStoneCost = 0;
 
-        SDL_SetRenderDrawColor(
-            renderer,
-            roadSelected ? 103 : 49,
-            roadSelected ? 84 : 42,
-            roadSelected ? 48 : 32,
-            roadSelected ? 205 : 135
-        );
+        bool selectedHasWood = true;
+        bool selectedHasStone = true;
 
-        SDL_RenderFillRect(
-            renderer,
-            &roadButton
-        );
+        bool selectedIsBuilding = false;
+        BuildingType selectedBuildingType =
+            BuildingType::Store;
 
-        SDL_SetRenderDrawBlendMode(
-            renderer,
-            SDL_BLENDMODE_NONE
-        );
+        switch (ui.buildSelection) {
+            case GameUIBuildSelection::Road:
+                selectedBuildIcon =
+                    schoolResources.buildRoadIcon;
 
-        SDL_SetRenderDrawColor(
-            renderer,
-            35, 30, 25, 255
-        );
+                selectedBuildName =
+                    schoolResources.buildNameText[0];
 
-        SDL_RenderDrawLine(
-            renderer,
-            roadButton.x,
-            roadButton.y,
-            roadButton.x + roadButton.w - 1,
-            roadButton.y
-        );
+                selectedHasWood = false;
+                selectedWoodCost = 0;
 
-        SDL_RenderDrawLine(
-            renderer,
-            roadButton.x,
-            roadButton.y,
-            roadButton.x,
-            roadButton.y + roadButton.h - 1
-        );
+                selectedHasStone = true;
+                selectedStoneCost = 1;
+                break;
 
-        SDL_SetRenderDrawColor(
-            renderer,
-            roadSelected ? 230 : 171,
-            roadSelected ? 194 : 154,
-            roadSelected ? 100 : 121,
-            255
-        );
+            case GameUIBuildSelection::Store:
+                selectedBuildIcon =
+                    getHouseIcon(
+                        houseIcons,
+                        HouseIconType::Store
+                    );
 
-        SDL_RenderDrawLine(
-            renderer,
-            roadButton.x,
-            roadButton.y + roadButton.h - 1,
-            roadButton.x + roadButton.w - 1,
-            roadButton.y + roadButton.h - 1
-        );
+                selectedBuildName =
+                    schoolResources.buildNameText[1];
 
-        SDL_RenderDrawLine(
-            renderer,
-            roadButton.x + roadButton.w - 1,
-            roadButton.y,
-            roadButton.x + roadButton.w - 1,
-            roadButton.y + roadButton.h - 1
-        );
+                selectedBuildingType =
+                    BuildingType::Store;
 
-        SDL_Texture* roadIcon =
-            schoolResources.buildRoadIcon;
+                selectedIsBuilding = true;
+                break;
 
-        if (roadIcon) {
+            case GameUIBuildSelection::Bakery:
+                selectedBuildIcon =
+                    getHouseIcon(
+                        houseIcons,
+                        HouseIconType::Bakery
+                    );
+
+                selectedBuildName =
+                    schoolResources.buildNameText[2];
+
+                selectedBuildingType =
+                    BuildingType::Bakery;
+
+                selectedIsBuilding = true;
+                break;
+
+            case GameUIBuildSelection::Farm:
+                selectedBuildIcon =
+                    getHouseIcon(
+                        houseIcons,
+                        HouseIconType::Farm
+                    );
+
+                selectedBuildName =
+                    schoolResources.buildNameText[3];
+
+                selectedBuildingType =
+                    BuildingType::Farm;
+
+                selectedIsBuilding = true;
+                break;
+
+            case GameUIBuildSelection::School:
+                selectedBuildIcon =
+                    getHouseIcon(
+                        houseIcons,
+                        HouseIconType::School
+                    );
+
+                selectedBuildName =
+                    schoolResources.buildNameText[4];
+
+                selectedBuildingType =
+                    BuildingType::School;
+
+                selectedIsBuilding = true;
+                break;
+        }
+
+        if (selectedIsBuilding) {
+            selectedWoodCost =
+                getBuildingWoodCost(
+                    selectedBuildingType
+                );
+
+            selectedStoneCost =
+                getBuildingStoneCost(
+                    selectedBuildingType
+                );
+
+            selectedHasWood =
+                selectedWoodCost > 0;
+
+            selectedHasStone =
+                selectedStoneCost > 0;
+        }
+
+        // -------------------------------------------------
+        // Caption
+        // -------------------------------------------------
+
+        if (selectedBuildName) {
             int width = 0;
             int height = 0;
 
             SDL_QueryTexture(
-                roadIcon,
+                selectedBuildName,
                 nullptr,
                 nullptr,
                 &width,
@@ -2362,25 +2411,163 @@ void renderGameUI(
             );
 
             SDL_Rect destination = {
-                roadButton.x +
-                    (roadButton.w - width) / 2,
-                roadButton.y +
-                    (roadButton.h - height) / 2,
+                6 + (180 - width) / 2,
+                233,
                 width,
                 height
             };
 
             SDL_RenderCopy(
                 renderer,
-                roadIcon,
+                selectedBuildName,
                 nullptr,
                 &destination
             );
         }
 
         // -------------------------------------------------
-        // Puvodni GUIHouseOrder[27]
+        // Selected icon
         // -------------------------------------------------
+
+        if (selectedBuildIcon) {
+            int width = 0;
+            int height = 0;
+
+            SDL_QueryTexture(
+                selectedBuildIcon,
+                nullptr,
+                nullptr,
+                &width,
+                &height
+            );
+
+            SDL_Rect destination = {
+                6 + (32 - width) / 2,
+                247 + (32 - height) / 2,
+                width,
+                height
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                selectedBuildIcon,
+                nullptr,
+                &destination
+            );
+        }
+
+        // -------------------------------------------------
+        // Wood / Stone icons
+        // -------------------------------------------------
+
+        if (schoolResources.buildWoodIcon) {
+            int width = 0;
+            int height = 0;
+
+            SDL_QueryTexture(
+                schoolResources.buildWoodIcon,
+                nullptr,
+                nullptr,
+                &width,
+                &height
+            );
+
+            SDL_Rect destination = {
+                73 + (32 - width) / 2,
+                247 + (32 - height) / 2,
+                width,
+                height
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.buildWoodIcon,
+                nullptr,
+                &destination
+            );
+        }
+
+        if (schoolResources.buildStoneIcon) {
+            int width = 0;
+            int height = 0;
+
+            SDL_QueryTexture(
+                schoolResources.buildStoneIcon,
+                nullptr,
+                nullptr,
+                &width,
+                &height
+            );
+
+            SDL_Rect destination = {
+                128 + (32 - width) / 2,
+                247 + (32 - height) / 2,
+                width,
+                height
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.buildStoneIcon,
+                nullptr,
+                &destination
+            );
+        }
+
+        // -------------------------------------------------
+        // Cost values
+        //
+        // statisticsCounts:
+        // 33 cells, each 32x18, values 0..32.
+        // -------------------------------------------------
+
+        if (schoolResources.statisticsCounts) {
+            if (selectedHasWood) {
+                SDL_Rect source = {
+                    0,
+                    selectedWoodCost * 18,
+                    32,
+                    18
+                };
+
+                SDL_Rect destination = {
+                    103,
+                    254,
+                    32,
+                    18
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.statisticsCounts,
+                    &source,
+                    &destination
+                );
+            }
+
+            if (selectedHasStone) {
+                SDL_Rect source = {
+                    0,
+                    selectedStoneCost * 18,
+                    32,
+                    18
+                };
+
+                SDL_Rect destination = {
+                    158,
+                    254,
+                    32,
+                    18
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.statisticsCounts,
+                    &source,
+                    &destination
+                );
+            }
+        }
 
         // ===============================================
         // ORIGINALNI KaM BUILD TOOL ROW
@@ -3011,6 +3198,43 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/build/tools/remove.bmp"
         );
 
+    resources.buildWoodIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/costs/wood.bmp"
+        );
+
+    resources.buildStoneIcon =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/build/costs/stone.bmp"
+        );
+
+    static const char* buildNameFiles[5] = {
+        "road",
+        "store",
+        "bakery",
+        "farm",
+        "school"
+    };
+
+    for (int i = 0; i < 5; ++i) {
+        char path[256];
+
+        snprintf(
+            path,
+            sizeof(path),
+            "app0:assets/ui/build/text/%s.bmp",
+            buildNameFiles[i]
+        );
+
+        resources.buildNameText[i] =
+            loadSchoolUITexture(
+                renderer,
+                path
+            );
+    }
+
     resources.statisticsCounts =
         loadSchoolUITexture(
             renderer,
@@ -3262,6 +3486,33 @@ void destroySchoolUIResources(
         );
 
         resources->buildRemoveIcon = nullptr;
+    }
+
+    if (resources->buildWoodIcon) {
+        SDL_DestroyTexture(
+            resources->buildWoodIcon
+        );
+
+        resources->buildWoodIcon = nullptr;
+    }
+
+    if (resources->buildStoneIcon) {
+        SDL_DestroyTexture(
+            resources->buildStoneIcon
+        );
+
+        resources->buildStoneIcon = nullptr;
+    }
+
+    for (int i = 0; i < 5; ++i) {
+        if (resources->buildNameText[i]) {
+            SDL_DestroyTexture(
+                resources->buildNameText[i]
+            );
+
+            resources->buildNameText[i] =
+                nullptr;
+        }
     }
 
     if (resources->statisticsCounts) {

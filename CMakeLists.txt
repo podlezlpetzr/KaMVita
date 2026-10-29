@@ -828,4 +828,32 @@ vita_create_vpk(
         assets/ui/build/tools/remove.bmp
         assets/ui/build/tools/remove.bmp
 
+    FILE
+        assets/ui/build/costs/wood.bmp
+        assets/ui/build/costs/wood.bmp
+
+    FILE
+        assets/ui/build/costs/stone.bmp
+        assets/ui/build/costs/stone.bmp
+
+    FILE
+        assets/ui/build/text/road.bmp
+        assets/ui/build/text/road.bmp
+
+    FILE
+        assets/ui/build/text/store.bmp
+        assets/ui/build/text/store.bmp
+
+    FILE
+        assets/ui/build/text/bakery.bmp
+        assets/ui/build/text/bakery.bmp
+
+    FILE
+        assets/ui/build/text/farm.bmp
+        assets/ui/build/text/farm.bmp
+
+    FILE
+        assets/ui/build/text/school.bmp
+        assets/ui/build/text/school.bmp
+
 )

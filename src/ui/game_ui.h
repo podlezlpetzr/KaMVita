@@ -133,6 +133,17 @@ struct SchoolUIResources {
     SDL_Texture* buildWineIcon;
     SDL_Texture* buildRemoveIcon;
 
+    // Originalni Build detail:
+    // GUI 353 = Wood
+    // GUI 352 = Stone
+    SDL_Texture* buildWoodIcon;
+    SDL_Texture* buildStoneIcon;
+
+    // fnt_Outline nazvy skutecne implementovanych
+    // Build polozek:
+    // Road, Store, Bakery, Farm, School.
+    SDL_Texture* buildNameText[5];
+
     // Originalni Ratios 440 resources.
     SDL_Texture* ratiosWareIcons[4];
     SDL_Texture* ratiosTrackbarThumb;
