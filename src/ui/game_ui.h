@@ -143,10 +143,13 @@ struct SchoolUIResources {
     SDL_Texture* buildWoodIcon;
     SDL_Texture* buildStoneIcon;
 
-    // fnt_Outline nazvy skutecne implementovanych
-    // Build polozek:
+    // fnt_Outline nazvy Build tools:
     // Road, Store, Bakery, Farm, School, Field, Wine.
+    //
+    // buildHouseNameText je kompletni katalog vsech
+    // 29 HouseIconType ve stejnem poradi jako HouseIconType.
     SDL_Texture* buildNameText[7];
+    SDL_Texture* buildHouseNameText[29];
 
     // Originalni Ratios 440 resources.
     SDL_Texture* ratiosWareIcons[4];

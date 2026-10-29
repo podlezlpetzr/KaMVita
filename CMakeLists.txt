@@ -864,4 +864,120 @@ vita_create_vpk(
         assets/ui/build/text/wine.bmp
         assets/ui/build/text/wine.bmp
 
+    FILE
+        assets/ui/build/text/houses/armor_smithy.bmp
+        assets/ui/build/text/houses/armor_smithy.bmp
+
+    FILE
+        assets/ui/build/text/houses/armor_workshop.bmp
+        assets/ui/build/text/houses/armor_workshop.bmp
+
+    FILE
+        assets/ui/build/text/houses/bakery.bmp
+        assets/ui/build/text/houses/bakery.bmp
+
+    FILE
+        assets/ui/build/text/houses/barracks.bmp
+        assets/ui/build/text/houses/barracks.bmp
+
+    FILE
+        assets/ui/build/text/houses/butchers.bmp
+        assets/ui/build/text/houses/butchers.bmp
+
+    FILE
+        assets/ui/build/text/houses/coal_mine.bmp
+        assets/ui/build/text/houses/coal_mine.bmp
+
+    FILE
+        assets/ui/build/text/houses/farm.bmp
+        assets/ui/build/text/houses/farm.bmp
+
+    FILE
+        assets/ui/build/text/houses/fisher_hut.bmp
+        assets/ui/build/text/houses/fisher_hut.bmp
+
+    FILE
+        assets/ui/build/text/houses/gold_mine.bmp
+        assets/ui/build/text/houses/gold_mine.bmp
+
+    FILE
+        assets/ui/build/text/houses/inn.bmp
+        assets/ui/build/text/houses/inn.bmp
+
+    FILE
+        assets/ui/build/text/houses/iron_mine.bmp
+        assets/ui/build/text/houses/iron_mine.bmp
+
+    FILE
+        assets/ui/build/text/houses/iron_smithy.bmp
+        assets/ui/build/text/houses/iron_smithy.bmp
+
+    FILE
+        assets/ui/build/text/houses/marketplace.bmp
+        assets/ui/build/text/houses/marketplace.bmp
+
+    FILE
+        assets/ui/build/text/houses/metallurgist.bmp
+        assets/ui/build/text/houses/metallurgist.bmp
+
+    FILE
+        assets/ui/build/text/houses/mill.bmp
+        assets/ui/build/text/houses/mill.bmp
+
+    FILE
+        assets/ui/build/text/houses/quarry.bmp
+        assets/ui/build/text/houses/quarry.bmp
+
+    FILE
+        assets/ui/build/text/houses/sawmill.bmp
+        assets/ui/build/text/houses/sawmill.bmp
+
+    FILE
+        assets/ui/build/text/houses/school.bmp
+        assets/ui/build/text/houses/school.bmp
+
+    FILE
+        assets/ui/build/text/houses/siege_workshop.bmp
+        assets/ui/build/text/houses/siege_workshop.bmp
+
+    FILE
+        assets/ui/build/text/houses/stables.bmp
+        assets/ui/build/text/houses/stables.bmp
+
+    FILE
+        assets/ui/build/text/houses/store.bmp
+        assets/ui/build/text/houses/store.bmp
+
+    FILE
+        assets/ui/build/text/houses/swine.bmp
+        assets/ui/build/text/houses/swine.bmp
+
+    FILE
+        assets/ui/build/text/houses/tannery.bmp
+        assets/ui/build/text/houses/tannery.bmp
+
+    FILE
+        assets/ui/build/text/houses/town_hall.bmp
+        assets/ui/build/text/houses/town_hall.bmp
+
+    FILE
+        assets/ui/build/text/houses/watch_tower.bmp
+        assets/ui/build/text/houses/watch_tower.bmp
+
+    FILE
+        assets/ui/build/text/houses/weapon_smithy.bmp
+        assets/ui/build/text/houses/weapon_smithy.bmp
+
+    FILE
+        assets/ui/build/text/houses/weapon_workshop.bmp
+        assets/ui/build/text/houses/weapon_workshop.bmp
+
+    FILE
+        assets/ui/build/text/houses/wineyard.bmp
+        assets/ui/build/text/houses/wineyard.bmp
+
+    FILE
+        assets/ui/build/text/houses/woodcutter.bmp
+        assets/ui/build/text/houses/woodcutter.bmp
+
 )

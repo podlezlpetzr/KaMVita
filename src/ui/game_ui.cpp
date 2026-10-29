@@ -3275,6 +3275,55 @@ SchoolUIResources loadSchoolUIResources(
             );
     }
 
+    static const char* buildHouseNameFiles[29] = {
+        "armor_smithy",
+        "armor_workshop",
+        "bakery",
+        "barracks",
+        "butchers",
+        "coal_mine",
+        "farm",
+        "fisher_hut",
+        "gold_mine",
+        "inn",
+        "iron_mine",
+        "iron_smithy",
+        "marketplace",
+        "metallurgist",
+        "mill",
+        "quarry",
+        "sawmill",
+        "school",
+        "siege_workshop",
+        "stables",
+        "store",
+        "swine",
+        "tannery",
+        "town_hall",
+        "watch_tower",
+        "weapon_smithy",
+        "weapon_workshop",
+        "wineyard",
+        "woodcutter",
+    };
+
+    for (int i = 0; i < 29; ++i) {
+        char path[256];
+
+        snprintf(
+            path,
+            sizeof(path),
+            "app0:assets/ui/build/text/houses/%s.bmp",
+            buildHouseNameFiles[i]
+        );
+
+        resources.buildHouseNameText[i] =
+            loadSchoolUITexture(
+                renderer,
+                path
+            );
+    }
+
     resources.statisticsCounts =
         loadSchoolUITexture(
             renderer,
@@ -3551,6 +3600,18 @@ void destroySchoolUIResources(
             );
 
             resources->buildNameText[i] =
+                nullptr;
+        }
+    }
+
+
+    for (int i = 0; i < 29; ++i) {
+        if (resources->buildHouseNameText[i]) {
+            SDL_DestroyTexture(
+                resources->buildHouseNameText[i]
+            );
+
+            resources->buildHouseNameText[i] =
                 nullptr;
         }
     }
