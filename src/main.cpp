@@ -1740,6 +1740,12 @@ int main(int argc, char* argv[])
 
             int hoveredBuildItem = -1;
 
+            // Index 0..26 v GUI_HOUSE_ORDER.
+            // Je oddeleny od hoveredBuildItem, protoze
+            // vsechny domy maji detail, ale pouze ctyri
+            // maji v KaMVita funkcni placement.
+            int hoveredHouseCatalogIndex = -1;
+
             // Originalni Build tool row:
             // 0 Road, 1 Field, 2 Wine, 3 Remove.
             const int buildToolX[4] = {
@@ -1782,6 +1788,10 @@ int main(int argc, char* argv[])
             ) {
                 gameUI.buildToolSelection =
                     hoveredBuildTool;
+
+                // Road/Field/Wine/Remove maji vlastni
+                // detail a opousteji House katalog.
+                gameUI.buildHouseCatalogSelection = -1;
 
                 switch (hoveredBuildTool) {
                     case 0:
@@ -1853,6 +1863,13 @@ int main(int argc, char* argv[])
                         continue;
                     }
 
+                    // Kazda pozice katalogu je vybiratelna
+                    // pro zobrazeni ikony, nazvu a ceny.
+                    hoveredHouseCatalogIndex =
+                        houseIndex;
+
+                    // Pouze implementovane typy dostanou
+                    // GameUIBuildSelection a placement.
                     switch (
                         GUI_HOUSE_ORDER[houseIndex]
                     ) {
@@ -1899,6 +1916,34 @@ int main(int argc, char* argv[])
                 }
             }
 
+            // Touch nad libovolnou z 27 House ikon
+            // vzdy aktualizuje katalogovy detail.
+            if (
+                hoveredHouseCatalogIndex >= 0 &&
+                (
+                    touchDown ||
+                    touchTapped
+                )
+            ) {
+                gameUI.buildHouseCatalogSelection =
+                    hoveredHouseCatalogIndex;
+
+                // Zadny tool row button nema byt selected,
+                // kdyz zobrazujeme House detail.
+                gameUI.buildToolSelection = -1;
+
+                // Bezpecnost: pouhe prohlizeni zamceneho
+                // domu nesmi ponechat aktivni stary
+                // Building placement.
+                if (hoveredBuildItem < 0) {
+                    activeBuildTool =
+                        BuildTool::Road;
+
+                    selectedTileX = -1;
+                    selectedTileY = -1;
+                }
+            }
+
             // Touch muze menit aktivni GUI polozku.
             // Samotna poloha herniho kurzoru nesmi
             // prepisovat vyber provedeny D-padem.
@@ -1941,9 +1986,16 @@ int main(int argc, char* argv[])
                         selection
                     );
 
-                // Road nebo house selection vrati
-                // Build tool focus na Road.
-                gameUI.buildToolSelection = 0;
+                // Road pouziva tool detail.
+                // House zachova katalogovy detail.
+                gameUI.buildToolSelection =
+                    selection == 0
+                        ? 0
+                        : -1;
+
+                if (selection == 0) {
+                    gameUI.buildHouseCatalogSelection = -1;
+                }
 
                 buildMenuSelection = selection;
 

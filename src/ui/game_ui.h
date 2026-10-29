@@ -58,7 +58,19 @@ struct GameUIState {
 
     // Aktivni originalni KaM Build tool:
     // 0 Road, 1 Field, 2 Wine, 3 Remove.
+    //
+    // -1 znamena, ze detail prave zobrazuje
+    // House polozku z Build katalogu.
     int buildToolSelection;
+
+    // Katalogovy vyber v GUI_HOUSE_ORDER:
+    // -1    = zadny House detail,
+    // 0..26 = vybrana pozice Build katalogu.
+    //
+    // Tento stav je zamerne oddeleny od
+    // GameUIBuildSelection, ktery povoluje placement
+    // pouze skutecne implementovanych budov.
+    int buildHouseCatalogSelection;
 
     GameUISection section;
 

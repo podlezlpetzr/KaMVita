@@ -15,6 +15,7 @@ void initGameUI(
 
     ui->buildSectionActive = true;
     ui->buildToolSelection = 0;
+    ui->buildHouseCatalogSelection = -1;
 
     ui->section = GameUISection::Build;
     ui->toolbarSelection = 0;
@@ -2311,6 +2312,11 @@ void renderGameUI(
         const bool wineToolSelected =
             ui.buildToolSelection == 2;
 
+        const bool houseCatalogSelected =
+            ui.buildHouseCatalogSelection >= 0 &&
+            ui.buildHouseCatalogSelection <
+                GUI_HOUSE_COUNT;
+
         if (fieldToolSelected) {
             selectedBuildIcon =
                 schoolResources.buildFieldIcon;
@@ -2333,6 +2339,51 @@ void renderGameUI(
             selectedStoneCost = 0;
             selectedHasWood = true;
             selectedHasStone = false;
+        } else if (houseCatalogSelected) {
+            const HouseIconType houseType =
+                GUI_HOUSE_ORDER[
+                    ui.buildHouseCatalogSelection
+                ];
+
+            const int houseTypeIndex =
+                static_cast<int>(
+                    houseType
+                );
+
+            const HouseBuildInfo& buildInfo =
+                getHouseBuildInfo(
+                    houseType
+                );
+
+            selectedBuildIcon =
+                getHouseIcon(
+                    houseIcons,
+                    houseType
+                );
+
+            if (
+                houseTypeIndex >= 0 &&
+                houseTypeIndex <
+                    HOUSE_ICON_COUNT
+            ) {
+                selectedBuildName =
+                    schoolResources
+                        .buildHouseNameText[
+                            houseTypeIndex
+                        ];
+            }
+
+            selectedWoodCost =
+                buildInfo.woodCost;
+
+            selectedStoneCost =
+                buildInfo.stoneCost;
+
+            selectedHasWood =
+                selectedWoodCost > 0;
+
+            selectedHasStone =
+                selectedStoneCost > 0;
         } else {
         switch (ui.buildSelection) {
             case GameUIBuildSelection::Road:
@@ -2810,35 +2861,17 @@ void renderGameUI(
                 GUI_HOUSE_ORDER[houseIndex];
 
             bool implemented = false;
-            bool selected = false;
+
+            const bool selected =
+                ui.buildHouseCatalogSelection ==
+                    houseIndex;
 
             switch (houseType) {
                 case HouseIconType::School:
-                    implemented = true;
-                    selected =
-                        ui.buildSelection ==
-                            GameUIBuildSelection::School;
-                    break;
-
                 case HouseIconType::Farm:
-                    implemented = true;
-                    selected =
-                        ui.buildSelection ==
-                            GameUIBuildSelection::Farm;
-                    break;
-
                 case HouseIconType::Bakery:
-                    implemented = true;
-                    selected =
-                        ui.buildSelection ==
-                            GameUIBuildSelection::Bakery;
-                    break;
-
                 case HouseIconType::Store:
                     implemented = true;
-                    selected =
-                        ui.buildSelection ==
-                            GameUIBuildSelection::Store;
                     break;
 
                 default:
@@ -2913,16 +2946,35 @@ void renderGameUI(
                 button.y + button.h - 1
             );
 
+            // Vsech 27 katalogovych pozic zobrazuje
+            // originální House ikonu.
+            //
+            // Neimplementovane domy zustavaji ztlumene,
+            // ale jejich metadata jsou plne dostupna.
             SDL_Texture* icon =
-                implemented
-                    ? getHouseIcon(
-                        houseIcons,
-                        houseType
-                    )
-                    : schoolResources.questionIcon;
+                getHouseIcon(
+                    houseIcons,
+                    houseType
+                );
 
             if (!icon)
                 continue;
+
+            if (!implemented) {
+                SDL_SetTextureColorMod(
+                    icon,
+                    115,
+                    115,
+                    115
+                );
+            } else {
+                SDL_SetTextureColorMod(
+                    icon,
+                    255,
+                    255,
+                    255
+                );
+            }
 
             int width = 0;
             int height = 0;
@@ -2949,6 +3001,15 @@ void renderGameUI(
                 icon,
                 nullptr,
                 &destination
+            );
+
+            // Sdilene House textury pouzivaji take Ratios
+            // a Statistics, proto vzdy obnovime plnou barvu.
+            SDL_SetTextureColorMod(
+                icon,
+                255,
+                255,
+                255
             );
         }
     }
