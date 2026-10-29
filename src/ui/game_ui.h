@@ -4,6 +4,7 @@
 
 #include "../game/buildings.h"
 #include "../game/units.h"
+#include "../game/ware_distribution.h"
 
 static constexpr int GAME_UI_PANEL_WIDTH = 220;
 
@@ -61,6 +62,11 @@ struct GameUIState {
     int toolbarSelection;
     bool toolbarFocus;
 
+    // Originalni Ratios 440 navigace.
+    int ratiosTab;
+    int ratiosRow;
+    bool ratiosFocusTabs;
+
     GameUISchoolSelection schoolSelection;
 
     // False: ovladani carouselu profesi.
@@ -113,6 +119,11 @@ struct SchoolUIResources {
     SDL_Texture* statisticsCounts;
     SDL_Texture* statisticsWipCounts;
 
+    // Originalni Ratios 440 resources.
+    SDL_Texture* ratiosWareIcons[4];
+    SDL_Texture* ratiosHouseIcons[9];
+    SDL_Texture* ratiosTrackbarThumb;
+
     // Originalni texty generovane z KaM FNTX fontu.
     SDL_Texture* needsText;
     SDL_Texture* goldText;
@@ -144,6 +155,7 @@ void renderGameUI(
     int buildingCount,
     const Unit* units,
     int unitCount,
+    const WareDistribution& wareDistribution,
     float cursorX,
     float cursorY
 );

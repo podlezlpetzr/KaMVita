@@ -2,6 +2,8 @@
 #include "game/buildings.h"
 #include "game/units.h"
 #include "ui/game_ui.h"
+#include "ui/game_ui_ratios.h"
+#include "game/ware_distribution.h"
 #include <algorithm>
 #include <vector>
 #include <SDL2/SDL.h>
@@ -412,6 +414,11 @@ int main(int argc, char* argv[])
     Unit units[MAX_UNITS] = {};
     int unitCount = 0;
 
+    WareDistribution wareDistribution = {};
+    initializeWareDistribution(
+        &wareDistribution
+    );
+
     // Zlomkova cast School training kroku.
     // Cely progress je ulozen v Building::schoolTrainingStep
     // a Building::schoolIdleStep.
@@ -705,6 +712,41 @@ int main(int argc, char* argv[])
                     1
                 );
             }
+        }
+
+        if (
+            gameUI.section ==
+                GameUISection::Ratios
+        ) {
+            handleGameUIRatiosGamepad(
+                &gameUI,
+                &wareDistribution,
+                leftPressed,
+                rightPressed,
+                upPressed,
+                downPressed,
+                crossPressed
+            );
+
+            if (touchTapped) {
+                if (
+                    handleGameUIRatiosTouch(
+                        &gameUI,
+                        &wareDistribution,
+                        touchStartX,
+                        touchStartY
+                    )
+                ) {
+                    touchTapped = false;
+                }
+            }
+
+            // Ratios spotrebovalo navigacni vstupy.
+            leftPressed = false;
+            rightPressed = false;
+            upPressed = false;
+            downPressed = false;
+            crossPressed = false;
         }
 
         // Originalni hlavni KaM toolbar 439..442.
@@ -2765,6 +2807,7 @@ int main(int argc, char* argv[])
             buildingCount,
             units,
             unitCount,
+            wareDistribution,
             cursorX,
             cursorY
         );

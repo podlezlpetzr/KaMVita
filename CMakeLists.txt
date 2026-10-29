@@ -30,8 +30,10 @@ add_executable(${PROJECT_NAME}
     src/render/terrain.cpp
     src/game/buildings.cpp
     src/game/units.cpp
+    src/game/ware_distribution.cpp
     src/ui/game_ui.cpp
     src/ui/game_ui_statistics.cpp
+    src/ui/game_ui_ratios.cpp
 )
 
 target_link_options(${PROJECT_NAME}
@@ -575,6 +577,76 @@ vita_create_vpk(
     FILE
         assets/ui/statistics/wip_counts.bmp
         assets/ui/statistics/wip_counts.bmp
+
+
+    FILE
+        assets/ui/ratios/wares/steel.bmp
+        assets/ui/ratios/wares/steel.bmp
+
+
+    FILE
+        assets/ui/ratios/wares/coal.bmp
+        assets/ui/ratios/wares/coal.bmp
+
+
+    FILE
+        assets/ui/ratios/wares/wood.bmp
+        assets/ui/ratios/wares/wood.bmp
+
+
+    FILE
+        assets/ui/ratios/wares/corn.bmp
+        assets/ui/ratios/wares/corn.bmp
+
+
+    FILE
+        assets/ui/ratios/trackbar_thumb.bmp
+        assets/ui/ratios/trackbar_thumb.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/weapon_smithy.bmp
+        assets/ui/ratios/houses/weapon_smithy.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/armor_smithy.bmp
+        assets/ui/ratios/houses/armor_smithy.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/iron_smithy.bmp
+        assets/ui/ratios/houses/iron_smithy.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/metallurgist.bmp
+        assets/ui/ratios/houses/metallurgist.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/armor_workshop.bmp
+        assets/ui/ratios/houses/armor_workshop.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/weapon_workshop.bmp
+        assets/ui/ratios/houses/weapon_workshop.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/mill.bmp
+        assets/ui/ratios/houses/mill.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/swine.bmp
+        assets/ui/ratios/houses/swine.bmp
+
+
+    FILE
+        assets/ui/ratios/houses/stables.bmp
+        assets/ui/ratios/houses/stables.bmp
 
 
 )
