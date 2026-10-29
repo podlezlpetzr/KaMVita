@@ -56,6 +56,10 @@ struct GameUIState {
     GameUIBuildSelection buildSelection;
     bool buildSectionActive;
 
+    // Samostatny KaM Build tool GUI 340.
+    // Remove neni House selection.
+    bool buildRemoveActive;
+
     GameUISection section;
 
     // Originalni hlavni toolbar GUI 439..442:

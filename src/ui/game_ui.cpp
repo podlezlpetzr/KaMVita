@@ -14,6 +14,7 @@ void initGameUI(
         GameUIBuildSelection::Road;
 
     ui->buildSectionActive = true;
+    ui->buildRemoveActive = false;
 
     ui->section = GameUISection::Build;
     ui->toolbarSelection = 0;
@@ -2613,12 +2614,20 @@ void renderGameUI(
             };
 
             const bool implemented =
-                toolIndex == 0;
+                toolIndex == 0 ||
+                toolIndex == 3;
 
             const bool selected =
-                implemented &&
-                ui.buildSelection ==
-                    GameUIBuildSelection::Road;
+                (
+                    toolIndex == 0 &&
+                    !ui.buildRemoveActive &&
+                    ui.buildSelection ==
+                        GameUIBuildSelection::Road
+                ) ||
+                (
+                    toolIndex == 3 &&
+                    ui.buildRemoveActive
+                );
 
             SDL_SetRenderDrawBlendMode(
                 renderer,
@@ -2699,8 +2708,8 @@ void renderGameUI(
             if (!icon)
                 continue;
 
-            // Road je funkcni.
-            // Ostatni nastroje jsou zatim disabled.
+            // Road a Remove jsou funkcni.
+            // Field a Wine zustavaji disabled.
             const Uint8 brightness =
                 implemented
                     ? 255

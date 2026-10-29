@@ -443,7 +443,8 @@ static bool loadGame(
 
 enum class BuildTool {
     Road,
-    Building
+    Building,
+    Remove
 };
 
 int main(int argc, char* argv[])
@@ -1739,8 +1740,39 @@ int main(int argc, char* argv[])
                     );
             }
 
+            // Remove GUI 340:
+            // originalni X=148, Vita content origin X=6.
+            SDL_Rect removeArea = {
+                buildContentX + 148,
+                buildActionY,
+                buildButtonSize,
+                buildButtonSize
+            };
+
+            const bool removeHovered =
+                cursorX >= removeArea.x &&
+                cursorX < removeArea.x + removeArea.w &&
+                cursorY >= removeArea.y &&
+                cursorY < removeArea.y + removeArea.h;
+
+            if (
+                removeHovered &&
+                touchTapped
+            ) {
+                activeBuildTool =
+                    BuildTool::Remove;
+
+                gameUI.buildRemoveActive = true;
+
+                selectedTileX = -1;
+                selectedTileY = -1;
+            }
+
             // Pouze implementovane houses jsou klikatelne.
-            if (hoveredBuildItem < 0) {
+            if (
+                hoveredBuildItem < 0 &&
+                !removeHovered
+            ) {
                 for (
                     int houseIndex = 0;
                     houseIndex < GUI_HOUSE_COUNT;
@@ -1861,6 +1893,9 @@ int main(int argc, char* argv[])
                     static_cast<GameUIBuildSelection>(
                         selection
                     );
+
+                // Vyber Road nebo house ukonci Remove mode.
+                gameUI.buildRemoveActive = false;
 
                 buildMenuSelection = selection;
 
@@ -2111,6 +2146,106 @@ int main(int argc, char* argv[])
                 selectedTileY = hoverTileY;
             }
         }
+        // -------------------------------------------------
+        // Remove tool GUI 340
+        //
+        // Prvni bezpecna verze rusi pouze:
+        // - nedokoncene stavebni plany,
+        // - RoadState::Plan.
+        //
+        // Hotove buildings a RoadState::Complete chrani.
+        // -------------------------------------------------
+
+        if (
+            !buildMenuOpen &&
+            activeBuildTool == BuildTool::Remove &&
+            squarePressed &&
+            hoverTileX >= 0 &&
+            hoverTileX < MAP_WIDTH &&
+            hoverTileY >= 0 &&
+            hoverTileY < MAP_HEIGHT
+        ) {
+            bool removedBuildingPlan = false;
+
+            for (
+                int buildingIndex = buildingCount - 1;
+                buildingIndex >= 0;
+                --buildingIndex
+            ) {
+                Building& building =
+                    buildings[buildingIndex];
+
+                if (!building.active)
+                    continue;
+
+                if (isBuildingComplete(building))
+                    continue;
+
+                const int width =
+                    getBuildingWidth(
+                        building.type
+                    );
+
+                const int height =
+                    getBuildingHeight(
+                        building.type
+                    );
+
+                const bool cursorInsideBuilding =
+                    hoverTileX >= building.tileX &&
+                    hoverTileX <
+                        building.tileX + width &&
+                    hoverTileY >= building.tileY &&
+                    hoverTileY <
+                        building.tileY + height;
+
+                if (!cursorInsideBuilding)
+                    continue;
+
+                // Zrus pripadne odkazy jednotek
+                // na recyklovany Building slot.
+                for (
+                    int unitIndex = 0;
+                    unitIndex < unitCount;
+                    ++unitIndex
+                ) {
+                    if (
+                        units[unitIndex].targetBuilding ==
+                        buildingIndex
+                    ) {
+                        units[unitIndex].targetBuilding = -1;
+                    }
+                }
+
+                building = {};
+                building.active = false;
+
+                if (
+                    gameUI.selectedSchoolBuilding ==
+                    buildingIndex
+                ) {
+                    gameUI.selectedSchoolBuilding = -1;
+                }
+
+                selectedTileX = -1;
+                selectedTileY = -1;
+
+                removedBuildingPlan = true;
+                break;
+            }
+
+            // Pokud pod kurzorem nebyl house plan,
+            // zrus pouze nedokoncenou planovanou cestu.
+            if (!removedBuildingPlan) {
+                RoadState& road =
+                    roads[hoverTileY][hoverTileX];
+
+                if (road == RoadState::Plan) {
+                    road = RoadState::None;
+                }
+            }
+        }
+
         // Road tool: Square prepina plan cesty
         // na dlazdici pod kurzorem.
         if (!buildMenuOpen &&
