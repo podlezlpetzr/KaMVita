@@ -145,8 +145,8 @@ struct SchoolUIResources {
 
     // fnt_Outline nazvy skutecne implementovanych
     // Build polozek:
-    // Road, Store, Bakery, Farm, School.
-    SDL_Texture* buildNameText[5];
+    // Road, Store, Bakery, Farm, School, Field, Wine.
+    SDL_Texture* buildNameText[7];
 
     // Originalni Ratios 440 resources.
     SDL_Texture* ratiosWareIcons[4];

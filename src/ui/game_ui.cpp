@@ -2297,6 +2297,43 @@ void renderGameUI(
         BuildingType selectedBuildingType =
             BuildingType::Store;
 
+        // Field/Wine jsou samostatne Build tools.
+        //
+        // Originalni KM_GUIGameBuild.pas:
+        // Field: Wood 0, Stone 0
+        // Wine:  Wood 1, Stone 0
+        //
+        // Pro Road a houses zustava nize puvodni
+        // GameUIBuildSelection logika.
+        const bool fieldToolSelected =
+            ui.buildToolSelection == 1;
+
+        const bool wineToolSelected =
+            ui.buildToolSelection == 2;
+
+        if (fieldToolSelected) {
+            selectedBuildIcon =
+                schoolResources.buildFieldIcon;
+
+            selectedBuildName =
+                schoolResources.buildNameText[5];
+
+            selectedWoodCost = 0;
+            selectedStoneCost = 0;
+            selectedHasWood = false;
+            selectedHasStone = false;
+        } else if (wineToolSelected) {
+            selectedBuildIcon =
+                schoolResources.buildWineIcon;
+
+            selectedBuildName =
+                schoolResources.buildNameText[6];
+
+            selectedWoodCost = 1;
+            selectedStoneCost = 0;
+            selectedHasWood = true;
+            selectedHasStone = false;
+        } else {
         switch (ui.buildSelection) {
             case GameUIBuildSelection::Road:
                 selectedBuildIcon =
@@ -2375,6 +2412,7 @@ void renderGameUI(
 
                 selectedIsBuilding = true;
                 break;
+        }
         }
 
         if (selectedIsBuilding) {
@@ -3210,15 +3248,17 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/build/costs/stone.bmp"
         );
 
-    static const char* buildNameFiles[5] = {
+    static const char* buildNameFiles[7] = {
         "road",
         "store",
         "bakery",
         "farm",
-        "school"
+        "school",
+        "field",
+        "wine"
     };
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 7; ++i) {
         char path[256];
 
         snprintf(
@@ -3504,7 +3544,7 @@ void destroySchoolUIResources(
         resources->buildStoneIcon = nullptr;
     }
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 7; ++i) {
         if (resources->buildNameText[i]) {
             SDL_DestroyTexture(
                 resources->buildNameText[i]

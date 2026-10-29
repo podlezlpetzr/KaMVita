@@ -856,4 +856,12 @@ vita_create_vpk(
         assets/ui/build/text/school.bmp
         assets/ui/build/text/school.bmp
 
+    FILE
+        assets/ui/build/text/field.bmp
+        assets/ui/build/text/field.bmp
+
+    FILE
+        assets/ui/build/text/wine.bmp
+        assets/ui/build/text/wine.bmp
+
 )
