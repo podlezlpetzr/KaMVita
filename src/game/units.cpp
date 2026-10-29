@@ -157,7 +157,11 @@ void renderUnits(
 
             if (
                 units[i].workAction ==
-                    UnitWorkAction::DigRoad
+                    UnitWorkAction::DigRoad ||
+                units[i].workAction ==
+                    UnitWorkAction::BuildField ||
+                units[i].workAction ==
+                    UnitWorkAction::BuildWine
             ) {
                 actionAtlas =
                     resources.workerDigAtlas;
@@ -622,6 +626,7 @@ void updateUnits(
     float deltaSeconds,
     int tileSize,
     RoadState* roads,
+    LandPlanState* landPlans,
     int mapWidth,
     int mapHeight
 )
@@ -730,6 +735,113 @@ void updateUnits(
                 unit.visible = true;
                 unit.state = UnitState::Idle;
 
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            }
+
+            continue;
+        }
+
+        if (
+            unit.state == UnitState::Working &&
+            (
+                unit.workAction ==
+                    UnitWorkAction::BuildField ||
+                unit.workAction ==
+                    UnitWorkAction::BuildWine
+            )
+        ) {
+            if (
+                !landPlans ||
+                unit.targetRoadX < 0 ||
+                unit.targetRoadX >= mapWidth ||
+                unit.targetRoadY < 0 ||
+                unit.targetRoadY >= mapHeight
+            ) {
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+
+                continue;
+            }
+
+            LandPlanState& land =
+                landPlans[
+                    unit.targetRoadY *
+                        mapWidth +
+                    unit.targetRoadX
+                ];
+
+            const bool fieldWork =
+                unit.workAction ==
+                    UnitWorkAction::BuildField;
+
+            const LandPlanState expectedPlan =
+                fieldWork
+                    ? LandPlanState::Field
+                    : LandPlanState::Wine;
+
+            if (land != expectedPlan) {
+                // Remove mohl plan behem prace zrusit.
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            unit.workTimer += deltaSeconds;
+
+            unit.animationTimer +=
+                deltaSeconds;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame =
+                    (
+                        unit.animationFrame + 1
+                    ) %
+                    WORKER_WORK1_FRAME_COUNT;
+            }
+
+            // Prvni construction checkpoint.
+            //
+            // Field/Wine material a originalni delky prace
+            // budou samostatna navazujici vrstva.
+            if (unit.workTimer >= 2.60f) {
+                land =
+                    fieldWork
+                        ? LandPlanState::FieldComplete
+                        : LandPlanState::WineComplete;
+
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
                 unit.animationFrame = 0;
                 unit.animationTimer = 0.0f;
             }

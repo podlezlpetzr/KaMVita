@@ -450,13 +450,8 @@ enum class BuildTool {
 };
 
 
-// Samostatny mapovy stav pro Field/Wine plany.
-// Road zustava ve vlastnim RoadState workflow.
-enum class LandPlanState : unsigned char {
-    None = 0,
-    Field,
-    Wine
-};
+// LandPlanState je sdileny s Worker state machine
+// a je deklarovany v game/units.h.
 
 int main(int argc, char* argv[])
 {
@@ -2792,24 +2787,36 @@ int main(int argc, char* argv[])
 
                 if (
                     landPlan ==
-                    LandPlanState::Field
+                        LandPlanState::Field
                 ) {
-                    // Field: zlutozelena.
+                    // Field plan.
                     SDL_SetRenderDrawColor(
                         renderer,
-                        190,
-                        165,
-                        45,
-                        72
+                        190, 165, 45, 72
+                    );
+                } else if (
+                    landPlan ==
+                        LandPlanState::Wine
+                ) {
+                    // Wine plan.
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        125, 45, 95, 82
+                    );
+                } else if (
+                    landPlan ==
+                        LandPlanState::FieldComplete
+                ) {
+                    // Hotove Field.
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        150, 126, 28, 210
                     );
                 } else {
-                    // Wine: vinove/fialova.
+                    // Hotove Wine.
                     SDL_SetRenderDrawColor(
                         renderer,
-                        125,
-                        45,
-                        95,
-                        82
+                        82, 112, 40, 210
                     );
                 }
 
@@ -2820,23 +2827,23 @@ int main(int argc, char* argv[])
 
                 if (
                     landPlan ==
-                    LandPlanState::Field
+                        LandPlanState::Field
                 ) {
                     SDL_SetRenderDrawColor(
                         renderer,
-                        238,
-                        211,
-                        76,
-                        210
+                        238, 211, 76, 210
                     );
-                } else {
+                } else if (
+                    landPlan ==
+                        LandPlanState::Wine
+                ) {
                     SDL_SetRenderDrawColor(
                         renderer,
-                        194,
-                        92,
-                        151,
-                        220
+                        194, 92, 151, 220
                     );
+                } else {
+                    // Hotovy teren uz nema planovaci ramecek.
+                    continue;
                 }
 
                 SDL_RenderDrawRect(
@@ -3371,6 +3378,7 @@ int main(int argc, char* argv[])
             deltaSeconds,
             TILE_SIZE,
             &roads[0][0],
+            &landPlans[0][0],
             MAP_WIDTH,
             MAP_HEIGHT
         );

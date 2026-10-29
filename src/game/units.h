@@ -20,7 +20,11 @@ enum class UnitWorkAction {
     BuildHouse,
     DigRoad,
     WaitForStone,
-    PaveRoad
+    PaveRoad,
+
+    // Worker construction pro Field/Wine.
+    BuildField,
+    BuildWine
 };
 
 enum class RoadState : unsigned char {
@@ -31,6 +35,21 @@ enum class RoadState : unsigned char {
     Dig3,
     Dig4,
     Complete
+};
+
+
+// Field/Wine workflow.
+//
+// Field/Wine jsou plany cekajici na Workera.
+// Complete varianty jsou hotovy teren.
+//
+// Farmer a rust budou samostatna dalsi vrstva.
+enum class LandPlanState : unsigned char {
+    None = 0,
+    Field,
+    Wine,
+    FieldComplete,
+    WineComplete
 };
 
 static constexpr int MAX_UNIT_PATH = 256;
@@ -116,6 +135,7 @@ void updateUnits(
     float deltaSeconds,
     int tileSize,
     RoadState* roads,
+    LandPlanState* landPlans,
     int mapWidth,
     int mapHeight
 );
