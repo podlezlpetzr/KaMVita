@@ -32,6 +32,7 @@ add_executable(${PROJECT_NAME}
     src/game/units.cpp
     src/game/ware_distribution.cpp
     src/ui/game_ui.cpp
+    src/ui/house_icons.cpp
     src/ui/game_ui_statistics.cpp
     src/ui/game_ui_ratios.cpp
 )
@@ -673,5 +674,121 @@ vita_create_vpk(
         assets/ui/build/original/school.bmp
         assets/ui/build/original/school.bmp
 
+
+    FILE
+        assets/ui/houses/icons/armor_smithy.bmp
+        assets/ui/houses/icons/armor_smithy.bmp
+
+    FILE
+        assets/ui/houses/icons/armor_workshop.bmp
+        assets/ui/houses/icons/armor_workshop.bmp
+
+    FILE
+        assets/ui/houses/icons/bakery.bmp
+        assets/ui/houses/icons/bakery.bmp
+
+    FILE
+        assets/ui/houses/icons/barracks.bmp
+        assets/ui/houses/icons/barracks.bmp
+
+    FILE
+        assets/ui/houses/icons/butchers.bmp
+        assets/ui/houses/icons/butchers.bmp
+
+    FILE
+        assets/ui/houses/icons/coal_mine.bmp
+        assets/ui/houses/icons/coal_mine.bmp
+
+    FILE
+        assets/ui/houses/icons/farm.bmp
+        assets/ui/houses/icons/farm.bmp
+
+    FILE
+        assets/ui/houses/icons/fisher_hut.bmp
+        assets/ui/houses/icons/fisher_hut.bmp
+
+    FILE
+        assets/ui/houses/icons/gold_mine.bmp
+        assets/ui/houses/icons/gold_mine.bmp
+
+    FILE
+        assets/ui/houses/icons/inn.bmp
+        assets/ui/houses/icons/inn.bmp
+
+    FILE
+        assets/ui/houses/icons/iron_mine.bmp
+        assets/ui/houses/icons/iron_mine.bmp
+
+    FILE
+        assets/ui/houses/icons/iron_smithy.bmp
+        assets/ui/houses/icons/iron_smithy.bmp
+
+    FILE
+        assets/ui/houses/icons/marketplace.bmp
+        assets/ui/houses/icons/marketplace.bmp
+
+    FILE
+        assets/ui/houses/icons/metallurgist.bmp
+        assets/ui/houses/icons/metallurgist.bmp
+
+    FILE
+        assets/ui/houses/icons/mill.bmp
+        assets/ui/houses/icons/mill.bmp
+
+    FILE
+        assets/ui/houses/icons/quarry.bmp
+        assets/ui/houses/icons/quarry.bmp
+
+    FILE
+        assets/ui/houses/icons/sawmill.bmp
+        assets/ui/houses/icons/sawmill.bmp
+
+    FILE
+        assets/ui/houses/icons/school.bmp
+        assets/ui/houses/icons/school.bmp
+
+    FILE
+        assets/ui/houses/icons/siege_workshop.bmp
+        assets/ui/houses/icons/siege_workshop.bmp
+
+    FILE
+        assets/ui/houses/icons/stables.bmp
+        assets/ui/houses/icons/stables.bmp
+
+    FILE
+        assets/ui/houses/icons/store.bmp
+        assets/ui/houses/icons/store.bmp
+
+    FILE
+        assets/ui/houses/icons/swine.bmp
+        assets/ui/houses/icons/swine.bmp
+
+    FILE
+        assets/ui/houses/icons/tannery.bmp
+        assets/ui/houses/icons/tannery.bmp
+
+    FILE
+        assets/ui/houses/icons/town_hall.bmp
+        assets/ui/houses/icons/town_hall.bmp
+
+    FILE
+        assets/ui/houses/icons/watch_tower.bmp
+        assets/ui/houses/icons/watch_tower.bmp
+
+    FILE
+        assets/ui/houses/icons/weapon_smithy.bmp
+        assets/ui/houses/icons/weapon_smithy.bmp
+
+    FILE
+        assets/ui/houses/icons/weapon_workshop.bmp
+        assets/ui/houses/icons/weapon_workshop.bmp
+
+    FILE
+        assets/ui/houses/icons/wineyard.bmp
+        assets/ui/houses/icons/wineyard.bmp
+
+    FILE
+        assets/ui/houses/icons/woodcutter.bmp
+        assets/ui/houses/icons/woodcutter.bmp
 
 )
