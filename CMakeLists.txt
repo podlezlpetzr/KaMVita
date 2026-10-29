@@ -788,4 +788,32 @@ vita_create_vpk(
         assets/ui/build/wares/wood.bmp
         assets/ui/build/wares/wood.bmp
 
+    FILE
+        assets/ui/build/controls/unavailable.bmp
+        assets/ui/build/controls/unavailable.bmp
+
+    FILE
+        assets/ui/build/controls/road.bmp
+        assets/ui/build/controls/road.bmp
+
+    FILE
+        assets/ui/build/controls/field.bmp
+        assets/ui/build/controls/field.bmp
+
+    FILE
+        assets/ui/build/controls/wine.bmp
+        assets/ui/build/controls/wine.bmp
+
+    FILE
+        assets/ui/build/controls/cancel.bmp
+        assets/ui/build/controls/cancel.bmp
+
+    FILE
+        assets/ui/build/controls/stone.bmp
+        assets/ui/build/controls/stone.bmp
+
+    FILE
+        assets/ui/build/controls/wood.bmp
+        assets/ui/build/controls/wood.bmp
+
 )
