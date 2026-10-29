@@ -443,6 +443,8 @@ static bool loadGame(
 
 enum class BuildTool {
     Road,
+    Field,
+    Wine,
     Building,
     Remove
 };
@@ -1720,49 +1722,76 @@ int main(int argc, char* argv[])
 
             int hoveredBuildItem = -1;
 
-            // Road = GameUIBuildSelection::Road = 0.
-            SDL_Rect roadArea = {
+            // Originalni Build tool row:
+            // 0 Road, 1 Field, 2 Wine, 3 Remove.
+            const int buildToolX[4] = {
                 buildContentX,
-                buildActionY,
-                buildButtonSize,
-                buildButtonSize
+                buildContentX + 37,
+                buildContentX + 74,
+                buildContentX + 148
             };
 
-            if (
-                cursorX >= roadArea.x &&
-                cursorX < roadArea.x + roadArea.w &&
-                cursorY >= roadArea.y &&
-                cursorY < roadArea.y + roadArea.h
+            int hoveredBuildTool = -1;
+
+            for (
+                int toolIndex = 0;
+                toolIndex < 4;
+                ++toolIndex
             ) {
-                hoveredBuildItem =
-                    static_cast<int>(
-                        GameUIBuildSelection::Road
-                    );
+                SDL_Rect toolArea = {
+                    buildToolX[toolIndex],
+                    buildActionY,
+                    buildButtonSize,
+                    buildButtonSize
+                };
+
+                if (
+                    cursorX >= toolArea.x &&
+                    cursorX <
+                        toolArea.x + toolArea.w &&
+                    cursorY >= toolArea.y &&
+                    cursorY <
+                        toolArea.y + toolArea.h
+                ) {
+                    hoveredBuildTool = toolIndex;
+                    break;
+                }
             }
 
-            // Remove GUI 340:
-            // originalni X=148, Vita content origin X=6.
-            SDL_Rect removeArea = {
-                buildContentX + 148,
-                buildActionY,
-                buildButtonSize,
-                buildButtonSize
-            };
-
-            const bool removeHovered =
-                cursorX >= removeArea.x &&
-                cursorX < removeArea.x + removeArea.w &&
-                cursorY >= removeArea.y &&
-                cursorY < removeArea.y + removeArea.h;
-
             if (
-                removeHovered &&
+                hoveredBuildTool >= 0 &&
                 touchTapped
             ) {
-                activeBuildTool =
-                    BuildTool::Remove;
+                gameUI.buildToolSelection =
+                    hoveredBuildTool;
 
-                gameUI.buildRemoveActive = true;
+                switch (hoveredBuildTool) {
+                    case 0:
+                        activeBuildTool =
+                            BuildTool::Road;
+
+                        gameUI.buildSelection =
+                            GameUIBuildSelection::Road;
+                        break;
+
+                    case 1:
+                        activeBuildTool =
+                            BuildTool::Field;
+                        break;
+
+                    case 2:
+                        activeBuildTool =
+                            BuildTool::Wine;
+                        break;
+
+                    case 3:
+                        activeBuildTool =
+                            BuildTool::Remove;
+                        break;
+
+                    default:
+                        break;
+                }
 
                 selectedTileX = -1;
                 selectedTileY = -1;
@@ -1771,7 +1800,7 @@ int main(int argc, char* argv[])
             // Pouze implementovane houses jsou klikatelne.
             if (
                 hoveredBuildItem < 0 &&
-                !removeHovered
+                hoveredBuildTool < 0
             ) {
                 for (
                     int houseIndex = 0;
@@ -1894,8 +1923,9 @@ int main(int argc, char* argv[])
                         selection
                     );
 
-                // Vyber Road nebo house ukonci Remove mode.
-                gameUI.buildRemoveActive = false;
+                // Road nebo house selection vrati
+                // Build tool focus na Road.
+                gameUI.buildToolSelection = 0;
 
                 buildMenuSelection = selection;
 

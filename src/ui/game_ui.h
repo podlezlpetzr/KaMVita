@@ -56,9 +56,9 @@ struct GameUIState {
     GameUIBuildSelection buildSelection;
     bool buildSectionActive;
 
-    // Samostatny KaM Build tool GUI 340.
-    // Remove neni House selection.
-    bool buildRemoveActive;
+    // Aktivni originalni KaM Build tool:
+    // 0 Road, 1 Field, 2 Wine, 3 Remove.
+    int buildToolSelection;
 
     GameUISection section;
 
