@@ -333,71 +333,250 @@ void renderKaMHouseEdge(
     if (!renderer)
         return;
 
+    // Prevod originalniho KaM RenderFence().
+    //
     // direction:
-    // 0 = north
-    // 1 = east
-    // 2 = south
-    // 3 = west
+    // 0 = N
+    // 1 = E
+    // 2 = S
+    // 3 = W
+    //
+    // Remake pouziva CELL_SIZE_PX = 40.
+    // KaMVita pouziva TILE_SIZE = 32.
+    //
+    // Originalni presah hrany:
+    // 3 / 40 tile.
 
-    const int overlap =
-        (3 * tileSize + 20) / 40;
+    const float edgeExtension =
+        3.0f *
+        (float)tileSize /
+        40.0f;
 
-    if (direction == 0 || direction == 2) {
+    const SDL_Color color = {
+        255,
+        255,
+        255,
+        255
+    };
+
+    // ------------------------------------------------------
+    // N / S
+    //
+    // RenderFence:
+    //
+    // pX-1-3/40, y1
+    // pX-1-3/40, y1-FenceY
+    // pX  +3/40, y2-FenceY
+    // pX  +3/40, y2
+    //
+    // Na plochem KaMVita terenu jsou y1/y2 shodne.
+    // ------------------------------------------------------
+
+    if (
+        direction == 0 ||
+        direction == 2
+    ) {
         if (!horizontalTexture)
             return;
 
-        const int thickness =
-            (7 * tileSize + 20) / 40;
+        int textureWidth = 0;
+        int textureHeight = 0;
 
-        const int edgeY =
-            direction == 0
-                ? cellScreenY - thickness / 2
-                : cellScreenY +
-                    tileSize -
-                    thickness / 2;
-
-        SDL_Rect destination = {
-            cellScreenX - overlap,
-            edgeY,
-            tileSize + overlap * 2,
-            thickness
-        };
-
-        SDL_RenderCopy(
-            renderer,
+        SDL_QueryTexture(
             horizontalTexture,
             nullptr,
-            &destination
+            nullptr,
+            &textureWidth,
+            &textureHeight
+        );
+
+        if (
+            textureWidth <= 0 ||
+            textureHeight <= 0
+        ) {
+            return;
+        }
+
+        // RenderFence pouziva PxWidth jako tloustku
+        // horizontalniho fence quadu.
+        const float fenceThickness =
+            (float)textureWidth *
+            (float)tileSize /
+            40.0f;
+
+        float edgeY =
+            (float)cellScreenY;
+
+        if (direction == 2) {
+            edgeY +=
+                (float)tileSize;
+        }
+
+        SDL_Vertex vertices[4] = {};
+
+        vertices[0].position = {
+            (float)cellScreenX -
+                edgeExtension,
+            edgeY
+        };
+
+        vertices[1].position = {
+            (float)cellScreenX -
+                edgeExtension,
+            edgeY -
+                fenceThickness
+        };
+
+        vertices[2].position = {
+            (float)cellScreenX +
+                (float)tileSize +
+                edgeExtension,
+            edgeY -
+                fenceThickness
+        };
+
+        vertices[3].position = {
+            (float)cellScreenX +
+                (float)tileSize +
+                edgeExtension,
+            edgeY
+        };
+
+        for (int i = 0; i < 4; ++i) {
+            vertices[i].color = color;
+        }
+
+        // Presne poradi UV odpovida RenderFence.
+        vertices[0].tex_coord = {1.0f, 0.0f};
+        vertices[1].tex_coord = {0.0f, 0.0f};
+        vertices[2].tex_coord = {0.0f, 1.0f};
+        vertices[3].tex_coord = {1.0f, 1.0f};
+
+        const int indices[6] = {
+            0, 1, 2,
+            0, 2, 3
+        };
+
+        SDL_RenderGeometry(
+            renderer,
+            horizontalTexture,
+            vertices,
+            4,
+            indices,
+            6
         );
 
         return;
     }
 
+    // ------------------------------------------------------
+    // E / W
+    //
+    // RenderFence:
+    //
+    // W:
+    // x1 = pX-1-3/40
+    //
+    // E:
+    // x1 = pX-1+3/40-FenceX
+    //
+    // Vertikalni textura si zachovava celou nativni
+    // vysku odpovidajici jednomu terennimu useku.
+    // ------------------------------------------------------
+
     if (!verticalTexture)
         return;
 
-    const int thickness =
-        (4 * tileSize + 20) / 40;
+    int textureWidth = 0;
+    int textureHeight = 0;
 
-    const int edgeX =
-        direction == 1
-            ? cellScreenX +
-                tileSize -
-                thickness / 2
-            : cellScreenX -
-                thickness / 2;
-
-    SDL_Rect destination = {
-        edgeX,
-        cellScreenY - overlap,
-        thickness,
-        tileSize + overlap * 2
-    };
-
-    SDL_RenderCopy(
-        renderer,
+    SDL_QueryTexture(
         verticalTexture,
         nullptr,
-        &destination
+        nullptr,
+        &textureWidth,
+        &textureHeight
+    );
+
+    if (
+        textureWidth <= 0 ||
+        textureHeight <= 0
+    ) {
+        return;
+    }
+
+    const float fenceWidth =
+        (float)textureWidth *
+        (float)tileSize /
+        40.0f;
+
+    float edgeX = 0.0f;
+
+    if (direction == 3) {
+        // West.
+        edgeX =
+            (float)cellScreenX -
+            edgeExtension;
+    } else {
+        // East.
+        edgeX =
+            (float)cellScreenX +
+            (float)tileSize +
+            edgeExtension -
+            fenceWidth;
+    }
+
+    const float topY =
+        (float)cellScreenY -
+        edgeExtension;
+
+    const float bottomY =
+        (float)cellScreenY +
+        (float)tileSize +
+        edgeExtension;
+
+    SDL_Vertex vertices[4] = {};
+
+    vertices[0].position = {
+        edgeX,
+        topY
+    };
+
+    vertices[1].position = {
+        edgeX + fenceWidth,
+        topY
+    };
+
+    vertices[2].position = {
+        edgeX + fenceWidth,
+        bottomY
+    };
+
+    vertices[3].position = {
+        edgeX,
+        bottomY
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        vertices[i].color = color;
+    }
+
+    vertices[0].tex_coord = {0.0f, 0.0f};
+    vertices[1].tex_coord = {1.0f, 0.0f};
+    vertices[2].tex_coord = {1.0f, 1.0f};
+    vertices[3].tex_coord = {0.0f, 1.0f};
+
+    const int indices[6] = {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    SDL_RenderGeometry(
+        renderer,
+        verticalTexture,
+        vertices,
+        4,
+        indices,
+        6
     );
 }
