@@ -2935,6 +2935,197 @@ int main(int argc, char* argv[])
         );
 
 
+        // -------------------------------------------------
+        // Originalni KaM Field/Wine fences
+        //
+        // Connectivity odpovida UpdateFences:
+        // spolecna hrana stejneho field typu se nekresli.
+        // -------------------------------------------------
+
+        for (
+            int fieldY = 0;
+            fieldY < MAP_HEIGHT;
+            ++fieldY
+        ) {
+            for (
+                int fieldX = 0;
+                fieldX < MAP_WIDTH;
+                ++fieldX
+            ) {
+                const LandPlanState type =
+                    landPlans[fieldY][fieldX];
+
+                const bool isCorn =
+                    type ==
+                        LandPlanState::FieldComplete;
+
+                const bool isWine =
+                    type ==
+                        LandPlanState::WineComplete;
+
+                if (!isCorn && !isWine)
+                    continue;
+
+                const bool north =
+                    fieldY == 0 ||
+                    landPlans[
+                        fieldY - 1
+                    ][
+                        fieldX
+                    ] != type;
+
+                const bool left =
+                    fieldX == 0 ||
+                    landPlans[
+                        fieldY
+                    ][
+                        fieldX - 1
+                    ] != type;
+
+                const bool right =
+                    fieldX + 1 >= MAP_WIDTH ||
+                    landPlans[
+                        fieldY
+                    ][
+                        fieldX + 1
+                    ] != type;
+
+                const bool south =
+                    fieldY + 1 >= MAP_HEIGHT ||
+                    landPlans[
+                        fieldY + 1
+                    ][
+                        fieldX
+                    ] != type;
+
+                SDL_Texture* horizontal =
+                    isCorn
+                        ? terrain.cornFenceHorizontal
+                        : terrain.wineFenceHorizontal;
+
+                SDL_Texture* vertical =
+                    isCorn
+                        ? terrain.cornFenceVertical
+                        : terrain.wineFenceVertical;
+
+                const int screenX =
+                    fieldX * TILE_SIZE -
+                    (int)cameraX;
+
+                const int screenY =
+                    fieldY * TILE_SIZE -
+                    (int)cameraY;
+
+                // Horizontalni rxGui zdroj 10x47 je
+                // predem otoceny na 47x10.
+                //
+                // Prevod KaM 40 px -> KaMVita 32 px:
+                // 47x10 -> 37x8.
+                const int horizontalWidth = 37;
+                const int horizontalHeight = 8;
+
+                // Verticalni zdroj zustava neotoceny:
+                // Corn 8 px -> 6 px
+                // Wine 5 px -> 4 px
+                const int verticalWidth =
+                    isCorn ? 6 : 4;
+
+                // Originalni quad ma vysku 44 KaM px.
+                // 44 * 32 / 40 = 35 Vita px.
+                const int verticalHeight = 35;
+
+                // Original RenderFence ma presah 3/40
+                // dlazdice na kazde strane.
+                const int horizontalX =
+                    screenX - 2;
+
+                // VO = -4 KaM px -> priblizne +3 Vita px.
+                const int northBottom =
+                    screenY + 3;
+
+                const int southBottom =
+                    screenY +
+                    TILE_SIZE +
+                    3;
+
+                if (north && horizontal) {
+                    SDL_Rect destination = {
+                        horizontalX,
+                        northBottom -
+                            horizontalHeight,
+                        horizontalWidth,
+                        horizontalHeight
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        horizontal,
+                        nullptr,
+                        &destination
+                    );
+                }
+
+                if (south && horizontal) {
+                    SDL_Rect destination = {
+                        horizontalX,
+                        southBottom -
+                            horizontalHeight,
+                        horizontalWidth,
+                        horizontalHeight
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        horizontal,
+                        nullptr,
+                        &destination
+                    );
+                }
+
+                // Verticalni segment zacina na horni
+                // hrane a presahuje 3 px pod dlazdici.
+                const int verticalY =
+                    screenY;
+
+                if (left && vertical) {
+                    SDL_Rect destination = {
+                        screenX -
+                            verticalWidth +
+                            2,
+                        verticalY,
+                        verticalWidth,
+                        verticalHeight
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        vertical,
+                        nullptr,
+                        &destination
+                    );
+                }
+
+                if (right && vertical) {
+                    SDL_Rect destination = {
+                        screenX +
+                            TILE_SIZE -
+                            2,
+                        verticalY,
+                        verticalWidth,
+                        verticalHeight
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        vertical,
+                        nullptr,
+                        &destination
+                    );
+                }
+            }
+        }
+
+
         // Vykresleni planu a fazi vystavby cest.
         SDL_SetRenderDrawBlendMode(
             renderer,

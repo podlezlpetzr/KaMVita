@@ -18,6 +18,47 @@ SDL_Texture* loadTexture(
     return texture;
 }
 
+static SDL_Texture* loadMagentaTexture(
+    SDL_Renderer* renderer,
+    const char* path
+)
+{
+    SDL_Surface* surface =
+        SDL_LoadBMP(path);
+
+    if (!surface)
+        return nullptr;
+
+    SDL_SetColorKey(
+        surface,
+        SDL_TRUE,
+        SDL_MapRGB(
+            surface->format,
+            255,
+            0,
+            255
+        )
+    );
+
+    SDL_Texture* texture =
+        SDL_CreateTextureFromSurface(
+            renderer,
+            surface
+        );
+
+    SDL_FreeSurface(surface);
+
+    if (texture) {
+        SDL_SetTextureBlendMode(
+            texture,
+            SDL_BLENDMODE_BLEND
+        );
+    }
+
+    return texture;
+}
+
+
 static SDL_Texture* loadOverlayTexture(
     SDL_Renderer* renderer,
     const char* path
@@ -231,6 +272,30 @@ TerrainResources loadTerrainResources(SDL_Renderer* renderer)
             "app0:assets/terrain/fields/runtime/wine_ground.bmp"
         );
 
+    terrain.cornFenceHorizontal =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/terrain/fields/fences/runtime/corn_horizontal.bmp"
+        );
+
+    terrain.cornFenceVertical =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/terrain/fields/fences/runtime/corn_vertical.bmp"
+        );
+
+    terrain.wineFenceHorizontal =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/terrain/fields/fences/runtime/wine_horizontal.bmp"
+        );
+
+    terrain.wineFenceVertical =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/terrain/fields/fences/runtime/wine_vertical.bmp"
+        );
+
     return terrain;
 }
 
@@ -293,6 +358,26 @@ void destroyTerrainResources(TerrainResources* terrain)
     if (terrain->wineGround)
         SDL_DestroyTexture(terrain->wineGround);
 
+    if (terrain->cornFenceHorizontal)
+        SDL_DestroyTexture(
+            terrain->cornFenceHorizontal
+        );
+
+    if (terrain->cornFenceVertical)
+        SDL_DestroyTexture(
+            terrain->cornFenceVertical
+        );
+
+    if (terrain->wineFenceHorizontal)
+        SDL_DestroyTexture(
+            terrain->wineFenceHorizontal
+        );
+
+    if (terrain->wineFenceVertical)
+        SDL_DestroyTexture(
+            terrain->wineFenceVertical
+        );
+
     terrain->grass = nullptr;
     terrain->water = nullptr;
     terrain->dirt = nullptr;
@@ -313,6 +398,11 @@ void destroyTerrainResources(TerrainResources* terrain)
     terrain->cornGround = nullptr;
     terrain->cornCut = nullptr;
     terrain->wineGround = nullptr;
+
+    terrain->cornFenceHorizontal = nullptr;
+    terrain->cornFenceVertical = nullptr;
+    terrain->wineFenceHorizontal = nullptr;
+    terrain->wineFenceVertical = nullptr;
 }
 
 void renderTerrain(

@@ -36,6 +36,17 @@ struct TerrainResources {
     // pro vsechny Wine stages. Grapes Obj 54..57
     // budou samostatna overlay vrstva.
     SDL_Texture* wineGround;
+
+    // Skutecne originalni KaM rxGui fence sprites:
+    //
+    // GUI 461 = Corn horizontal, source 10x47
+    // GUI 465 = Corn vertical, source 8x78
+    // GUI 462 = Wine horizontal, source 10x47
+    // GUI 466 = Wine vertical, source 5x69
+    SDL_Texture* cornFenceHorizontal;
+    SDL_Texture* cornFenceVertical;
+    SDL_Texture* wineFenceHorizontal;
+    SDL_Texture* wineFenceVertical;
 };
 
 TerrainResources loadTerrainResources(SDL_Renderer* renderer);

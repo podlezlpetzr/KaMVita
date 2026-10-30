@@ -1008,4 +1008,20 @@ vita_create_vpk(
         assets/terrain/fields/runtime/wine_ground.bmp
         assets/terrain/fields/runtime/wine_ground.bmp
 
+    FILE
+        assets/terrain/fields/fences/runtime/corn_horizontal.bmp
+        assets/terrain/fields/fences/runtime/corn_horizontal.bmp
+
+    FILE
+        assets/terrain/fields/fences/runtime/corn_vertical.bmp
+        assets/terrain/fields/fences/runtime/corn_vertical.bmp
+
+    FILE
+        assets/terrain/fields/fences/runtime/wine_horizontal.bmp
+        assets/terrain/fields/fences/runtime/wine_horizontal.bmp
+
+    FILE
+        assets/terrain/fields/fences/runtime/wine_vertical.bmp
+        assets/terrain/fields/fences/runtime/wine_vertical.bmp
+
 )
