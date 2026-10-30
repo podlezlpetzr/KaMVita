@@ -34,6 +34,7 @@ add_executable(${PROJECT_NAME}
     src/game/units.cpp
     src/game/ware_distribution.cpp
     src/ui/game_ui.cpp
+    src/ui/game_ui_unit.cpp
     src/ui/house_icons.cpp
     src/ui/game_ui_statistics.cpp
     src/ui/game_ui_ratios.cpp
@@ -1069,5 +1070,53 @@ vita_create_vpk(
     FILE
         assets/buildings/tablets/original/school_264.bmp
         assets/buildings/tablets/original/school_264.bmp
+
+    FILE
+        assets/ui/units/back_443.bmp
+        assets/ui/units/back_443.bmp
+
+    FILE
+        assets/ui/units/text/condition.bmp
+        assets/ui/units/text/condition.bmp
+
+    FILE
+        assets/ui/units/text/idle.bmp
+        assets/ui/units/text/idle.bmp
+
+    FILE
+        assets/ui/units/text/walking.bmp
+        assets/ui/units/text/walking.bmp
+
+    FILE
+        assets/ui/units/text/road.bmp
+        assets/ui/units/text/road.bmp
+
+    FILE
+        assets/ui/units/text/field.bmp
+        assets/ui/units/text/field.bmp
+
+    FILE
+        assets/ui/units/text/wine.bmp
+        assets/ui/units/text/wine.bmp
+
+    FILE
+        assets/ui/units/text/house_site.bmp
+        assets/ui/units/text/house_site.bmp
+
+    FILE
+        assets/ui/units/text/house.bmp
+        assets/ui/units/text/house.bmp
+
+    FILE
+        assets/ui/units/text/repair.bmp
+        assets/ui/units/text/repair.bmp
+
+    FILE
+        assets/ui/units/text/serf_description.bmp
+        assets/ui/units/text/serf_description.bmp
+
+    FILE
+        assets/ui/units/text/worker_description.bmp
+        assets/ui/units/text/worker_description.bmp
 
 )

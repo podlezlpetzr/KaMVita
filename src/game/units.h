@@ -75,11 +75,23 @@ enum class LandPlanState : unsigned char {
     WineComplete
 };
 
+// KaM Remake condition maximum: 45 * 60.
+static constexpr int UNIT_MAX_CONDITION =
+    45 * 60;
+
+// New KaMVita units start at the Remake base 60 percent.
+static constexpr int UNIT_START_CONDITION =
+    UNIT_MAX_CONDITION * 6 / 10;
+
 static constexpr int MAX_UNIT_PATH = 256;
 
 struct Unit {
     UnitType type;
     UnitState state;
+
+    // KaM Remake unit condition:
+    // 0..UNIT_MAX_CONDITION.
+    int condition;
 
     float worldX;
     float worldY;

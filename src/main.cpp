@@ -3,6 +3,7 @@
 #include "game/buildings.h"
 #include "game/units.h"
 #include "ui/game_ui.h"
+#include "ui/game_ui_unit.h"
 #include "ui/game_ui_ratios.h"
 #include "ui/house_icons.h"
 #include "game/ware_distribution.h"
@@ -442,6 +443,19 @@ static bool loadGame(
 }
 
 
+// DEV UNIT MOVE BEGIN
+//
+// Vypnutim teto jedine konstanty zustane zachovan:
+// - vyber jednotky
+// - Unit GUI
+// - selection marker
+//
+// Zrusi se pouze rucni testovaci pohyb.
+static constexpr bool ENABLE_DEV_UNIT_MOVE = true;
+
+// DEV UNIT MOVE END
+
+
 enum class BuildTool {
     Road,
     Field,
@@ -494,6 +508,15 @@ int main(int argc, char* argv[])
         loadKaMPlanResources(renderer);
     BuildingResources buildingResources = loadBuildingResources(renderer);
     UnitResources unitResources = loadUnitResources(renderer);
+
+    UnitUIResources unitUIResources =
+        loadUnitUIResources(renderer);
+
+    UnitUIState unitUI = {};
+    initUnitUI(&unitUI);
+
+    unitUI.previousSection =
+        GameUISection::Build;
 
     SchoolUIResources schoolUIResources =
         loadSchoolUIResources(renderer);
@@ -561,6 +584,7 @@ int main(int argc, char* argv[])
         worker = {};
         worker.type = UnitType::Worker;
         worker.state = UnitState::Idle;
+        worker.condition = UNIT_START_CONDITION;
 
         // Pred development Store.
         worker.worldX =
@@ -620,6 +644,7 @@ int main(int argc, char* argv[])
         serf = {};
         serf.type = UnitType::Serf;
         serf.state = UnitState::Idle;
+        serf.condition = UNIT_START_CONDITION;
 
         // Vedle Workera pred development Store.
         serf.worldX =
@@ -1012,7 +1037,10 @@ int main(int argc, char* argv[])
 
         // Originalni hlavni KaM toolbar 439..442.
         // Kazdy glyph prepina skutecnou GameUISection.
-        if (touchTapped) {
+        if (
+            touchTapped &&
+            !unitUI.panelVisible
+        ) {
             const int toolbarX = 6;
             const int toolbarY = 194;
             const int toolbarStep = 46;
@@ -1517,6 +1545,165 @@ int main(int argc, char* argv[])
                 touchTapped = false;
         }
 
+        // -------------------------------------------------
+        // Unit GUI Back.
+        //
+        // Remake pouziva GUI 443. Circle i touch provedou
+        // stejnou akci: deselect a navrat k hlavni strance.
+        // -------------------------------------------------
+        if (
+            unitUI.panelVisible &&
+            circlePressed
+        ) {
+            const GameUISection returnSection =
+                unitUI.previousSection;
+
+            closeUnitUI(&unitUI);
+
+            gameUI.section =
+                returnSection;
+
+            gameUI.buildSectionActive =
+                returnSection ==
+                    GameUISection::Build;
+
+            circlePressed = false;
+        }
+
+        if (
+            unitUI.panelVisible &&
+            touchTapped
+        ) {
+            const GameUISection returnSection =
+                unitUI.previousSection;
+
+            if (
+                handleUnitUIBackTouch(
+                    &unitUI,
+                    touchStartX,
+                    touchStartY
+                )
+            ) {
+                gameUI.section =
+                    returnSection;
+
+                gameUI.buildSectionActive =
+                    returnSection ==
+                        GameUISection::Build;
+
+                touchTapped = false;
+                crossPressed = false;
+            }
+        }
+
+
+        // -------------------------------------------------
+        // Unit selection.
+        //
+        // X nebo touch tap nad jednotkou ma prednost pred
+        // mapovym prikazem. Vyber a GUI nejsou DEV funkce.
+        // -------------------------------------------------
+        bool unitSelectionConsumed = false;
+
+        if (
+            !buildMenuOpen &&
+            (
+                crossPressed ||
+                touchTapped
+            )
+        ) {
+            const float selectScreenX =
+                touchTapped
+                    ? touchStartX
+                    : cursorX;
+
+            const float selectScreenY =
+                touchTapped
+                    ? touchStartY
+                    : cursorY;
+
+            const int hitUnit =
+                hitTestUnit(
+                    units,
+                    unitCount,
+                    selectScreenX,
+                    selectScreenY,
+                    cameraX,
+                    cameraY
+                );
+
+            if (hitUnit >= 0) {
+                // Backward-compatible runtime initialization:
+                // older or zero-initialized development units
+                // receive the Remake base condition.
+                if (units[hitUnit].condition <= 0) {
+                    units[hitUnit].condition =
+                        UNIT_START_CONDITION;
+                }
+
+                // Unit detail je skutecna sidebar stranka,
+                // nikoliv overlay nad Build/Stats/School.
+                if (
+                    gameUI.section !=
+                        GameUISection::Unit
+                ) {
+                    unitUI.previousSection =
+                        gameUI.section;
+                }
+
+                unitUI.selectedUnitIndex =
+                    hitUnit;
+
+                unitUI.panelVisible = true;
+
+                gameUI.section =
+                    GameUISection::Unit;
+
+                gameUI.buildSectionActive = false;
+                gameUI.toolbarFocus = false;
+
+                unitSelectionConsumed = true;
+
+                crossPressed = false;
+
+                if (touchTapped)
+                    touchTapped = false;
+            }
+        }
+
+        // Neviditelna nebo zrusena jednotka nemuze
+        // zustat vybrana.
+        if (
+            unitUI.selectedUnitIndex >= 0 &&
+            (
+                unitUI.selectedUnitIndex >= unitCount ||
+                !units[
+                    unitUI.selectedUnitIndex
+                ].active ||
+                !units[
+                    unitUI.selectedUnitIndex
+                ].visible
+            )
+        ) {
+            const GameUISection returnSection =
+                unitUI.previousSection;
+
+            unitUI.selectedUnitIndex = -1;
+            unitUI.panelVisible = false;
+
+            if (
+                gameUI.section ==
+                    GameUISection::Unit
+            ) {
+                gameUI.section =
+                    returnSection;
+
+                gameUI.buildSectionActive =
+                    returnSection ==
+                        GameUISection::Build;
+            }
+        }
+
         previousButtons = pad.buttons;
 
         if (r1Pressed && !buildMenuOpen) {
@@ -1560,6 +1747,66 @@ int main(int argc, char* argv[])
                 break;
             }
         }
+
+        // DEV UNIT MOVE BEGIN
+        if (
+            ENABLE_DEV_UNIT_MOVE &&
+            unitUI.selectedUnitIndex >= 0 &&
+            unitUI.selectedUnitIndex < unitCount &&
+            !buildMenuOpen &&
+            squarePressed &&
+            cursorX >= GAME_UI_PANEL_WIDTH
+        ) {
+            Unit& selectedUnit =
+                units[
+                    unitUI.selectedUnitIndex
+                ];
+
+            const float moveTargetX =
+                (
+                    (
+                        (int)cursorX +
+                        (int)cameraX
+                    ) /
+                    TILE_SIZE +
+                    0.5f
+                ) *
+                TILE_SIZE;
+
+            const float moveTargetY =
+                (
+                    (
+                        (int)cursorY +
+                        (int)cameraY
+                    ) /
+                    TILE_SIZE +
+                    0.5f
+                ) *
+                TILE_SIZE;
+
+            selectedUnit.targetBuilding = -1;
+            selectedUnit.targetRoadX = -1;
+            selectedUnit.targetRoadY = -1;
+            selectedUnit.workAction =
+                UnitWorkAction::None;
+
+            selectedUnit.doorwayOffsetX = 0;
+            selectedUnit.doorwayOffsetY = 0;
+
+            setUnitMoveTarget(
+                &selectedUnit,
+                moveTargetX,
+                moveTargetY,
+                buildings,
+                buildingCount,
+                MAP_WIDTH,
+                MAP_HEIGHT,
+                TILE_SIZE
+            );
+
+            squarePressed = false;
+        }
+        // DEV UNIT MOVE END
 
         if (l1Pressed && !buildMenuOpen) {
             bool workerSpawned = false;
@@ -1621,6 +1868,7 @@ int main(int argc, char* argv[])
 
                     worker.type = UnitType::Worker;
                     worker.state = UnitState::Idle;
+                    worker.condition = UNIT_START_CONDITION;
 
                     // School ma vstup ve spodni rade
                     // na prostredni dlazdici. Worker se
@@ -1930,6 +2178,9 @@ int main(int argc, char* argv[])
                                 worker.doorwayOffsetX = 0;
                                 worker.doorwayOffsetY =
                                     -TILE_SIZE;
+
+                                worker.doorwayProgress =
+                                    0.0f;
                             } else {
                                 worker.doorwayOffsetX = 0;
                                 worker.doorwayOffsetY = 0;
@@ -2293,6 +2544,10 @@ int main(int argc, char* argv[])
                 );
 
             if (activateBuildItem) {
+                if (unitUI.panelVisible) {
+                    closeUnitUI(&unitUI);
+                }
+
                 int selection =
                     touchTapped &&
                     hoveredBuildItem >= 0
@@ -3747,6 +4002,9 @@ int main(int argc, char* argv[])
                         ? UnitType::Serf
                         : UnitType::Worker;
 
+                trainedUnit.condition =
+                    UNIT_START_CONDITION;
+
                 BuildingEntrance entrance =
                     getBuildingEntrance(
                         school.type
@@ -4048,6 +4306,15 @@ int main(int argc, char* argv[])
             }
         }
 
+        renderSelectedUnitMarker(
+            renderer,
+            units,
+            unitCount,
+            unitUI.selectedUnitIndex,
+            cameraX,
+            cameraY
+        );
+
         if (activeBuildTool == BuildTool::Building) {
             renderBuildingPreview(
                 renderer,
@@ -4194,6 +4461,19 @@ int main(int argc, char* argv[])
             cursorY
         );
 
+        if (
+            gameUI.section ==
+                GameUISection::Unit
+        ) {
+            renderUnitUI(
+                renderer,
+                unitUIResources,
+                unitUI,
+                units,
+                unitCount
+            );
+        }
+
         SDL_SetRenderDrawColor(renderer, 255, 230, 120, 255);
 
         SDL_RenderDrawLine(renderer,
@@ -4230,6 +4510,10 @@ int main(int argc, char* argv[])
     );
 
     destroyTerrainResources(&terrain);
+
+    destroyUnitUIResources(
+        &unitUIResources
+    );
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

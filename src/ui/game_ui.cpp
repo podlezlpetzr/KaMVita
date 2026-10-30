@@ -148,7 +148,9 @@ void renderGameUI(
     // Original: 42x36, horizontalni krok 46 px.
     // =====================================================
 
-    {
+    if (
+        ui.section != GameUISection::Unit
+    ) {
         const int toolbarX = 6;
         const int toolbarY = 194;
 

@@ -240,14 +240,47 @@ void renderUnits(
                     actionCellHeight
                 };
 
+                // Working muze mit samostatny pouze
+                // renderovaci offset.
+                //
+                // BuildHouse jej pouziva pro Work1 uvnitr
+                // footprintu, zatimco logicka pozice nohou
+                // zustava na pruchozi entrance dlazdici.
+                const bool isHousePreparation =
+                    units[i].workAction ==
+                        UnitWorkAction::BuildHouse;
+
+                const float workingProgress =
+                    isHousePreparation
+                        ? units[i].doorwayProgress
+                        : 0.0f;
+
+                const int workingOffsetX =
+                    isHousePreparation
+                        ? static_cast<int>(
+                            units[i].doorwayOffsetX *
+                            workingProgress
+                        )
+                        : 0;
+
+                const int workingOffsetY =
+                    isHousePreparation
+                        ? static_cast<int>(
+                            units[i].doorwayOffsetY *
+                            workingProgress
+                        )
+                        : 0;
+
                 SDL_Rect actionDestination = {
                     (int)units[i].worldX -
                         (int)cameraX +
-                        actionAnchorX,
+                        actionAnchorX +
+                        workingOffsetX,
 
                     (int)units[i].worldY -
                         (int)cameraY +
-                        actionAnchorY,
+                        actionAnchorY +
+                        workingOffsetY,
 
                     actionCellWidth,
                     actionCellHeight
@@ -779,6 +812,7 @@ void updateUnits(
 
                 unit.doorwayOffsetX = 0;
                 unit.doorwayOffsetY = 0;
+                unit.doorwayProgress = 0.0f;
 
                 unit.workAction =
                     UnitWorkAction::None;
@@ -807,6 +841,7 @@ void updateUnits(
 
                 unit.doorwayOffsetX = 0;
                 unit.doorwayOffsetY = 0;
+                unit.doorwayProgress = 0.0f;
 
                 unit.workAction =
                     UnitWorkAction::None;
@@ -818,7 +853,21 @@ void updateUnits(
                 continue;
             }
 
-            unit.workTimer += deltaSeconds;
+            // Logická pozice nohou zůstává mimo
+            // blokovaný footprint. Vizuální Work1 sprite
+            // během krátké fáze plynule přejde dovnitř.
+            if (unit.doorwayProgress < 1.0f) {
+                unit.doorwayProgress +=
+                    deltaSeconds * 4.0f;
+
+                if (unit.doorwayProgress > 1.0f)
+                    unit.doorwayProgress = 1.0f;
+            } else {
+                // Čas přípravy podkladu běží až poté,
+                // co Worker vizuálně dorazí na místo.
+                unit.workTimer += deltaSeconds;
+            }
+
             unit.animationTimer += deltaSeconds;
 
             while (
@@ -845,6 +894,7 @@ void updateUnits(
 
                 unit.doorwayOffsetX = 0;
                 unit.doorwayOffsetY = 0;
+                unit.doorwayProgress = 0.0f;
 
                 unit.workAction =
                     UnitWorkAction::None;
@@ -1162,6 +1212,10 @@ void updateUnits(
                         unit.doorwayOffsetX = 0;
                         unit.doorwayOffsetY =
                             -tileSize;
+
+                        // Plynulý vizuální přesun z volné
+                        // entrance dlaždice do footprintu.
+                        unit.doorwayProgress = 0.0f;
                     } else {
                         unit.doorwayOffsetX = 0;
                         unit.doorwayOffsetY = 0;

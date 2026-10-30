@@ -14,7 +14,8 @@ enum class GameUISection {
     Ratios,
     Statistics,
     Options,
-    School
+    School,
+    Unit
 };
 
 enum class GameUISchoolSelection {
