@@ -544,6 +544,133 @@ int main(int argc, char* argv[])
     Unit units[MAX_UNITS] = {};
     int unitCount = 0;
 
+    // -------------------------------------------------
+    // Development bootstrap units
+    //
+    // Pro rychle testovani construction workflow jsou
+    // Worker a Serf dostupni ihned po startu hry.
+    //
+    // School training zustava beze zmeny a pozdeji
+    // muzeme tento bootstrap jednoduse odstranit.
+    // -------------------------------------------------
+
+    if (unitCount + 2 <= MAX_UNITS) {
+        // WORKER
+        Unit& worker = units[unitCount++];
+
+        worker = {};
+        worker.type = UnitType::Worker;
+        worker.state = UnitState::Idle;
+
+        // Pred development Store.
+        worker.worldX =
+            (28.5f) * TILE_SIZE;
+
+        worker.worldY =
+            (32.5f) * TILE_SIZE;
+
+        worker.targetWorldX =
+            worker.worldX;
+
+        worker.targetWorldY =
+            worker.worldY;
+
+        // Smer S:
+        // N, NE, E, SE, S, SW, W, NW.
+        worker.direction = 4;
+
+        worker.animationFrame = 0;
+        worker.animationTimer = 0.0f;
+
+        worker.pathLength = 0;
+        worker.pathIndex = 0;
+
+        worker.targetBuilding = -1;
+        worker.targetRoadX = -1;
+        worker.targetRoadY = -1;
+
+        worker.workTimer = 0.0f;
+        worker.workAction =
+            UnitWorkAction::None;
+
+        worker.doorwayProgress = 0.0f;
+
+        worker.doorwayStartX =
+            worker.worldX;
+
+        worker.doorwayStartY =
+            worker.worldY;
+
+        worker.doorwayTargetX =
+            worker.worldX;
+
+        worker.doorwayTargetY =
+            worker.worldY;
+
+        worker.doorwayOffsetX = 0;
+        worker.doorwayOffsetY = 0;
+
+        worker.visible = true;
+        worker.active = true;
+
+
+        // SERF
+        Unit& serf = units[unitCount++];
+
+        serf = {};
+        serf.type = UnitType::Serf;
+        serf.state = UnitState::Idle;
+
+        // Vedle Workera pred development Store.
+        serf.worldX =
+            (27.5f) * TILE_SIZE;
+
+        serf.worldY =
+            (32.5f) * TILE_SIZE;
+
+        serf.targetWorldX =
+            serf.worldX;
+
+        serf.targetWorldY =
+            serf.worldY;
+
+        serf.direction = 4;
+
+        serf.animationFrame = 0;
+        serf.animationTimer = 0.0f;
+
+        serf.pathLength = 0;
+        serf.pathIndex = 0;
+
+        serf.targetBuilding = -1;
+        serf.targetRoadX = -1;
+        serf.targetRoadY = -1;
+
+        serf.workTimer = 0.0f;
+        serf.workAction =
+            UnitWorkAction::None;
+
+        serf.doorwayProgress = 0.0f;
+
+        serf.doorwayStartX =
+            serf.worldX;
+
+        serf.doorwayStartY =
+            serf.worldY;
+
+        serf.doorwayTargetX =
+            serf.worldX;
+
+        serf.doorwayTargetY =
+            serf.worldY;
+
+        serf.doorwayOffsetX = 0;
+        serf.doorwayOffsetY = 0;
+
+        serf.visible = true;
+        serf.active = true;
+    }
+
     WareDistribution wareDistribution = {};
     initializeWareDistribution(
         &wareDistribution
@@ -1568,8 +1695,107 @@ int main(int argc, char* argv[])
                     UnitWorkAction requestedWorkAction =
                         UnitWorkAction::None;
 
+                    int requestedBuilding = -1;
+
+                    int workTargetTileX =
+                        cursorTileX;
+
+                    int workTargetTileY =
+                        cursorTileY;
+
                     if (validCursorTile) {
+                        // Nejdřív zkus House plan.
+                        //
+                        // Prikaz lze zadat na libovolne aktivni
+                        // dlazdici planu. Worker pak jde pred
+                        // entrance, nikoliv dovnitr blokovaneho
+                        // footprintu.
+                        for (
+                            int buildingIndex = 0;
+                            buildingIndex < buildingCount;
+                            ++buildingIndex
+                        ) {
+                            Building& candidate =
+                                buildings[
+                                    buildingIndex
+                                ];
+
+                            if (!candidate.active)
+                                continue;
+
+                            if (
+                                candidate.constructionProgress != 0 ||
+                                candidate.woodStep != 0 ||
+                                candidate.stoneStep != 0
+                            ) {
+                                continue;
+                            }
+
+                            const int localX =
+                                cursorTileX -
+                                candidate.tileX;
+
+                            const int localY =
+                                cursorTileY -
+                                candidate.tileY;
+
+                            const int width =
+                                getBuildingWidth(
+                                    candidate.type
+                                );
+
+                            const int height =
+                                getBuildingHeight(
+                                    candidate.type
+                                );
+
+                            if (
+                                localX < 0 ||
+                                localY < 0 ||
+                                localX >= width ||
+                                localY >= height
+                            ) {
+                                continue;
+                            }
+
+                            if (
+                                getBuildingPlanValue(
+                                    candidate.type,
+                                    localX,
+                                    localY
+                                ) == 0
+                            ) {
+                                continue;
+                            }
+
+                            const BuildingEntrance entrance =
+                                getBuildingEntrance(
+                                    candidate.type
+                                );
+
+                            requestedWorkAction =
+                                UnitWorkAction::BuildHouse;
+
+                            requestedBuilding =
+                                buildingIndex;
+
+                            workTargetTileX =
+                                candidate.tileX +
+                                entrance.tileOffsetX;
+
+                            // Jedna volna dlazdice pred
+                            // jiznim entrance.
+                            workTargetTileY =
+                                candidate.tileY +
+                                entrance.tileOffsetY +
+                                1;
+
+                            break;
+                        }
+
                         if (
+                            requestedWorkAction ==
+                                UnitWorkAction::None &&
                             roads[
                                 cursorTileY
                             ][
@@ -1579,6 +1805,8 @@ int main(int argc, char* argv[])
                             requestedWorkAction =
                                 UnitWorkAction::DigRoad;
                         } else if (
+                            requestedWorkAction ==
+                                UnitWorkAction::None &&
                             landPlans[
                                 cursorTileY
                             ][
@@ -1614,21 +1842,17 @@ int main(int argc, char* argv[])
                     }
 
                     float targetX =
-                        ((int)cursorX +
-                         (int)cameraX) /
+                        (
+                            workTargetTileX +
+                            0.5f
+                        ) *
                         TILE_SIZE;
 
                     float targetY =
-                        ((int)cursorY +
-                         (int)cameraY) /
-                        TILE_SIZE;
-
-                    targetX =
-                        (targetX + 0.5f) *
-                        TILE_SIZE;
-
-                    targetY =
-                        (targetY + 0.5f) *
+                        (
+                            workTargetTileY +
+                            0.5f
+                        ) *
                         TILE_SIZE;
 
                     bool pathFound =
@@ -1650,16 +1874,29 @@ int main(int argc, char* argv[])
                         pathFound &&
                         hasWorkTarget
                     ) {
-                        worker.targetRoadX =
-                            cursorTileX;
-
-                        worker.targetRoadY =
-                            cursorTileY;
-
                         worker.workAction =
                             requestedWorkAction;
 
                         worker.workTimer = 0.0f;
+
+                        if (
+                            requestedWorkAction ==
+                                UnitWorkAction::BuildHouse
+                        ) {
+                            worker.targetBuilding =
+                                requestedBuilding;
+
+                            worker.targetRoadX = -1;
+                            worker.targetRoadY = -1;
+                        } else {
+                            worker.targetBuilding = -1;
+
+                            worker.targetRoadX =
+                                cursorTileX;
+
+                            worker.targetRoadY =
+                                cursorTileY;
+                        }
                         worker.animationFrame = 0;
                         worker.animationTimer = 0.0f;
 
@@ -1679,18 +1916,35 @@ int main(int argc, char* argv[])
                         // dlazdici, neni potreba walking faze.
                         if (
                             workerTileX ==
-                                cursorTileX &&
+                                workTargetTileX &&
                             workerTileY ==
-                                cursorTileY
+                                workTargetTileY
                         ) {
                             worker.state =
                                 UnitState::Working;
+
+                            if (
+                                requestedWorkAction ==
+                                    UnitWorkAction::BuildHouse
+                            ) {
+                                worker.doorwayOffsetX = 0;
+                                worker.doorwayOffsetY =
+                                    -TILE_SIZE;
+                            } else {
+                                worker.doorwayOffsetX = 0;
+                                worker.doorwayOffsetY = 0;
+                            }
                         }
                     } else {
                         // Bez pracovniho planu zustava X
                         // beznym prikazem k pohybu.
+                        worker.targetBuilding = -1;
                         worker.targetRoadX = -1;
                         worker.targetRoadY = -1;
+
+                        worker.doorwayOffsetX = 0;
+                        worker.doorwayOffsetY = 0;
+
                         worker.workAction =
                             UnitWorkAction::None;
 
@@ -3693,6 +3947,8 @@ int main(int argc, char* argv[])
             TILE_SIZE,
             &roads[0][0],
             &landPlans[0][0],
+            buildings,
+            buildingCount,
             MAP_WIDTH,
             MAP_HEIGHT
         );

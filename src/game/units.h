@@ -159,6 +159,8 @@ void updateUnits(
     int tileSize,
     RoadState* roads,
     LandPlanState* landPlans,
+    Building* buildings,
+    int buildingCount,
     int mapWidth,
     int mapHeight
 );

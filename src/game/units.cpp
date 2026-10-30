@@ -159,6 +159,8 @@ void renderUnits(
                 units[i].workAction ==
                     UnitWorkAction::DigRoad ||
                 units[i].workAction ==
+                    UnitWorkAction::BuildHouse ||
+                units[i].workAction ==
                     UnitWorkAction::BuildField ||
                 units[i].workAction ==
                     UnitWorkAction::BuildWine
@@ -629,6 +631,8 @@ void updateUnits(
     int tileSize,
     RoadState* roads,
     LandPlanState* landPlans,
+    Building* buildings,
+    int buildingCount,
     int mapWidth,
     int mapHeight
 )
@@ -743,6 +747,116 @@ void updateUnits(
 
             continue;
         }
+
+        // -------------------------------------------------
+        // House terrain preparation.
+        //
+        // Worker stoji na volne dlazdici pred entrance.
+        // Prvni Work1 faze pouze pripravi podklad.
+        //
+        // constructionProgress:
+        // 0 = rope plan + tablet
+        // 1 = prepared terrain, wooden WIP fence
+        //
+        // Wood/Stone construction je samostatna dalsi faze.
+        // -------------------------------------------------
+        if (
+            unit.state == UnitState::Working &&
+            unit.workAction ==
+                UnitWorkAction::BuildHouse
+        ) {
+            const bool validTarget =
+                buildings &&
+                unit.targetBuilding >= 0 &&
+                unit.targetBuilding < buildingCount &&
+                buildings[
+                    unit.targetBuilding
+                ].active;
+
+            if (!validTarget) {
+                unit.state = UnitState::Idle;
+                unit.targetBuilding = -1;
+
+                unit.doorwayOffsetX = 0;
+                unit.doorwayOffsetY = 0;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            Building& building =
+                buildings[
+                    unit.targetBuilding
+                ];
+
+            // Plan mohl byt mezitim zrusen nebo
+            // uz pripraven jinym Workerem.
+            if (
+                building.constructionProgress != 0 ||
+                building.woodStep != 0 ||
+                building.stoneStep != 0
+            ) {
+                unit.state = UnitState::Idle;
+                unit.targetBuilding = -1;
+
+                unit.doorwayOffsetX = 0;
+                unit.doorwayOffsetY = 0;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            unit.workTimer += deltaSeconds;
+            unit.animationTimer += deltaSeconds;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame =
+                    (
+                        unit.animationFrame + 1
+                    ) %
+                    WORKER_WORK1_FRAME_COUNT;
+            }
+
+            // Prvni House construction checkpoint:
+            // Worker dokoncil pripravu / srovnani podkladu.
+            if (unit.workTimer >= 1.30f) {
+                building.constructionProgress = 1;
+
+                unit.state = UnitState::Idle;
+                unit.targetBuilding = -1;
+
+                unit.doorwayOffsetX = 0;
+                unit.doorwayOffsetY = 0;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            }
+
+            continue;
+        }
+
 
         if (
             unit.state == UnitState::Working &&
@@ -1023,13 +1137,35 @@ void updateUnits(
                 unit.pathLength = 0;
                 unit.pathIndex = 0;
 
-                if (unit.targetRoadX >= 0 &&
-                    unit.targetRoadY >= 0) {
+                const bool hasRoadWork =
+                    unit.targetRoadX >= 0 &&
+                    unit.targetRoadY >= 0;
 
+                const bool hasBuildingWork =
+                    unit.targetBuilding >= 0 &&
+                    unit.workAction ==
+                        UnitWorkAction::BuildHouse;
+
+                if (
+                    hasRoadWork ||
+                    hasBuildingWork
+                ) {
                     unit.state =
                         UnitState::Working;
 
                     unit.workTimer = 0.0f;
+
+                    if (hasBuildingWork) {
+                        // Worker zustava logicky na volne
+                        // dlazdici pred entrance, ale Work1
+                        // animace se vykresli uvnitr planu.
+                        unit.doorwayOffsetX = 0;
+                        unit.doorwayOffsetY =
+                            -tileSize;
+                    } else {
+                        unit.doorwayOffsetX = 0;
+                        unit.doorwayOffsetY = 0;
+                    }
                 } else {
                     unit.state =
                         UnitState::Idle;

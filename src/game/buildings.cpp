@@ -1597,6 +1597,22 @@ BuildingEntrance getBuildingEntrance(
                 7
             };
 
+        case BuildingType::Bakery:
+            return {
+                2,
+                2,
+                0,
+                0
+            };
+
+        case BuildingType::Farm:
+            return {
+                1,
+                2,
+                0,
+                0
+            };
+
         default:
             return {
                 0,
