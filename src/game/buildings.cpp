@@ -1,4 +1,5 @@
 #include "buildings.h"
+#include "house_plan_catalog.h"
 
 static SDL_Texture* loadColorKeyTexture(
     SDL_Renderer* renderer,
@@ -55,6 +56,29 @@ bool buildingsOverlap(
     return !separated;
 }
 
+
+static int getHousePlanCatalogIndex(
+    BuildingType type
+)
+{
+    switch (type) {
+        case BuildingType::Store:
+            return 20;
+
+        case BuildingType::Bakery:
+            return 2;
+
+        case BuildingType::Farm:
+            return 6;
+
+        case BuildingType::School:
+            return 17;
+    }
+
+    return -1;
+}
+
+
 void renderBuildings(
     SDL_Renderer* renderer,
     const BuildingResources& resources,
@@ -62,7 +86,8 @@ void renderBuildings(
     int buildingCount,
     float cameraX,
     float cameraY,
-    int tileSize
+    int tileSize,
+    const KaMPlanResources* planResources
 )
 {
     for (int i = 0; i < buildingCount; ++i) {
@@ -205,58 +230,234 @@ void renderBuildings(
                 ? woodMaximumStep
                 : woodStep;
 
-        // Bez jedineho pracovniho kroku je videt stavebni plan.
+        // House pred prvnim Wood/Stone krokem:
+        //
+        // constructionProgress == 0:
+        //   originalni provaz 105/117 + House tablet
+        //
+        // constructionProgress > 0:
+        //   originalni drevene WIP ohraniceni 463/467
         if (renderedWoodStep == 0 && stoneStep == 0) {
-            for (int localY = 0;
-                 localY < buildingHeight;
-                 ++localY) {
+            const int catalogIndex =
+                getHousePlanCatalogIndex(
+                    building.type
+                );
 
-                for (int localX = 0;
-                     localX < buildingWidth;
-                     ++localX) {
-
-                    int planValue = getBuildingPlanValue(
-                        building.type,
-                        localX,
-                        localY
+            if (
+                catalogIndex >= 0 &&
+                planResources
+            ) {
+                const HousePlanCatalogEntry& plan =
+                    getHousePlanCatalogEntry(
+                        catalogIndex
                     );
 
-                    if (planValue == 0)
-                        continue;
+                // Soucasne KaMVita tileX/tileY ukazuje na
+                // levy horni roh aktivniho footprintu.
+                //
+                // HouseDatX je plny 4x4 grid, a proto
+                // zde prevedeme jeho aktivni cast na
+                // soucasnou lokalni kotvu budovy.
+                int minX = 4;
+                int minY = 4;
 
-                    SDL_Rect planTile = {
-                        footprintX + localX * tileSize,
-                        footprintY + localY * tileSize,
-                        tileSize,
-                        tileSize
-                    };
+                for (int y = 0; y < 4; ++y) {
+                    for (int x = 0; x < 4; ++x) {
+                        if (plan.plan[y][x] == 0)
+                            continue;
 
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        178, 139, 76, 255
-                    );
+                        if (x < minX)
+                            minX = x;
 
-                    SDL_RenderDrawRect(
-                        renderer,
-                        &planTile
-                    );
+                        if (y < minY)
+                            minY = y;
+                    }
+                }
 
-                    if (planValue == 2) {
-                        SDL_Rect entrance = {
-                            planTile.x + tileSize / 4,
-                            planTile.y + tileSize / 4,
-                            tileSize / 2,
-                            tileSize / 2
+                if (minX >= 4)
+                    minX = 0;
+
+                if (minY >= 4)
+                    minY = 0;
+
+                const bool preparedTerrain =
+                    building.constructionProgress > 0;
+
+                SDL_Texture* horizontal =
+                    preparedTerrain
+                        ? planResources->
+                            houseWipHorizontal
+                        : planResources->
+                            housePlanHorizontal;
+
+                SDL_Texture* vertical =
+                    preparedTerrain
+                        ? planResources->
+                            houseWipVertical
+                        : planResources->
+                            housePlanVertical;
+
+                for (int y = 0; y < 4; ++y) {
+                    for (int x = 0; x < 4; ++x) {
+                        if (plan.plan[y][x] == 0)
+                            continue;
+
+                        const int cellScreenX =
+                            footprintX +
+                            (x - minX) * tileSize;
+
+                        const int cellScreenY =
+                            footprintY +
+                            (y - minY) * tileSize;
+
+                        const bool north =
+                            y == 0 ||
+                            plan.plan[y - 1][x] == 0;
+
+                        const bool east =
+                            x == 3 ||
+                            plan.plan[y][x + 1] == 0;
+
+                        const bool south =
+                            y == 3 ||
+                            plan.plan[y + 1][x] == 0;
+
+                        const bool west =
+                            x == 0 ||
+                            plan.plan[y][x - 1] == 0;
+
+                        if (north) {
+                            renderKaMHouseEdge(
+                                renderer,
+                                horizontal,
+                                vertical,
+                                cellScreenX,
+                                cellScreenY,
+                                tileSize,
+                                0
+                            );
+                        }
+
+                        if (east) {
+                            renderKaMHouseEdge(
+                                renderer,
+                                horizontal,
+                                vertical,
+                                cellScreenX,
+                                cellScreenY,
+                                tileSize,
+                                1
+                            );
+                        }
+
+                        if (south) {
+                            renderKaMHouseEdge(
+                                renderer,
+                                horizontal,
+                                vertical,
+                                cellScreenX,
+                                cellScreenY,
+                                tileSize,
+                                2
+                            );
+                        }
+
+                        if (west) {
+                            renderKaMHouseEdge(
+                                renderer,
+                                horizontal,
+                                vertical,
+                                cellScreenX,
+                                cellScreenY,
+                                tileSize,
+                                3
+                            );
+                        }
+                    }
+                }
+
+                // Tablet patri pouze k provazovemu planu.
+                if (
+                    !preparedTerrain &&
+                    (int)building.type >= 0 &&
+                    (int)building.type < 4
+                ) {
+                    SDL_Texture* tablet =
+                        planResources->houseTablets[
+                            (int)building.type
+                        ];
+
+                    if (tablet) {
+                        const int entranceScreenX =
+                            footprintX +
+                            (
+                                plan.entranceX -
+                                minX
+                            ) * tileSize;
+
+                        const int entranceScreenY =
+                            footprintY +
+                            (
+                                plan.entranceY -
+                                minY
+                            ) * tileSize;
+
+                        // Presny prevod Remake
+                        // AddHouseTablet:
+                        //
+                        // CornerX =
+                        //   Loc.X + PivotX / 40 - 0.25
+                        //
+                        // CornerY =
+                        //   Loc.Y +
+                        //   (PivotY + Height) / 40 -
+                        //   0.55
+                        //
+                        // Loc.X / Loc.Y v AddHouseTablet
+                        // se pouzivaji primo jako mapova
+                        // entrance pozice. Nepricitame dalsi
+                        // celou dlazdici.
+                        const int tabletLocationX =
+                            entranceScreenX;
+
+                        const int tabletLocationY =
+                            entranceScreenY;
+
+                        const int horizontalOffset =
+                            (
+                                tileSize * 25 +
+                                50
+                            ) / 100;
+
+                        const int verticalOffset =
+                            (
+                                tileSize * 55 +
+                                50
+                            ) / 100;
+
+                        // KaMVita entrance anchor je proti
+                        // Remake Loc.X o jednu mapovou bunku
+                        // vlevo. Y uz odpovida spravne.
+                        SDL_Rect destination = {
+                            tabletLocationX +
+                                tileSize +
+                                plan.tabletPivotX -
+                                horizontalOffset,
+
+                            tabletLocationY +
+                                plan.tabletPivotY +
+                                plan.tabletHeight -
+                                verticalOffset,
+
+                            plan.tabletWidth,
+                            plan.tabletHeight
                         };
 
-                        SDL_SetRenderDrawColor(
+                        SDL_RenderCopy(
                             renderer,
-                            255, 185, 45, 255
-                        );
-
-                        SDL_RenderDrawRect(
-                            renderer,
-                            &entrance
+                            tablet,
+                            nullptr,
+                            &destination
                         );
                     }
                 }
@@ -264,6 +465,7 @@ void renderBuildings(
 
             continue;
         }
+
 
         // Kamenna vrstva je kotva pro celou budovu.
         int stoneDestinationX =
@@ -670,6 +872,72 @@ void renderBuildings(
     }
 }
 
+
+void getBuildingTopLeftFromEntrance(
+    BuildingType type,
+    int entranceTileX,
+    int entranceTileY,
+    int* topLeftTileX,
+    int* topLeftTileY
+)
+{
+    int resultX = entranceTileX;
+    int resultY = entranceTileY;
+
+    const int catalogIndex =
+        getHousePlanCatalogIndex(type);
+
+    if (catalogIndex >= 0) {
+        const HousePlanCatalogEntry& plan =
+            getHousePlanCatalogEntry(
+                catalogIndex
+            );
+
+        int minX = 4;
+        int minY = 4;
+
+        for (int y = 0; y < 4; ++y) {
+            for (int x = 0; x < 4; ++x) {
+                if (plan.plan[y][x] == 0)
+                    continue;
+
+                if (x < minX)
+                    minX = x;
+
+                if (y < minY)
+                    minY = y;
+            }
+        }
+
+        if (minX >= 4)
+            minX = 0;
+
+        if (minY >= 4)
+            minY = 0;
+
+        const int normalizedEntranceX =
+            plan.entranceX - minX;
+
+        const int normalizedEntranceY =
+            plan.entranceY - minY;
+
+        resultX =
+            entranceTileX -
+            normalizedEntranceX;
+
+        resultY =
+            entranceTileY -
+            normalizedEntranceY;
+    }
+
+    if (topLeftTileX)
+        *topLeftTileX = resultX;
+
+    if (topLeftTileY)
+        *topLeftTileY = resultY;
+}
+
+
 bool canPlaceBuilding(
     const Building* buildings,
     int buildingCount,
@@ -748,12 +1016,25 @@ void renderBuildingPreview(
     if (selectedTileX < 0 || selectedTileY < 0)
         return;
 
+    // selectedTileX/Y represents the entrance tile,
+    // matching KaM Remake placement behavior.
+    int placementTileX = selectedTileX;
+    int placementTileY = selectedTileY;
+
+    getBuildingTopLeftFromEntrance(
+        selectedType,
+        selectedTileX,
+        selectedTileY,
+        &placementTileX,
+        &placementTileY
+    );
+
     bool previewValid = canPlaceBuilding(
         buildings,
         buildingCount,
         selectedType,
-        selectedTileX,
-        selectedTileY,
+        placementTileX,
+        placementTileY,
         mapWidth,
         mapHeight
     );
@@ -773,9 +1054,9 @@ void renderBuildingPreview(
                 continue;
 
             SDL_Rect tile = {
-                (selectedTileX + localX) * tileSize -
+                (placementTileX + localX) * tileSize -
                     (int)cameraX,
-                (selectedTileY + localY) * tileSize -
+                (placementTileY + localY) * tileSize -
                     (int)cameraY,
                 tileSize,
                 tileSize
@@ -854,11 +1135,11 @@ void renderBuildingPreview(
             buildingHeight * tileSize;
 
         SDL_Rect destination = {
-            selectedTileX * tileSize -
+            placementTileX * tileSize -
                 (int)cameraX +
                 (footprintWidth - spriteWidth) / 2,
 
-            selectedTileY * tileSize -
+            placementTileY * tileSize -
                 (int)cameraY +
                 footprintHeight -
                 spriteHeight,

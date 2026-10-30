@@ -66,6 +66,54 @@ KaMPlanResources loadKaMPlanResources(
             "app0:assets/terrain/plans/original/wine_108.bmp"
         );
 
+    resources.housePlanHorizontal =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/plans/original/house_horizontal_105.bmp"
+        );
+
+    resources.housePlanVertical =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/plans/original/house_vertical_117.bmp"
+        );
+
+    resources.houseWipHorizontal =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/plans/original/house_wip_horizontal_463.bmp"
+        );
+
+    resources.houseWipVertical =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/plans/original/house_wip_vertical_467.bmp"
+        );
+
+    resources.houseTablets[0] =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/tablets/original/store_262.bmp"
+        );
+
+    resources.houseTablets[1] =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/tablets/original/bakery_258.bmp"
+        );
+
+    resources.houseTablets[2] =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/tablets/original/farm_259.bmp"
+        );
+
+    resources.houseTablets[3] =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/tablets/original/school_264.bmp"
+        );
+
     return resources;
 }
 
@@ -92,9 +140,47 @@ void destroyKaMPlanResources(
             resources->wineMarkup
         );
 
+    if (resources->housePlanHorizontal)
+        SDL_DestroyTexture(
+            resources->housePlanHorizontal
+        );
+
+    if (resources->housePlanVertical)
+        SDL_DestroyTexture(
+            resources->housePlanVertical
+        );
+
+    if (resources->houseWipHorizontal)
+        SDL_DestroyTexture(
+            resources->houseWipHorizontal
+        );
+
+    if (resources->houseWipVertical)
+        SDL_DestroyTexture(
+            resources->houseWipVertical
+        );
+
+    for (int i = 0; i < 4; ++i) {
+        if (resources->houseTablets[i]) {
+            SDL_DestroyTexture(
+                resources->houseTablets[i]
+            );
+        }
+    }
+
     resources->roadMarkup = nullptr;
     resources->fieldMarkup = nullptr;
     resources->wineMarkup = nullptr;
+
+    resources->housePlanHorizontal = nullptr;
+    resources->housePlanVertical = nullptr;
+
+    resources->houseWipHorizontal = nullptr;
+    resources->houseWipVertical = nullptr;
+
+    for (int i = 0; i < 4; ++i) {
+        resources->houseTablets[i] = nullptr;
+    }
 }
 
 
@@ -230,5 +316,88 @@ void renderKaMMarkup(
         8,
         indices,
         12
+    );
+}
+
+
+void renderKaMHouseEdge(
+    SDL_Renderer* renderer,
+    SDL_Texture* horizontalTexture,
+    SDL_Texture* verticalTexture,
+    int cellScreenX,
+    int cellScreenY,
+    int tileSize,
+    int direction
+)
+{
+    if (!renderer)
+        return;
+
+    // direction:
+    // 0 = north
+    // 1 = east
+    // 2 = south
+    // 3 = west
+
+    const int overlap =
+        (3 * tileSize + 20) / 40;
+
+    if (direction == 0 || direction == 2) {
+        if (!horizontalTexture)
+            return;
+
+        const int thickness =
+            (7 * tileSize + 20) / 40;
+
+        const int edgeY =
+            direction == 0
+                ? cellScreenY - thickness / 2
+                : cellScreenY +
+                    tileSize -
+                    thickness / 2;
+
+        SDL_Rect destination = {
+            cellScreenX - overlap,
+            edgeY,
+            tileSize + overlap * 2,
+            thickness
+        };
+
+        SDL_RenderCopy(
+            renderer,
+            horizontalTexture,
+            nullptr,
+            &destination
+        );
+
+        return;
+    }
+
+    if (!verticalTexture)
+        return;
+
+    const int thickness =
+        (4 * tileSize + 20) / 40;
+
+    const int edgeX =
+        direction == 1
+            ? cellScreenX +
+                tileSize -
+                thickness / 2
+            : cellScreenX -
+                thickness / 2;
+
+    SDL_Rect destination = {
+        edgeX,
+        cellScreenY - overlap,
+        thickness,
+        tileSize + overlap * 2
+    };
+
+    SDL_RenderCopy(
+        renderer,
+        verticalTexture,
+        nullptr,
+        &destination
     );
 }

@@ -2745,6 +2745,27 @@ int main(int argc, char* argv[])
             }
         }
 
+        int buildingPlacementTileX =
+            selectedTileX;
+
+        int buildingPlacementTileY =
+            selectedTileY;
+
+        if (
+            activeBuildTool ==
+                BuildTool::Building &&
+            selectedTileX >= 0 &&
+            selectedTileY >= 0
+        ) {
+            getBuildingTopLeftFromEntrance(
+                selectedBuildingType,
+                selectedTileX,
+                selectedTileY,
+                &buildingPlacementTileX,
+                &buildingPlacementTileY
+            );
+        }
+
         if (!buildMenuOpen &&
             activeBuildTool == BuildTool::Building &&
             squarePressed &&
@@ -2752,8 +2773,8 @@ int main(int argc, char* argv[])
                 buildings,
                 buildingCount,
                 selectedBuildingType,
-                selectedTileX,
-                selectedTileY,
+                buildingPlacementTileX,
+                buildingPlacementTileY,
                 MAP_WIDTH,
                 MAP_HEIGHT
             )) {
@@ -2785,8 +2806,13 @@ int main(int argc, char* argv[])
                         .schoolQueue[queueIndex] = -1;
                 }
 
-                buildings[freeSlot].tileX = selectedTileX;
-                buildings[freeSlot].tileY = selectedTileY;
+                // Internal save/runtime position remains
+                // the top-left of the active footprint.
+                buildings[freeSlot].tileX =
+                    buildingPlacementTileX;
+
+                buildings[freeSlot].tileY =
+                    buildingPlacementTileY;
                 buildings[freeSlot].type = selectedBuildingType;
                 buildings[freeSlot].constructionProgress = 0;
                 buildings[freeSlot].woodDelivered = 0;
@@ -3751,7 +3777,8 @@ int main(int argc, char* argv[])
                     1,
                     cameraX,
                     cameraY,
-                    TILE_SIZE
+                    TILE_SIZE,
+                    &kamPlanResources
                 );
             } else {
                 renderUnits(

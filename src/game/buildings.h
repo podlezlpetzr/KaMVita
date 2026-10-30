@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include "../render/kam_plan_renderer.h"
 
 enum class BuildingType {
     Store = 0,
@@ -73,7 +74,17 @@ void renderBuildings(
     int buildingCount,
     float cameraX,
     float cameraY,
-    int tileSize
+    int tileSize,
+    const KaMPlanResources* planResources
+);
+
+
+void getBuildingTopLeftFromEntrance(
+    BuildingType type,
+    int entranceTileX,
+    int entranceTileY,
+    int* topLeftTileX,
+    int* topLeftTileY
 );
 
 bool canPlaceBuilding(

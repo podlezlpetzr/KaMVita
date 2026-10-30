@@ -1038,4 +1038,36 @@ vita_create_vpk(
         assets/terrain/plans/original/wine_108.bmp
         assets/terrain/plans/original/wine_108.bmp
 
+    FILE
+        assets/buildings/plans/original/house_horizontal_105.bmp
+        assets/buildings/plans/original/house_horizontal_105.bmp
+
+    FILE
+        assets/buildings/plans/original/house_vertical_117.bmp
+        assets/buildings/plans/original/house_vertical_117.bmp
+
+    FILE
+        assets/buildings/plans/original/house_wip_horizontal_463.bmp
+        assets/buildings/plans/original/house_wip_horizontal_463.bmp
+
+    FILE
+        assets/buildings/plans/original/house_wip_vertical_467.bmp
+        assets/buildings/plans/original/house_wip_vertical_467.bmp
+
+    FILE
+        assets/buildings/tablets/original/store_262.bmp
+        assets/buildings/tablets/original/store_262.bmp
+
+    FILE
+        assets/buildings/tablets/original/bakery_258.bmp
+        assets/buildings/tablets/original/bakery_258.bmp
+
+    FILE
+        assets/buildings/tablets/original/farm_259.bmp
+        assets/buildings/tablets/original/farm_259.bmp
+
+    FILE
+        assets/buildings/tablets/original/school_264.bmp
+        assets/buildings/tablets/original/school_264.bmp
+
 )
