@@ -2856,6 +2856,8 @@ int main(int argc, char* argv[])
                     landPlan ==
                         LandPlanState::FieldComplete ||
                     landPlan ==
+                        LandPlanState::WineInit ||
+                    landPlan ==
                         LandPlanState::WineComplete
                 ) {
                     SDL_Texture* completedTexture =
@@ -2961,42 +2963,73 @@ int main(int argc, char* argv[])
 
                 const bool isWine =
                     type ==
+                        LandPlanState::WineInit ||
+                    type ==
                         LandPlanState::WineComplete;
 
                 if (!isCorn && !isWine)
                     continue;
 
+                auto sameFieldType = [
+                    isCorn,
+                    isWine
+                ](LandPlanState neighbor) -> bool {
+                    if (isCorn) {
+                        return
+                            neighbor ==
+                                LandPlanState::FieldComplete;
+                    }
+
+                    if (isWine) {
+                        return
+                            neighbor ==
+                                LandPlanState::WineInit ||
+                            neighbor ==
+                                LandPlanState::WineComplete;
+                    }
+
+                    return false;
+                };
+
                 const bool north =
                     fieldY == 0 ||
-                    landPlans[
-                        fieldY - 1
-                    ][
-                        fieldX
-                    ] != type;
+                    !sameFieldType(
+                        landPlans[
+                            fieldY - 1
+                        ][
+                            fieldX
+                        ]
+                    );
 
                 const bool left =
                     fieldX == 0 ||
-                    landPlans[
-                        fieldY
-                    ][
-                        fieldX - 1
-                    ] != type;
+                    !sameFieldType(
+                        landPlans[
+                            fieldY
+                        ][
+                            fieldX - 1
+                        ]
+                    );
 
                 const bool right =
                     fieldX + 1 >= MAP_WIDTH ||
-                    landPlans[
-                        fieldY
-                    ][
-                        fieldX + 1
-                    ] != type;
+                    !sameFieldType(
+                        landPlans[
+                            fieldY
+                        ][
+                            fieldX + 1
+                        ]
+                    );
 
                 const bool south =
                     fieldY + 1 >= MAP_HEIGHT ||
-                    landPlans[
-                        fieldY + 1
-                    ][
-                        fieldX
-                    ] != type;
+                    !sameFieldType(
+                        landPlans[
+                            fieldY + 1
+                        ][
+                            fieldX
+                        ]
+                    );
 
                 SDL_Texture* horizontal =
                     isCorn

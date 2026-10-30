@@ -24,7 +24,17 @@ enum class UnitWorkAction {
 
     // Worker construction pro Field/Wine.
     BuildField,
-    BuildWine
+
+    // Wine phase 1:
+    // kopani / priprava terenu.
+    BuildWine,
+
+    // Wine phase 2:
+    // stavba drevene konstrukce.
+    //
+    // Pozdeji bude tato faze povolena az po
+    // doruceni 1 Wood.
+    BuildWineWood
 };
 
 enum class RoadState : unsigned char {
@@ -46,9 +56,22 @@ enum class RoadState : unsigned char {
 // Farmer a rust budou samostatna dalsi vrstva.
 enum class LandPlanState : unsigned char {
     None = 0,
+
+    // Plany cekajici na Workera.
     Field,
     Wine,
+
+    // Field je po Work1 hotovy.
     FieldComplete,
+
+    // Wine po prvni Worker fazi:
+    // Terrain 55 uz existuje, ale jeste chybi
+    // finalni drevena konstrukce / Obj 54.
+    //
+    // Budouci 1 Wood delivery bude cekat zde.
+    WineInit,
+
+    // Wine po druhe Worker Work2 fazi.
     WineComplete
 };
 

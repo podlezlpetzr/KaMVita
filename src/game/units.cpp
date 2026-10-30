@@ -182,7 +182,9 @@ void renderUnits(
                     WORKER_WORK1_ANCHOR_Y;
             } else if (
                 units[i].workAction ==
-                    UnitWorkAction::PaveRoad
+                    UnitWorkAction::PaveRoad ||
+                units[i].workAction ==
+                    UnitWorkAction::BuildWineWood
             ) {
                 actionAtlas =
                     resources.workerPaveAtlas;
@@ -748,7 +750,9 @@ void updateUnits(
                 unit.workAction ==
                     UnitWorkAction::BuildField ||
                 unit.workAction ==
-                    UnitWorkAction::BuildWine
+                    UnitWorkAction::BuildWine ||
+                unit.workAction ==
+                    UnitWorkAction::BuildWineWood
             )
         ) {
             if (
@@ -767,6 +771,8 @@ void updateUnits(
                     UnitWorkAction::None;
 
                 unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
 
                 continue;
             }
@@ -782,13 +788,31 @@ void updateUnits(
                 unit.workAction ==
                     UnitWorkAction::BuildField;
 
-            const LandPlanState expectedPlan =
-                fieldWork
-                    ? LandPlanState::Field
-                    : LandPlanState::Wine;
+            const bool wineDigWork =
+                unit.workAction ==
+                    UnitWorkAction::BuildWine;
 
-            if (land != expectedPlan) {
-                // Remove mohl plan behem prace zrusit.
+            const bool wineWoodWork =
+                unit.workAction ==
+                    UnitWorkAction::BuildWineWood;
+
+            LandPlanState expectedState =
+                LandPlanState::None;
+
+            if (fieldWork) {
+                expectedState =
+                    LandPlanState::Field;
+            } else if (wineDigWork) {
+                expectedState =
+                    LandPlanState::Wine;
+            } else if (wineWoodWork) {
+                expectedState =
+                    LandPlanState::WineInit;
+            }
+
+            if (land != expectedState) {
+                // Remove mohl plan nebo mezistav
+                // behem prace zrusit.
                 unit.state = UnitState::Idle;
 
                 unit.targetRoadX = -1;
@@ -805,9 +829,12 @@ void updateUnits(
             }
 
             unit.workTimer += deltaSeconds;
+            unit.animationTimer += deltaSeconds;
 
-            unit.animationTimer +=
-                deltaSeconds;
+            const int workFrameCount =
+                wineWoodWork
+                    ? WORKER_WORK2_FRAME_COUNT
+                    : WORKER_WORK1_FRAME_COUNT;
 
             while (
                 unit.animationTimer >=
@@ -820,26 +847,57 @@ void updateUnits(
                     (
                         unit.animationFrame + 1
                     ) %
-                    WORKER_WORK1_FRAME_COUNT;
+                    workFrameCount;
             }
 
-            // Prvni construction checkpoint.
+            // Field zustava jedna Work1 faze.
             //
-            // Field/Wine material a originalni delky prace
-            // budou samostatna navazujici vrstva.
-            if (unit.workTimer >= 2.60f) {
-                land =
-                    fieldWork
-                        ? LandPlanState::FieldComplete
-                        : LandPlanState::WineComplete;
+            // Wine:
+            // Work1 -> WineInit
+            // Work2 -> WineComplete
+            //
+            // Budouci Serf/Store 1 Wood delivery se vlozi
+            // mezi WineInit a BuildWineWood.
+            if (unit.workTimer >= 1.30f) {
+                if (fieldWork) {
+                    land =
+                        LandPlanState::FieldComplete;
 
-                unit.state = UnitState::Idle;
+                    unit.state = UnitState::Idle;
+                    unit.targetRoadX = -1;
+                    unit.targetRoadY = -1;
 
-                unit.targetRoadX = -1;
-                unit.targetRoadY = -1;
+                    unit.workAction =
+                        UnitWorkAction::None;
+                } else if (wineDigWork) {
+                    // Ekvivalent prvniho Wine construction
+                    // checkpointu: Terrain 55 uz muze byt
+                    // vykreslen, Obj 54 jeste ne.
+                    land =
+                        LandPlanState::WineInit;
 
-                unit.workAction =
-                    UnitWorkAction::None;
+                    // Ve finalni ekonomice zde Worker
+                    // prejde do cekani na 1 Wood.
+                    //
+                    // Dokud nema KaMVita obecny Ware/Store
+                    // delivery system, navazeme rovnou
+                    // druhou autentickou Work2 fazi.
+                    unit.workAction =
+                        UnitWorkAction::BuildWineWood;
+
+                    unit.state =
+                        UnitState::Working;
+                } else {
+                    land =
+                        LandPlanState::WineComplete;
+
+                    unit.state = UnitState::Idle;
+                    unit.targetRoadX = -1;
+                    unit.targetRoadY = -1;
+
+                    unit.workAction =
+                        UnitWorkAction::None;
+                }
 
                 unit.workTimer = 0.0f;
                 unit.animationFrame = 0;
