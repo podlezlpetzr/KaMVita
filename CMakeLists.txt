@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/render/terrain.cpp
     src/game/buildings.cpp
+    src/game/house_plan_catalog.cpp
     src/game/units.cpp
     src/game/ware_distribution.cpp
     src/ui/game_ui.cpp
