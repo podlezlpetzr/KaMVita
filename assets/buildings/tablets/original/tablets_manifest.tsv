@@ -1,0 +1,30 @@
+house	name	sprite_id	width	height	pivot_x	pivot_y	file
+Armor smithy	armor_smithy	261	35	29	-17	-14	armor_smithy_261.bmp
+Armor workshop	armor_workshop	271	35	29	-17	-14	armor_workshop_271.bmp
+Bakery	bakery	258	35	28	-17	-14	bakery_258.bmp
+Barracks	barracks	272	35	29	-17	-14	barracks_272.bmp
+Butchers	butchers	275	35	30	-17	-15	butchers_275.bmp
+Coal mine	coal_mine	254	35	28	-17	-14	coal_mine_254.bmp
+Farm	farm	259	35	30	-17	-15	farm_259.bmp
+Fisher hut	fisher_hut	257	35	30	-17	-15	fisher_hut_257.bmp
+Gold mine	gold_mine	256	35	28	-17	-14	gold_mine_256.bmp
+Inn	inn	278	35	30	-17	-15	inn_278.bmp
+Iron mine	iron_mine	255	35	28	-17	-14	iron_mine_255.bmp
+Iron smithy	iron_smithy	252	35	30	-17	-15	iron_smithy_252.bmp
+Marketplace	marketplace	277	16	15	-8	-7	marketplace_277.bmp
+Metallurgist	metallurgist	266	34	29	-17	-14	metallurgist_266.bmp
+Mill	mill	273	35	29	-17	-14	mill_273.bmp
+Quarry	quarry	265	35	29	-17	-14	quarry_265.bmp
+Sawmill	sawmill	251	35	27	-17	-13	sawmill_251.bmp
+School	school	264	35	30	-17	-15	school_264.bmp
+Siege workshop	siege_workshop	274	35	29	-17	-14	siege_workshop_274.bmp
+Stables	stables	263	35	30	-17	-15	stables_263.bmp
+Store	store	262	35	29	-17	-14	store_262.bmp
+Swine	swine	267	35	30	-17	-15	swine_267.bmp
+Tannery	tannery	276	35	30	-17	-15	tannery_276.bmp
+Town hall	town_hall	269	35	30	-17	-15	town_hall_269.bmp
+Watch tower	watch_tower	268	35	29	-17	-14	watch_tower_268.bmp
+Weapon smithy	weapon_smithy	253	35	29	-17	-14	weapon_smithy_253.bmp
+Weapon workshop	weapon_workshop	270	35	30	-17	-15	weapon_workshop_270.bmp
+Wineyard	wineyard	279	35	29	-17	-14	wineyard_279.bmp
+Woodcutter	woodcutter	260	35	30	-17	-15	woodcutter_260.bmp
