@@ -28,6 +28,7 @@ find_package(SDL2 REQUIRED)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/render/terrain.cpp
+    src/render/kam_plan_renderer.cpp
     src/game/buildings.cpp
     src/game/house_plan_catalog.cpp
     src/game/units.cpp
@@ -1024,5 +1025,17 @@ vita_create_vpk(
     FILE
         assets/terrain/fields/fences/runtime/wine_vertical.bmp
         assets/terrain/fields/fences/runtime/wine_vertical.bmp
+
+    FILE
+        assets/terrain/plans/original/road_105.bmp
+        assets/terrain/plans/original/road_105.bmp
+
+    FILE
+        assets/terrain/plans/original/field_107.bmp
+        assets/terrain/plans/original/field_107.bmp
+
+    FILE
+        assets/terrain/plans/original/wine_108.bmp
+        assets/terrain/plans/original/wine_108.bmp
 
 )

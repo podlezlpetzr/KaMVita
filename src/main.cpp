@@ -1,4 +1,5 @@
 #include "render/terrain.h"
+#include "render/kam_plan_renderer.h"
 #include "game/buildings.h"
 #include "game/units.h"
 #include "ui/game_ui.h"
@@ -488,6 +489,9 @@ int main(int argc, char* argv[])
         return 1;
     }
     TerrainResources terrain = loadTerrainResources(renderer);
+
+    KaMPlanResources kamPlanResources =
+        loadKaMPlanResources(renderer);
     BuildingResources buildingResources = loadBuildingResources(renderer);
     UnitResources unitResources = loadUnitResources(renderer);
 
@@ -2887,46 +2891,18 @@ int main(int argc, char* argv[])
                     continue;
                 }
 
-                // Nedokoncene Field/Wine zustavaji
-                // zatim jako jednoznacny planning overlay.
-                if (
+                SDL_Texture* planMarkup =
                     landPlan ==
                         LandPlanState::Field
-                ) {
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        190, 165, 45, 72
-                    );
-                } else {
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        125, 45, 95, 82
-                    );
-                }
+                            ? kamPlanResources.fieldMarkup
+                            : kamPlanResources.wineMarkup;
 
-                SDL_RenderFillRect(
+                renderKaMMarkup(
                     renderer,
-                    &fieldPlanRect
-                );
-
-                if (
-                    landPlan ==
-                        LandPlanState::Field
-                ) {
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        238, 211, 76, 210
-                    );
-                } else {
-                    SDL_SetRenderDrawColor(
-                        renderer,
-                        194, 92, 151, 220
-                    );
-                }
-
-                SDL_RenderDrawRect(
-                    renderer,
-                    &fieldPlanRect
+                    planMarkup,
+                    fieldPlanRect.x,
+                    fieldPlanRect.y,
+                    TILE_SIZE
                 );
             }
         }
@@ -3191,6 +3167,18 @@ int main(int argc, char* argv[])
                 };
 
                 SDL_Texture* roadTexture = nullptr;
+
+                if (roadState == RoadState::Plan) {
+                    renderKaMMarkup(
+                        renderer,
+                        kamPlanResources.roadMarkup,
+                        destination.x,
+                        destination.y,
+                        TILE_SIZE
+                    );
+
+                    continue;
+                }
 
                 switch (roadState) {
                     case RoadState::Dig1:
@@ -3954,6 +3942,10 @@ int main(int argc, char* argv[])
 
     destroyUnitResources(&unitResources);
     destroyBuildingResources(&buildingResources);
+    destroyKaMPlanResources(
+        &kamPlanResources
+    );
+
     destroyTerrainResources(&terrain);
 
     SDL_DestroyRenderer(renderer);
