@@ -71,6 +71,12 @@ UnitResources loadUnitResources(
             "app0:assets/units/serf/carry_stone_atlas.bmp"
         );
 
+    resources.serfCarryGoldAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/carry_gold_atlas.bmp"
+        );
+
     return resources;
 }
 
@@ -88,6 +94,7 @@ void destroyUnitResources(
     SDL_DestroyTexture(resources->workerPaveAtlas);
     SDL_DestroyTexture(resources->serfWalkAtlas);
     SDL_DestroyTexture(resources->serfCarryStoneAtlas);
+    SDL_DestroyTexture(resources->serfCarryGoldAtlas);
 
     resources->workerIdle = nullptr;
     resources->workerWalkAtlas = nullptr;
@@ -96,6 +103,7 @@ void destroyUnitResources(
     resources->workerPaveAtlas = nullptr;
     resources->serfWalkAtlas = nullptr;
     resources->serfCarryStoneAtlas = nullptr;
+    resources->serfCarryGoldAtlas = nullptr;
 }
 
 void renderUnits(
@@ -339,25 +347,11 @@ void renderUnits(
             walkCellHeight
         };
 
+        // Doorway pixel alignment is now represented by
+        // the actual world-space approach and door points.
+        // No additional render-only shift is needed.
         int doorwaySlideX = 0;
         int doorwaySlideY = 0;
-
-        if (
-            units[i].state ==
-                UnitState::LeavingBuilding
-        ) {
-            doorwaySlideX =
-                (int)(
-                    units[i].doorwayOffsetX *
-                    units[i].doorwayProgress
-                );
-
-            doorwaySlideY =
-                (int)(
-                    units[i].doorwayOffsetY *
-                    units[i].doorwayProgress
-                );
-        }
 
         SDL_Rect destination = {
             (int)units[i].worldX -
@@ -380,6 +374,70 @@ void renderUnits(
             &source,
             &destination
         );
+
+        // =================================================
+        // ORIGINAL KaM SERF GOLD CARRY LAYER
+        //
+        // Remake:
+        // zakladni Serf animace + SerfCarry[Ware,Direction].
+        //
+        // Gold atlas byl vytvoren primo z:
+        // unit.dat WareTypeToIndex[wt_Gold] = 7
+        // a originalniho units.rx.
+        //
+        // Atlas:
+        // cell 44x42
+        // anchor -22,-45
+        // 8 smeru x 8 kroku.
+        // =================================================
+
+        if (
+            isSerf &&
+            units[i].carriedWare ==
+                WareType::Gold &&
+            resources.serfCarryGoldAtlas
+        ) {
+            constexpr int goldCellWidth = 44;
+            constexpr int goldCellHeight = 42;
+
+            constexpr int goldAnchorX = -22;
+            constexpr int goldAnchorY = -45;
+
+            int goldFrame =
+                units[i].animationFrame % 8;
+
+            if (goldFrame < 0)
+                goldFrame += 8;
+
+            SDL_Rect goldSource = {
+                goldFrame * goldCellWidth,
+                direction * goldCellHeight,
+                goldCellWidth,
+                goldCellHeight
+            };
+
+            SDL_Rect goldDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX +
+                    goldAnchorX +
+                    doorwaySlideX,
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    goldAnchorY +
+                    doorwaySlideY,
+
+                goldCellWidth,
+                goldCellHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.serfCarryGoldAtlas,
+                &goldSource,
+                &goldDestination
+            );
+        }
     }
 }
 
@@ -1615,6 +1673,346 @@ void updateUnits(
                 continue;
         }
 
+        // =================================================
+        // SERF EXACT PRE-DOOR APPROACH
+        //
+        // Pathfinding konci ve stredu volne dlazdice.
+        // Tato kratka faze Serfa nejdrive zarovna po ulici
+        // presne pod viditelne dvere.
+        //
+        // Teprve po dosazeni tohoto bodu se Serf otoci
+        // na sever a zahaji EnteringBuilding.
+        // =================================================
+        if (
+            unit.state ==
+                UnitState::ApproachingBuilding
+        ) {
+            const float dx =
+                unit.targetWorldX -
+                unit.worldX;
+
+            const float dy =
+                unit.targetWorldY -
+                unit.worldY;
+
+            const float distance =
+                std::sqrt(
+                    dx * dx +
+                    dy * dy
+                );
+
+            if (distance <= 1.0f) {
+                unit.worldX =
+                    unit.targetWorldX;
+
+                unit.worldY =
+                    unit.targetWorldY;
+
+                // Vstup zacina az z presneho bodu
+                // nachazejiciho se pod dvermi.
+                unit.doorwayStartX =
+                    unit.worldX;
+
+                unit.doorwayStartY =
+                    unit.worldY;
+
+                unit.doorwayProgress = 0.0f;
+
+                // Vstup do budovy je od tohoto okamziku
+                // ciste severnim pohybem.
+                unit.direction = 0;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                unit.state =
+                    UnitState::EnteringBuilding;
+
+                continue;
+            }
+
+            // Behem kratkeho zarovnani pod dvere
+            // zachovame smer z posledniho normalniho
+            // walking kroku.
+            //
+            // Serf se tedy neotoci podle nekolikapixeloveho
+            // bocniho posunu. Na sever se otoci az presne
+            // pod dvermi v prechodu na EnteringBuilding.
+
+            float movement =
+                movementSpeed *
+                deltaSeconds;
+
+            if (movement >= distance) {
+                unit.worldX =
+                    unit.targetWorldX;
+
+                unit.worldY =
+                    unit.targetWorldY;
+            } else {
+                unit.worldX +=
+                    dx / distance *
+                    movement;
+
+                unit.worldY +=
+                    dy / distance *
+                    movement;
+            }
+
+            unit.animationTimer +=
+                deltaSeconds;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame =
+                    (
+                        unit.animationFrame + 1
+                    ) % 8;
+            }
+
+            continue;
+        }
+
+        // =================================================
+        // SERF PHYSICAL BUILDING ENTRY
+        //
+        // Remake order:
+        // PointBelowEntrance -> GoInside -> transfer
+        // -> GoOutside.
+        //
+        // doorwayStart = street / PointBelowEntrance
+        // doorwayTarget = entrance tile inside footprint
+        // =================================================
+        if (
+            unit.state ==
+                UnitState::EnteringBuilding
+        ) {
+            const float streetX =
+                unit.doorwayStartX;
+
+            const float streetY =
+                unit.doorwayStartY;
+
+            const float doorX =
+                unit.doorwayTargetX;
+
+            const float doorY =
+                unit.doorwayTargetY;
+
+            const float dx = doorX - streetX;
+            const float dy = doorY - streetY;
+
+            const float distance =
+                std::sqrt(dx * dx + dy * dy);
+
+            if (distance <= 0.0f) {
+                unit.doorwayProgress = 1.0f;
+            } else {
+                unit.doorwayProgress +=
+                    (
+                        movementSpeed *
+                        deltaSeconds
+                    ) / distance;
+            }
+
+            if (unit.doorwayProgress > 1.0f)
+                unit.doorwayProgress = 1.0f;
+
+            unit.worldX =
+                streetX +
+                dx * unit.doorwayProgress;
+
+            unit.worldY =
+                streetY +
+                dy * unit.doorwayProgress;
+
+            unit.direction = 0;
+
+            unit.animationTimer += deltaSeconds;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame =
+                    (
+                        unit.animationFrame + 1
+                    ) % 8;
+            }
+
+            // Serf zmizi v okamziku, kdy projde viditelnou
+            // hranou dveri. Zbytek logickeho pohybu do
+            // entrance tile probiha uz uvnitr budovy.
+            unit.visible =
+                unit.doorwayProgress < 0.48f;
+
+            if (unit.doorwayProgress < 1.0f)
+                continue;
+
+            bool transferSucceeded = false;
+
+            // ---------------------------------------------
+            // PICKUP INSIDE SOURCE STORE
+            // ---------------------------------------------
+            if (
+                unit.type == UnitType::Serf &&
+                unit.logisticsState ==
+                    SerfLogisticsState::ToSource
+            ) {
+                const bool validSource =
+                    buildings &&
+                    unit.sourceBuilding >= 0 &&
+                    unit.sourceBuilding <
+                        buildingCount &&
+                    buildings[
+                        unit.sourceBuilding
+                    ].active &&
+                    buildings[
+                        unit.sourceBuilding
+                    ].type ==
+                        BuildingType::Store &&
+                    isBuildingComplete(
+                        buildings[
+                            unit.sourceBuilding
+                        ]
+                    );
+
+                const bool validWare =
+                    isValidWareType(
+                        unit.assignedWare
+                    );
+
+                if (
+                    validSource &&
+                    validWare &&
+                    unit.carriedWare ==
+                        WareType::Count
+                ) {
+                    transferSucceeded =
+                        takeStoreWare(
+                            &buildings[
+                                unit.sourceBuilding
+                            ],
+                            unit.assignedWare,
+                            1
+                        );
+                }
+
+                if (transferSucceeded) {
+                    unit.carriedWare =
+                        unit.assignedWare;
+
+                    unit.logisticsState =
+                        SerfLogisticsState::Carrying;
+                } else {
+                    unit.carriedWare =
+                        WareType::Count;
+
+                    unit.assignedWare =
+                        WareType::Count;
+
+                    unit.sourceBuilding = -1;
+                    unit.destinationBuilding = -1;
+
+                    unit.logisticsState =
+                        SerfLogisticsState::Idle;
+                }
+            }
+
+            // ---------------------------------------------
+            // DELIVERY INSIDE DESTINATION HOUSE
+            // ---------------------------------------------
+            else if (
+                unit.type == UnitType::Serf &&
+                unit.logisticsState ==
+                    SerfLogisticsState::ToDestination
+            ) {
+                const bool validDestination =
+                    buildings &&
+                    unit.destinationBuilding >= 0 &&
+                    unit.destinationBuilding <
+                        buildingCount;
+
+                const bool validCargo =
+                    isValidWareType(
+                        unit.assignedWare
+                    ) &&
+                    isValidWareType(
+                        unit.carriedWare
+                    ) &&
+                    unit.assignedWare ==
+                        unit.carriedWare;
+
+                if (
+                    validDestination &&
+                    validCargo
+                ) {
+                    transferSucceeded =
+                        deliverWareToBuilding(
+                            &buildings[
+                                unit.destinationBuilding
+                            ],
+                            unit.carriedWare
+                        );
+                }
+
+                if (transferSucceeded) {
+                    unit.carriedWare =
+                        WareType::Count;
+
+                    unit.assignedWare =
+                        WareType::Count;
+
+                    unit.sourceBuilding = -1;
+                    unit.destinationBuilding = -1;
+
+                    unit.logisticsState =
+                        SerfLogisticsState::Idle;
+                } else {
+                    // Delivery nebyla prijata.
+                    // Serf si naklad ponecha.
+                    unit.logisticsState =
+                        SerfLogisticsState::Carrying;
+                }
+            }
+
+            // ---------------------------------------------
+            // LEAVE BUILDING
+            //
+            // Obratime predchozi doorway trasu:
+            // entrance -> PointBelowEntrance.
+            // ---------------------------------------------
+            unit.doorwayStartX = doorX;
+            unit.doorwayStartY = doorY;
+
+            unit.doorwayTargetX = streetX;
+            unit.doorwayTargetY = streetY;
+
+            unit.doorwayProgress = 0.0f;
+
+            unit.worldX = doorX;
+            unit.worldY = doorY;
+
+            unit.direction = 4;
+            unit.visible = false;
+
+            unit.animationFrame = 0;
+            unit.animationTimer = 0.0f;
+
+            unit.state =
+                UnitState::LeavingBuilding;
+
+            continue;
+        }
+
         if (
             unit.state ==
                 UnitState::LeavingBuilding
@@ -1654,10 +2052,11 @@ void updateUnits(
                 unit.doorwayStartY +
                 dy * unit.doorwayProgress;
 
-            // V originalu je jednotka uvnitr
-            // budovy neviditelna.
+            // Uvnitr budovy zustava jednotka skryta.
+            // Zobrazi se az pri pruchodu viditelnou hranou
+            // dveri, ne hluboko pod texturou budovy.
             unit.visible =
-                unit.doorwayProgress > 0.0f;
+                unit.doorwayProgress >= 0.52f;
 
             // Vystup ze School smeruje na jih.
             unit.direction = 4;
@@ -2115,14 +2514,11 @@ void updateUnits(
                 unit.pathIndex = 0;
 
                 // =========================================
-                // SERF PHYSICAL DESTINATION DELIVERY
+                // SERF ENTER DESTINATION
                 //
-                // Ware se odevzda az po skutecnem
-                // dokonceni cesty ke vstupu cile.
-                //
-                // Pokud demand mezitim zmizel, Serf
-                // naklad neztrati. Zustane Carrying
-                // a muze dostat novy cil.
+                // Transfer uz neprobiha pred budovou.
+                // Serf nejdrive fyzicky vstoupi entrance tile.
+                // Delivery se provede az po dokonceni vstupu.
                 // =========================================
                 if (
                     unit.type == UnitType::Serf &&
@@ -2133,79 +2529,96 @@ void updateUnits(
                         buildings &&
                         unit.destinationBuilding >= 0 &&
                         unit.destinationBuilding <
-                            buildingCount;
-
-                    const bool validCargo =
-                        isValidWareType(
-                            unit.assignedWare
-                        ) &&
-                        isValidWareType(
-                            unit.carriedWare
-                        ) &&
-                        unit.assignedWare ==
-                            unit.carriedWare;
-
-                    bool delivered = false;
-
-                    if (
-                        validDestination &&
-                        validCargo
-                    ) {
-                        Building& destination =
+                            buildingCount &&
+                        buildings[
+                            unit.destinationBuilding
+                        ].active &&
+                        isBuildingComplete(
                             buildings[
                                 unit.destinationBuilding
-                            ];
+                            ]
+                        );
 
-                        // Autoritativni demand kontrola
-                        // a fyzicky zapis do cilove zasoby.
-                        delivered =
-                            deliverWareToBuilding(
-                                &destination,
-                                unit.carriedWare
-                            );
-                    }
-
-                    if (delivered) {
-                        // Ware uz fyzicky vlastni cil.
-                        unit.carriedWare =
-                            WareType::Count;
-
-                        unit.assignedWare =
-                            WareType::Count;
-
-                        unit.sourceBuilding = -1;
-                        unit.destinationBuilding = -1;
-
-                        unit.logisticsState =
-                            SerfLogisticsState::Idle;
-
-                        unit.state = UnitState::Idle;
-                    } else {
-                        // Cesta skoncila, ale delivery
-                        // nebyla prijata. Naklad zustava
-                        // fyzicky u Serfa.
+                    if (!validDestination) {
+                        // Naklad zustava fyzicky u Serfa.
                         unit.logisticsState =
                             SerfLogisticsState::Carrying;
 
                         unit.state = UnitState::Idle;
+                        continue;
                     }
 
-                    unit.targetWorldX = unit.worldX;
-                    unit.targetWorldY = unit.worldY;
+                    const Building& destination =
+                        buildings[
+                            unit.destinationBuilding
+                        ];
 
-                    unit.animationFrame = 0;
-                    unit.animationTimer = 0.0f;
+                    const BuildingEntrance entrance =
+                        getBuildingEntrance(
+                            destination.type
+                        );
+
+                    // Nejdrixe spocitame doorway offset
+                    // aktualni cilove budovy. Teprve potom
+                    // muzeme odvodit skutecny bod dveri.
+                    constexpr int BUILDING_DOOR_ANCHOR_X =
+                        -18;
+
+                    unit.doorwayOffsetX =
+                        entrance.pixelOffsetX -
+                        tileSize / 2 +
+                        BUILDING_DOOR_ANCHOR_X;
+
+                    unit.doorwayOffsetY =
+                        entrance.pixelOffsetY;
+
+                    const float logicalDoorX =
+                        (
+                            destination.tileX +
+                            entrance.tileOffsetX +
+                            0.5f
+                        ) * tileSize;
+
+                    const float logicalDoorY =
+                        (
+                            destination.tileY +
+                            entrance.tileOffsetY +
+                            0.5f
+                        ) * tileSize;
+
+                    unit.doorwayTargetX =
+                        logicalDoorX +
+                        unit.doorwayOffsetX;
+
+                    unit.doorwayTargetY =
+                        logicalDoorY +
+                        unit.doorwayOffsetY;
+
+                    // Kratke zarovnani probiha po ulici.
+                    // Serf se dostane pod stejne X jako dvere,
+                    // ale zustane na pristupove pozici Y.
+                    unit.targetWorldX =
+                        unit.doorwayTargetX;
+
+                    unit.targetWorldY =
+                        unit.worldY;
+
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
+
+                    // Neotacime Serfa na sever ve stredu
+                    // dlazdice. Nejdrive jde presne pod dvere.
+                    unit.state =
+                        UnitState::ApproachingBuilding;
 
                     continue;
                 }
 
                 // =========================================
-                // SERF STORE PICKUP
+                // SERF ENTER SOURCE STORE
                 //
-                // Pickup se provede az po fyzickem
-                // dokonceni cesty ke zdrojovemu Store.
-                //
-                // Do teto chvile zustaval ware ve skladu.
+                // Ware zustava ve Store po celou dobu vstupu.
+                // Pickup se provede az uvnitr budovy.
                 // =========================================
                 if (
                     unit.type == UnitType::Serf &&
@@ -2230,82 +2643,72 @@ void updateUnits(
                             ]
                         );
 
-                    const bool validWare =
-                        isValidWareType(
-                            unit.assignedWare
+                    if (!validSource) {
+                        cancelSerfTransport(&unit);
+                        unit.state = UnitState::Idle;
+                        continue;
+                    }
+
+                    const Building& sourceBuilding =
+                        buildings[
+                            unit.sourceBuilding
+                        ];
+
+                    const BuildingEntrance entrance =
+                        getBuildingEntrance(
+                            sourceBuilding.type
                         );
 
-                    bool pickedUp = false;
+                    // Nejdrixe spocitame doorway offset
+                    // aktualniho Store. Teprve potom
+                    // muzeme odvodit skutecny bod dveri.
+                    constexpr int BUILDING_DOOR_ANCHOR_X =
+                        -18;
 
-                    if (
-                        validSource &&
-                        validWare &&
-                        unit.carriedWare ==
-                            WareType::Count
-                    ) {
-                        Building& source =
-                            buildings[
-                                unit.sourceBuilding
-                            ];
+                    unit.doorwayOffsetX =
+                        entrance.pixelOffsetX -
+                        tileSize / 2 +
+                        BUILDING_DOOR_ANCHOR_X;
 
-                        // takeStoreWare() je posledni
-                        // autoritativni kontrola dostupnosti.
-                        // Pokud mezitim ware odvezl jiny Serf,
-                        // pickup korektne selze.
-                        pickedUp =
-                            takeStoreWare(
-                                &source,
-                                unit.assignedWare,
-                                1
-                            );
-                    }
+                    unit.doorwayOffsetY =
+                        entrance.pixelOffsetY;
 
-                    if (pickedUp) {
-                        unit.carriedWare =
-                            unit.assignedWare;
+                    const float logicalDoorX =
+                        (
+                            sourceBuilding.tileX +
+                            entrance.tileOffsetX +
+                            0.5f
+                        ) * tileSize;
 
-                        unit.logisticsState =
-                            SerfLogisticsState::Carrying;
+                    const float logicalDoorY =
+                        (
+                            sourceBuilding.tileY +
+                            entrance.tileOffsetY +
+                            0.5f
+                        ) * tileSize;
 
-                        unit.state =
-                            UnitState::Idle;
+                    unit.doorwayTargetX =
+                        logicalDoorX +
+                        unit.doorwayOffsetX;
 
-                        unit.targetWorldX =
-                            unit.worldX;
+                    unit.doorwayTargetY =
+                        logicalDoorY +
+                        unit.doorwayOffsetY;
 
-                        unit.targetWorldY =
-                            unit.worldY;
+                    // Presny bod pod dvermi, stale na ulici.
+                    unit.targetWorldX =
+                        unit.doorwayTargetX;
 
-                        unit.animationFrame = 0;
-                        unit.animationTimer = 0.0f;
-                    } else {
-                        // Zdroj nebo ware prestal byt platny.
-                        // Protoze Serf nic nevyzvedl,
-                        // muzeme ulohu bezpecne zrusit.
-                        unit.carriedWare =
-                            WareType::Count;
+                    unit.targetWorldY =
+                        unit.worldY;
 
-                        unit.assignedWare =
-                            WareType::Count;
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
 
-                        unit.sourceBuilding = -1;
-                        unit.destinationBuilding = -1;
-
-                        unit.logisticsState =
-                            SerfLogisticsState::Idle;
-
-                        unit.state =
-                            UnitState::Idle;
-
-                        unit.targetWorldX =
-                            unit.worldX;
-
-                        unit.targetWorldY =
-                            unit.worldY;
-
-                        unit.animationFrame = 0;
-                        unit.animationTimer = 0.0f;
-                    }
+                    // Neotacime Serfa na sever ve stredu
+                    // dlazdice. Nejdrive jde presne pod dvere.
+                    unit.state =
+                        UnitState::ApproachingBuilding;
 
                     continue;
                 }
@@ -2358,6 +2761,79 @@ void updateUnits(
             unit.targetWorldY =
                 (unit.pathY[unit.pathIndex] + 0.5f) *
                 tileSize;
+
+            // =============================================
+            // SERF FINAL WAYPOINT DOOR ALIGNMENT
+            //
+            // Posledni waypoint transportni cesty nemusi
+            // byt stred PointBelowEntrance tile.
+            //
+            // Uz posledni walking segment zamirime na X
+            // skutecnych dveri. Serf se tak zarovna pri
+            // prichodu a nemusi se po zastaveni vracet
+            // bokem nebo pozadu.
+            // =============================================
+            if (
+                unit.type == UnitType::Serf &&
+                unit.pathIndex ==
+                    unit.pathLength - 1 &&
+                (
+                    unit.logisticsState ==
+                        SerfLogisticsState::ToSource ||
+                    unit.logisticsState ==
+                        SerfLogisticsState::ToDestination
+                ) &&
+                buildings
+            ) {
+                int houseIndex = -1;
+
+                if (
+                    unit.logisticsState ==
+                        SerfLogisticsState::ToSource
+                ) {
+                    houseIndex =
+                        unit.sourceBuilding;
+                } else {
+                    houseIndex =
+                        unit.destinationBuilding;
+                }
+
+                if (
+                    houseIndex >= 0 &&
+                    houseIndex < buildingCount &&
+                    buildings[houseIndex].active
+                ) {
+                    const Building& house =
+                        buildings[houseIndex];
+
+                    const BuildingEntrance entrance =
+                        getBuildingEntrance(
+                            house.type
+                        );
+
+                    constexpr int
+                        BUILDING_DOOR_ANCHOR_X = -18;
+
+                    const int doorOffsetX =
+                        entrance.pixelOffsetX -
+                        tileSize / 2 +
+                        BUILDING_DOOR_ANCHOR_X;
+
+                    const float logicalDoorX =
+                        (
+                            house.tileX +
+                            entrance.tileOffsetX +
+                            0.5f
+                        ) * tileSize;
+
+                    // Y zustava na volne pristupove
+                    // dlazdici. Menime pouze X posledniho
+                    // walking waypointu.
+                    unit.targetWorldX =
+                        logicalDoorX +
+                        doorOffsetX;
+                }
+            }
 
             continue;
         }

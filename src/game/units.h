@@ -12,6 +12,15 @@ enum class UnitState {
     Idle,
     Walking,
     Working,
+
+    // Kratke pixelove zarovnani ze stredu pristupove
+    // dlazdice presne pod viditelne dvere.
+    ApproachingBuilding,
+
+    // Kratky pohyb z bodu pod dvermi dovnitr budovy.
+    EnteringBuilding,
+
+    // Kratky pohyb ze dveri zpet do bodu pod nimi.
     LeavingBuilding
 };
 
@@ -199,6 +208,10 @@ struct UnitResources {
 
     SDL_Texture* serfWalkAtlas;
     SDL_Texture* serfCarryStoneAtlas;
+
+    // Originalni KaM SerfCarry[wt_Gold].
+    // 8 smeru x 8 animacnich kroku.
+    SDL_Texture* serfCarryGoldAtlas;
 };
 
 static constexpr int MAX_UNITS = 32;

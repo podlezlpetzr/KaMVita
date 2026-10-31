@@ -259,6 +259,10 @@ vita_create_vpk(
         assets/units/serf/carry_stone_atlas.bmp
 
     FILE
+        assets/units/serf/carry_gold_atlas.bmp
+        assets/units/serf/carry_gold_atlas.bmp
+
+    FILE
         assets/ui/school/serf_icon.bmp
         assets/ui/school/serf_icon.bmp
 
