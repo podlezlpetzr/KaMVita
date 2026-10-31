@@ -121,6 +121,29 @@ struct Building {
     // Nazev a vyznam odpovida Remake NotAcceptFlag.
     bool storeNotAccept[STORE_WARE_COUNT];
 
+    // =====================================================
+    // GENERAL HOUSE WARE INVENTORY
+    //
+    // Remake TKMHouse:
+    //   fResourceIn[1..4]
+    //   fResourceDeliveryCount[1..4]
+    //   fResourceOut[1..4]
+    //
+    // resourceIn:
+    // skutecne dorucene vstupni suroviny.
+    //
+    // resourceDeliveryCount:
+    // pocet kusu rezervovanych aktivni dopravou.
+    // Zabranuje preplneni domu vice Serfy.
+    //
+    // resourceOut:
+    // skutecne vyrobene suroviny cekajici na odvoz.
+    // =====================================================
+
+    int resourceIn[4];
+    int resourceDeliveryCount[4];
+    int resourceOut[4];
+
     bool schoolTrainingActive;
     bool schoolFinishingTraining;
 
