@@ -723,6 +723,133 @@ bool startSerfTransportToSource(
 }
 
 
+bool startSerfTransportToDestination(
+    Unit* serf,
+    const Building* buildings,
+    int buildingCount,
+    int mapWidth,
+    int mapHeight,
+    int tileSize
+)
+{
+    if (!serf || !serf->active)
+        return false;
+
+    if (serf->type != UnitType::Serf)
+        return false;
+
+    // Tento krok smi nasledovat pouze po uspesnem
+    // fyzickem pickup ze zdrojoveho Store.
+    if (
+        serf->logisticsState !=
+            SerfLogisticsState::Carrying
+    ) {
+        return false;
+    }
+
+    if (!isValidWareType(serf->assignedWare))
+        return false;
+
+    if (!isValidWareType(serf->carriedWare))
+        return false;
+
+    // Assignment a fyzicky naklad musi odpovidat.
+    if (serf->assignedWare != serf->carriedWare)
+        return false;
+
+    if (!buildings || buildingCount <= 0)
+        return false;
+
+    if (
+        serf->destinationBuilding < 0 ||
+        serf->destinationBuilding >=
+            buildingCount
+    ) {
+        return false;
+    }
+
+    const Building& destination =
+        buildings[
+            serf->destinationBuilding
+        ];
+
+    if (
+        !destination.active ||
+        !isBuildingComplete(destination)
+    ) {
+        return false;
+    }
+
+    BuildingEntrance entrance =
+        getBuildingEntrance(
+            destination.type
+        );
+
+    const int entranceTileX =
+        destination.tileX +
+        entrance.tileOffsetX;
+
+    const int entranceTileY =
+        destination.tileY +
+        entrance.tileOffsetY;
+
+    // Soucasne implementovane KaMVita House entrance
+    // jsou na spodni hrane footprintu.
+    // Carrier proto cili na volny tile primo pod vstupem.
+    const int approachTileX =
+        entranceTileX;
+
+    const int approachTileY =
+        entranceTileY + 1;
+
+    if (
+        approachTileX < 0 ||
+        approachTileX >= mapWidth ||
+        approachTileY < 0 ||
+        approachTileY >= mapHeight ||
+        tileSize <= 0
+    ) {
+        return false;
+    }
+
+    const float targetWorldX =
+        (
+            approachTileX +
+            0.5f
+        ) * tileSize;
+
+    const float targetWorldY =
+        (
+            approachTileY +
+            0.5f
+        ) * tileSize;
+
+    // Kriticke pravidlo:
+    // logisticsState prepneme az PO uspesnem
+    // pathfindingu. Pri neuspechu zustava Carrying
+    // a Serf stale fyzicky vlastni ware.
+    if (
+        !setUnitMoveTarget(
+            serf,
+            targetWorldX,
+            targetWorldY,
+            buildings,
+            buildingCount,
+            mapWidth,
+            mapHeight,
+            tileSize
+        )
+    ) {
+        return false;
+    }
+
+    serf->logisticsState =
+        SerfLogisticsState::ToDestination;
+
+    return true;
+}
+
+
 bool setUnitMoveTarget(
     Unit* unit,
     float targetWorldX,

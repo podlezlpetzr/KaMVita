@@ -281,6 +281,22 @@ bool startSerfTransportToSource(
 );
 
 
+// Spusti cestu Serfa, ktery uz fyzicky nese ware,
+// na volnou dlazdici pred entrance cilove budovy.
+//
+// Ware se zde NEODEVZDAVA.
+// Pokud pathfinding selze, Serf zustane Carrying
+// a fyzicky naklad mu zustane.
+bool startSerfTransportToDestination(
+    Unit* serf,
+    const Building* buildings,
+    int buildingCount,
+    int mapWidth,
+    int mapHeight,
+    int tileSize
+);
+
+
 bool setUnitMoveTarget(
     Unit* unit,
     float targetWorldX,
