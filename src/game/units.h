@@ -266,6 +266,21 @@ void cancelSerfTransport(
 );
 
 
+// Spusti fyzickou cestu jiz prirazeneho Serfa
+// na volnou dlazdici pred entrance zdrojoveho Store.
+//
+// Ware ze Store se zde NEODEBIRA.
+// Pickup prijde az po skutecnem dokonceni cesty.
+bool startSerfTransportToSource(
+    Unit* serf,
+    const Building* buildings,
+    int buildingCount,
+    int mapWidth,
+    int mapHeight,
+    int tileSize
+);
+
+
 bool setUnitMoveTarget(
     Unit* unit,
     float targetWorldX,

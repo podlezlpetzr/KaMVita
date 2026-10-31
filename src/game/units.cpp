@@ -591,6 +591,138 @@ void cancelSerfTransport(
 }
 
 
+bool startSerfTransportToSource(
+    Unit* serf,
+    const Building* buildings,
+    int buildingCount,
+    int mapWidth,
+    int mapHeight,
+    int tileSize
+)
+{
+    if (!serf || !serf->active)
+        return false;
+
+    if (serf->type != UnitType::Serf)
+        return false;
+
+    if (
+        serf->logisticsState !=
+            SerfLogisticsState::Assigned
+    ) {
+        return false;
+    }
+
+    // Assignment musi obsahovat ware,
+    // ale Serf jej jeste fyzicky nenese.
+    if (!isValidWareType(serf->assignedWare))
+        return false;
+
+    if (serf->carriedWare != WareType::Count)
+        return false;
+
+    if (!buildings || buildingCount <= 0)
+        return false;
+
+    if (
+        serf->sourceBuilding < 0 ||
+        serf->sourceBuilding >= buildingCount
+    ) {
+        return false;
+    }
+
+    const Building& source =
+        buildings[serf->sourceBuilding];
+
+    if (
+        !source.active ||
+        source.type != BuildingType::Store ||
+        !isBuildingComplete(source)
+    ) {
+        return false;
+    }
+
+    // Ware se mohl mezi assignmentem a startem cesty
+    // mezitim spotrebovat jinou ulohou.
+    if (
+        !canStoreTakeWare(
+            source,
+            serf->assignedWare,
+            1
+        )
+    ) {
+        return false;
+    }
+
+    BuildingEntrance entrance =
+        getBuildingEntrance(source.type);
+
+    // BuildingEntrance ukazuje na vstupni tile uvnitr
+    // footprintu. Carrier musi stat na pruchozi dlazdici
+    // bezprostredne pred vstupem.
+    //
+    // Soucasne KaMVita budovy maji vstup ve spodni hrane,
+    // proto je pristupovy tile o 1 radek jizne.
+    const int entranceTileX =
+        source.tileX +
+        entrance.tileOffsetX;
+
+    const int entranceTileY =
+        source.tileY +
+        entrance.tileOffsetY;
+
+    const int approachTileX =
+        entranceTileX;
+
+    const int approachTileY =
+        entranceTileY + 1;
+
+    if (
+        approachTileX < 0 ||
+        approachTileX >= mapWidth ||
+        approachTileY < 0 ||
+        approachTileY >= mapHeight ||
+        tileSize <= 0
+    ) {
+        return false;
+    }
+
+    const float targetWorldX =
+        (
+            approachTileX +
+            0.5f
+        ) * tileSize;
+
+    const float targetWorldY =
+        (
+            approachTileY +
+            0.5f
+        ) * tileSize;
+
+    // Nejdříve musi uspet pathfinding.
+    // Teprve potom zmenime logisticsState.
+    if (
+        !setUnitMoveTarget(
+            serf,
+            targetWorldX,
+            targetWorldY,
+            buildings,
+            buildingCount,
+            mapWidth,
+            mapHeight,
+            tileSize
+        )
+    ) {
+        return false;
+    }
+
+    serf->logisticsState =
+        SerfLogisticsState::ToSource;
+
+    return true;
+}
+
+
 bool setUnitMoveTarget(
     Unit* unit,
     float targetWorldX,
