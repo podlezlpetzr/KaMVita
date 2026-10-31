@@ -966,6 +966,61 @@ int main(int argc, char* argv[])
                     );
                 }
             }
+        } else if (
+            gameUI.section ==
+                GameUISection::Store
+        ) {
+            int selection =
+                gameUI.storeWareSelection;
+
+            if (selection < 0)
+                selection = 0;
+
+            if (selection >= STORE_WARE_COUNT)
+                selection =
+                    STORE_WARE_COUNT - 1;
+
+            const int currentColumn =
+                selection % 5;
+
+            if (leftPressed) {
+                if (currentColumn > 0)
+                    --selection;
+            }
+
+            if (rightPressed) {
+                if (
+                    currentColumn < 4 &&
+                    selection + 1 <
+                        STORE_WARE_COUNT
+                ) {
+                    ++selection;
+                }
+            }
+
+            if (upPressed) {
+                if (selection >= 5)
+                    selection -= 5;
+            }
+
+            if (downPressed) {
+                if (
+                    selection + 5 <
+                        STORE_WARE_COUNT
+                ) {
+                    selection += 5;
+                }
+            }
+
+            gameUI.storeWareSelection =
+                selection;
+
+            // Store spotreboval navigacni vstup.
+            leftPressed = false;
+            rightPressed = false;
+            upPressed = false;
+            downPressed = false;
+
         } else if (gameUI.buildSectionActive) {
             if (leftPressed) {
                 moveGameUISelection(
@@ -1033,6 +1088,121 @@ int main(int argc, char* argv[])
             upPressed = false;
             downPressed = false;
             crossPressed = false;
+        }
+
+        // -------------------------------------------------
+        // STORE WARE ACCEPT / NOT-ACCEPT
+        //
+        // Remake:
+        // kazdy Store ware ma vlastni NotAcceptFlag.
+        //
+        // Gamepad:
+        // D-pad vybere ware, X prepina flag.
+        //
+        // Touch:
+        // tap na konkretni 32x36 ware slot vybere
+        // a okamzite prepne jeho flag.
+        // -------------------------------------------------
+
+        if (
+            gameUI.section ==
+                GameUISection::Store &&
+            gameUI.selectedStoreBuilding >= 0 &&
+            gameUI.selectedStoreBuilding <
+                buildingCount
+        ) {
+            Building& store =
+                buildings[
+                    gameUI.selectedStoreBuilding
+                ];
+
+            const bool validStore =
+                store.active &&
+                store.type ==
+                    BuildingType::Store &&
+                isBuildingComplete(store);
+
+            if (validStore) {
+                if (crossPressed) {
+                    int wareIndex =
+                        gameUI.storeWareSelection;
+
+                    if (
+                        wareIndex >= 0 &&
+                        wareIndex <
+                            STORE_WARE_COUNT
+                    ) {
+                        store.storeNotAccept[
+                            wareIndex
+                        ] =
+                            !store.storeNotAccept[
+                                wareIndex
+                            ];
+                    }
+
+                    // X patri Store GUI a nesmi
+                    // propadnout do mapoveho inputu.
+                    crossPressed = false;
+                }
+
+                if (touchTapped) {
+                    const int storePanelX = 6;
+                    const int storePanelY = 274;
+
+                    for (
+                        int wareIndex = 0;
+                        wareIndex <
+                            STORE_WARE_COUNT;
+                        ++wareIndex
+                    ) {
+                        const int column =
+                            wareIndex % 5;
+
+                        const int row =
+                            wareIndex / 5;
+
+                        SDL_Rect wareArea = {
+                            storePanelX +
+                                2 +
+                                column * 36,
+                            storePanelY +
+                                19 +
+                                row * 42,
+                            32,
+                            36
+                        };
+
+                        const bool insideWare =
+                            touchStartX >=
+                                wareArea.x &&
+                            touchStartX <
+                                wareArea.x +
+                                    wareArea.w &&
+                            touchStartY >=
+                                wareArea.y &&
+                            touchStartY <
+                                wareArea.y +
+                                    wareArea.h;
+
+                        if (!insideWare)
+                            continue;
+
+                        gameUI.storeWareSelection =
+                            wareIndex;
+
+                        store.storeNotAccept[
+                            wareIndex
+                        ] =
+                            !store.storeNotAccept[
+                                wareIndex
+                            ];
+
+                        touchTapped = false;
+                        crossPressed = false;
+                        break;
+                    }
+                }
+            }
         }
 
         // Originalni hlavni KaM toolbar 439..442.
@@ -2844,6 +3014,8 @@ int main(int argc, char* argv[])
 
                     gameUI.selectedStoreBuilding =
                         i;
+
+                    gameUI.storeWareSelection = 0;
 
                     gameUI.selectedSchoolBuilding =
                         -1;

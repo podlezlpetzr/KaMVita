@@ -33,6 +33,7 @@ void initGameUI(
 
     ui->selectedSchoolBuilding = -1;
     ui->selectedStoreBuilding = -1;
+    ui->storeWareSelection = 0;
 }
 
 void renderGameUI(
@@ -3378,6 +3379,31 @@ void renderGameUI(
                 32,
                 36
             };
+
+            // Gamepad focus vybraneho Store ware slotu.
+            // Pouzivame zlaty KaM-style ramecek bez
+            // zasahu do originalni ware grafiky.
+            if (
+                wareIndex ==
+                    ui.storeWareSelection
+            ) {
+                SDL_Rect focusArea = {
+                    wareArea.x - 1,
+                    wareArea.y - 1,
+                    wareArea.w + 2,
+                    wareArea.h + 2
+                };
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    230, 190, 90, 255
+                );
+
+                SDL_RenderDrawRect(
+                    renderer,
+                    &focusArea
+                );
+            }
 
             // Jemny puvodni game-panel relief.
             SDL_SetRenderDrawColor(

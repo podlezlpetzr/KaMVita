@@ -98,6 +98,10 @@ struct GameUIState {
     // Aktualne otevreny dokoncený Store.
     // -1 = zadny Store panel.
     int selectedStoreBuilding;
+
+    // Store GUI focus.
+    // 0..27 odpovida WareType a GUI 351..378.
+    int storeWareSelection;
 };
 
 void initGameUI(
