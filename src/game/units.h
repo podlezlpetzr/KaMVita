@@ -156,6 +156,12 @@ struct Unit {
 
     SerfLogisticsState logisticsState;
 
+    // Ware prirazeny logistickou ulohou.
+    // Nemusi jeste byt fyzicky u Serfa.
+    WareType assignedWare;
+
+    // Ware skutecne neseny Serfem.
+    // WareType::Count = zadny naklad.
     WareType carriedWare;
 
     int sourceBuilding;
@@ -226,6 +232,39 @@ void updateUnits(
     int mapWidth,
     int mapHeight
 );
+
+// ============================================================
+// SERF TRANSPORT ASSIGNMENT API
+//
+// Pouze rezervuje logistickou ulohu v Serf runtime stavu.
+// Neodebira ware ze Store a nespousti pohyb.
+//
+// Pickup se provede az po skutecnem prichodu Serfa ke
+// zdrojovemu Store.
+// ============================================================
+
+bool canAssignSerfTransport(
+    const Unit& serf,
+    WareType ware,
+    int sourceBuilding,
+    int destinationBuilding,
+    const Building* buildings,
+    int buildingCount
+);
+
+bool assignSerfTransport(
+    Unit* serf,
+    WareType ware,
+    int sourceBuilding,
+    int destinationBuilding,
+    const Building* buildings,
+    int buildingCount
+);
+
+void cancelSerfTransport(
+    Unit* serf
+);
+
 
 bool setUnitMoveTarget(
     Unit* unit,

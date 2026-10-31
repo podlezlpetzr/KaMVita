@@ -430,6 +430,167 @@ static bool isBuildingTileBlocked(
     return false;
 }
 
+// ============================================================
+// SERF TRANSPORT ASSIGNMENT API
+// ============================================================
+
+bool canAssignSerfTransport(
+    const Unit& serf,
+    WareType ware,
+    int sourceBuilding,
+    int destinationBuilding,
+    const Building* buildings,
+    int buildingCount
+)
+{
+    if (!serf.active)
+        return false;
+
+    if (serf.type != UnitType::Serf)
+        return false;
+
+    // Serf musi byt fyzicky volny.
+    if (serf.state != UnitState::Idle)
+        return false;
+
+    // A zaroven bez aktivni logisticke ulohy.
+    if (
+        serf.logisticsState !=
+            SerfLogisticsState::Idle
+    ) {
+        return false;
+    }
+
+    // Nesmime prepsat fyzicky neseny naklad.
+    if (serf.carriedWare != WareType::Count)
+        return false;
+
+    if (!isValidWareType(ware))
+        return false;
+
+    if (!buildings || buildingCount <= 0)
+        return false;
+
+    if (
+        sourceBuilding < 0 ||
+        sourceBuilding >= buildingCount ||
+        destinationBuilding < 0 ||
+        destinationBuilding >= buildingCount
+    ) {
+        return false;
+    }
+
+    if (sourceBuilding == destinationBuilding)
+        return false;
+
+    const Building& source =
+        buildings[sourceBuilding];
+
+    const Building& destination =
+        buildings[destinationBuilding];
+
+    // Zdroj transportni ulohy musi byt funkcni Store.
+    if (
+        !source.active ||
+        source.type != BuildingType::Store ||
+        !isBuildingComplete(source)
+    ) {
+        return false;
+    }
+
+    // Ware se zatim pouze overi.
+    // Pri assignmentu se ze Store NIC neodebira.
+    if (
+        !canStoreTakeWare(
+            source,
+            ware,
+            1
+        )
+    ) {
+        return false;
+    }
+
+    // Destination musi existovat a byt dokoncena.
+    // Konkretni demand pravidla pridame samostatne.
+    if (
+        !destination.active ||
+        !isBuildingComplete(destination)
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool assignSerfTransport(
+    Unit* serf,
+    WareType ware,
+    int sourceBuilding,
+    int destinationBuilding,
+    const Building* buildings,
+    int buildingCount
+)
+{
+    if (!serf)
+        return false;
+
+    if (
+        !canAssignSerfTransport(
+            *serf,
+            ware,
+            sourceBuilding,
+            destinationBuilding,
+            buildings,
+            buildingCount
+        )
+    ) {
+        return false;
+    }
+
+    serf->logisticsState =
+        SerfLogisticsState::Assigned;
+
+    serf->assignedWare = ware;
+
+    // Assignment neni pickup.
+    serf->carriedWare =
+        WareType::Count;
+
+    serf->sourceBuilding =
+        sourceBuilding;
+
+    serf->destinationBuilding =
+        destinationBuilding;
+
+    return true;
+}
+
+
+void cancelSerfTransport(
+    Unit* serf
+)
+{
+    if (!serf)
+        return;
+
+    // Tato funkce je zatim urcena jen pro ulohu,
+    // ktera jeste nema fyzicky vyzvednuty ware.
+    // Nesenou surovinu nesmime potichu zahodit.
+    if (serf->carriedWare != WareType::Count)
+        return;
+
+    serf->logisticsState =
+        SerfLogisticsState::Idle;
+
+    serf->assignedWare =
+        WareType::Count;
+
+    serf->sourceBuilding = -1;
+    serf->destinationBuilding = -1;
+}
+
+
 bool setUnitMoveTarget(
     Unit* unit,
     float targetWorldX,

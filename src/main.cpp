@@ -910,6 +910,9 @@ int main(int argc, char* argv[])
         serf.logisticsState =
             SerfLogisticsState::Idle;
 
+        serf.assignedWare =
+            WareType::Count;
+
         serf.carriedWare =
             WareType::Count;
 
@@ -4644,6 +4647,9 @@ int main(int argc, char* argv[])
 
                 trainedUnit.logisticsState =
                     SerfLogisticsState::Idle;
+
+                trainedUnit.assignedWare =
+                    WareType::Count;
 
                 trainedUnit.carriedWare =
                     WareType::Count;
