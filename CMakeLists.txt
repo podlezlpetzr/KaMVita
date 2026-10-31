@@ -1119,4 +1119,123 @@ vita_create_vpk(
         assets/ui/units/text/worker_description.bmp
         assets/ui/units/text/worker_description.bmp
 
+    # Originalni KaM Store GUI 351..378
+
+    FILE
+        assets/ui/store/wares/gui_0351.bmp
+        assets/ui/store/wares/gui_0351.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0352.bmp
+        assets/ui/store/wares/gui_0352.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0353.bmp
+        assets/ui/store/wares/gui_0353.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0354.bmp
+        assets/ui/store/wares/gui_0354.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0355.bmp
+        assets/ui/store/wares/gui_0355.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0356.bmp
+        assets/ui/store/wares/gui_0356.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0357.bmp
+        assets/ui/store/wares/gui_0357.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0358.bmp
+        assets/ui/store/wares/gui_0358.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0359.bmp
+        assets/ui/store/wares/gui_0359.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0360.bmp
+        assets/ui/store/wares/gui_0360.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0361.bmp
+        assets/ui/store/wares/gui_0361.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0362.bmp
+        assets/ui/store/wares/gui_0362.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0363.bmp
+        assets/ui/store/wares/gui_0363.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0364.bmp
+        assets/ui/store/wares/gui_0364.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0365.bmp
+        assets/ui/store/wares/gui_0365.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0366.bmp
+        assets/ui/store/wares/gui_0366.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0367.bmp
+        assets/ui/store/wares/gui_0367.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0368.bmp
+        assets/ui/store/wares/gui_0368.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0369.bmp
+        assets/ui/store/wares/gui_0369.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0370.bmp
+        assets/ui/store/wares/gui_0370.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0371.bmp
+        assets/ui/store/wares/gui_0371.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0372.bmp
+        assets/ui/store/wares/gui_0372.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0373.bmp
+        assets/ui/store/wares/gui_0373.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0374.bmp
+        assets/ui/store/wares/gui_0374.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0375.bmp
+        assets/ui/store/wares/gui_0375.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0376.bmp
+        assets/ui/store/wares/gui_0376.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0377.bmp
+        assets/ui/store/wares/gui_0377.bmp
+
+    FILE
+        assets/ui/store/wares/gui_0378.bmp
+        assets/ui/store/wares/gui_0378.bmp
+
+    # Originalni KaM Store accept marker GUI 49
+    FILE
+        assets/ui/store/controls/accept_flag.bmp
+        assets/ui/store/controls/accept_flag.bmp
+
 )

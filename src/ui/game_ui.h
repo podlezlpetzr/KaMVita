@@ -172,6 +172,12 @@ struct SchoolUIResources {
     SDL_Texture* ratiosWareIcons[4];
     SDL_Texture* ratiosTrackbarThumb;
 
+    // Originalni KaM Store GUI.
+    // GUI 351..378 = 28 ware ikon ve WareType poradi.
+    // GUI 49 = 12x12 Store accept/not-accept marker.
+    SDL_Texture* storeWareIcons[STORE_WARE_COUNT];
+    SDL_Texture* storeAcceptFlag;
+
     // Originalni texty generovane z KaM FNTX fontu.
     SDL_Texture* needsText;
     SDL_Texture* goldText;

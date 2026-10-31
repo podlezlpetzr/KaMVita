@@ -3224,6 +3224,35 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/school/wares/gold.bmp"
         );
 
+    // -----------------------------------------------------
+    // Originalni Store GUI resources
+    // GUI 351..378 = WareType 0..27
+    // GUI 49       = accept/not-accept marker
+    // -----------------------------------------------------
+
+    for (int i = 0; i < STORE_WARE_COUNT; ++i) {
+        char storeWarePath[256];
+
+        snprintf(
+            storeWarePath,
+            sizeof(storeWarePath),
+            "app0:assets/ui/store/wares/gui_%04d.bmp",
+            STORE_GUI_FIRST_WARE_SPRITE + i
+        );
+
+        resources.storeWareIcons[i] =
+            loadSchoolUITexture(
+                renderer,
+                storeWarePath
+            );
+    }
+
+    resources.storeAcceptFlag =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/store/controls/accept_flag.bmp"
+        );
+
     // Originalni GUI sprite 41 = question mark.
     resources.questionIcon =
         loadSchoolUITexture(
@@ -3591,6 +3620,24 @@ void destroySchoolUIResources(
         SDL_DestroyTexture(
             resources->goldIcon
         );
+    }
+
+    for (int i = 0; i < STORE_WARE_COUNT; ++i) {
+        if (resources->storeWareIcons[i]) {
+            SDL_DestroyTexture(
+                resources->storeWareIcons[i]
+            );
+
+            resources->storeWareIcons[i] = nullptr;
+        }
+    }
+
+    if (resources->storeAcceptFlag) {
+        SDL_DestroyTexture(
+            resources->storeAcceptFlag
+        );
+
+        resources->storeAcceptFlag = nullptr;
     }
 
     if (resources->questionIcon) {
