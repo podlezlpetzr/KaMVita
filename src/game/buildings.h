@@ -204,6 +204,59 @@ bool takeStoreWare(
 );
 
 
+// ============================================================
+// GENERAL HOUSE INPUT WARE API
+//
+// Bakery:
+//   resourceIn[0] = Flour
+//
+// Remake normal House input capacity = 5.
+// resourceDeliveryCount rezervuje ware na ceste.
+// ============================================================
+
+static constexpr int HOUSE_INPUT_CAPACITY = 5;
+static constexpr int HOUSE_RESOURCE_SLOT_COUNT = 4;
+
+int getHouseInputSlot(
+    BuildingType type,
+    WareType ware
+);
+
+int getHouseInputAmount(
+    const Building& building,
+    WareType ware
+);
+
+int getHouseIncomingAmount(
+    const Building& building,
+    WareType ware
+);
+
+bool canHouseAcceptWare(
+    const Building& building,
+    WareType ware,
+    int amount = 1
+);
+
+bool reserveHouseWareDelivery(
+    Building* building,
+    WareType ware,
+    int amount = 1
+);
+
+bool cancelHouseWareDelivery(
+    Building* building,
+    WareType ware,
+    int amount = 1
+);
+
+bool deliverHouseWare(
+    Building* building,
+    WareType ware,
+    int amount = 1
+);
+
+
 bool buildingsOverlap(
     const Building& a,
     BuildingType type,

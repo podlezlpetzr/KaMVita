@@ -26,6 +26,291 @@ static SDL_Texture* loadColorKeyTexture(
 }
 
 
+// ============================================================
+// GENERAL HOUSE INPUT WARE API
+// ============================================================
+
+int getHouseInputSlot(
+    BuildingType type,
+    WareType ware
+)
+{
+    switch (type) {
+        case BuildingType::Bakery:
+            return
+                ware == WareType::Flour
+                    ? 0
+                    : -1;
+
+        case BuildingType::Store:
+        case BuildingType::Farm:
+        case BuildingType::School:
+            return -1;
+    }
+
+    return -1;
+}
+
+
+static bool isUsableInputHouse(
+    const Building& building
+)
+{
+    return
+        building.active &&
+        building.type != BuildingType::Store &&
+        isBuildingComplete(building);
+}
+
+
+int getHouseInputAmount(
+    const Building& building,
+    WareType ware
+)
+{
+    if (!isUsableInputHouse(building))
+        return 0;
+
+    const int slot =
+        getHouseInputSlot(
+            building.type,
+            ware
+        );
+
+    if (
+        slot < 0 ||
+        slot >= HOUSE_RESOURCE_SLOT_COUNT
+    ) {
+        return 0;
+    }
+
+    const int amount =
+        building.resourceIn[slot];
+
+    return amount > 0
+        ? amount
+        : 0;
+}
+
+
+int getHouseIncomingAmount(
+    const Building& building,
+    WareType ware
+)
+{
+    if (!isUsableInputHouse(building))
+        return 0;
+
+    const int slot =
+        getHouseInputSlot(
+            building.type,
+            ware
+        );
+
+    if (
+        slot < 0 ||
+        slot >= HOUSE_RESOURCE_SLOT_COUNT
+    ) {
+        return 0;
+    }
+
+    const int amount =
+        building.resourceDeliveryCount[slot];
+
+    return amount > 0
+        ? amount
+        : 0;
+}
+
+
+bool canHouseAcceptWare(
+    const Building& building,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !isUsableInputHouse(building) ||
+        !building.wareDeliveryEnabled ||
+        !isValidWareType(ware) ||
+        amount <= 0
+    ) {
+        return false;
+    }
+
+    const int slot =
+        getHouseInputSlot(
+            building.type,
+            ware
+        );
+
+    if (
+        slot < 0 ||
+        slot >= HOUSE_RESOURCE_SLOT_COUNT
+    ) {
+        return false;
+    }
+
+    const int stored =
+        getHouseInputAmount(
+            building,
+            ware
+        );
+
+    const int incoming =
+        getHouseIncomingAmount(
+            building,
+            ware
+        );
+
+    if (
+        stored > HOUSE_INPUT_CAPACITY ||
+        incoming > HOUSE_INPUT_CAPACITY
+    ) {
+        return false;
+    }
+
+    return
+        amount <=
+        HOUSE_INPUT_CAPACITY -
+        stored -
+        incoming;
+}
+
+
+bool reserveHouseWareDelivery(
+    Building* building,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !building ||
+        !canHouseAcceptWare(
+            *building,
+            ware,
+            amount
+        )
+    ) {
+        return false;
+    }
+
+    const int slot =
+        getHouseInputSlot(
+            building->type,
+            ware
+        );
+
+    building->
+        resourceDeliveryCount[slot] +=
+            amount;
+
+    return true;
+}
+
+
+bool cancelHouseWareDelivery(
+    Building* building,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !building ||
+        amount <= 0
+    ) {
+        return false;
+    }
+
+    const int slot =
+        getHouseInputSlot(
+            building->type,
+            ware
+        );
+
+    if (
+        slot < 0 ||
+        slot >= HOUSE_RESOURCE_SLOT_COUNT
+    ) {
+        return false;
+    }
+
+    if (
+        building->
+            resourceDeliveryCount[slot] <
+        amount
+    ) {
+        return false;
+    }
+
+    building->
+        resourceDeliveryCount[slot] -=
+            amount;
+
+    return true;
+}
+
+
+bool deliverHouseWare(
+    Building* building,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !building ||
+        amount <= 0
+    ) {
+        return false;
+    }
+
+    const int slot =
+        getHouseInputSlot(
+            building->type,
+            ware
+        );
+
+    if (
+        slot < 0 ||
+        slot >= HOUSE_RESOURCE_SLOT_COUNT
+    ) {
+        return false;
+    }
+
+    if (
+        building->
+            resourceDeliveryCount[slot] <
+        amount
+    ) {
+        return false;
+    }
+
+    const int current =
+        getHouseInputAmount(
+            *building,
+            ware
+        );
+
+    if (
+        current >
+            HOUSE_INPUT_CAPACITY -
+            amount
+    ) {
+        return false;
+    }
+
+    building->
+        resourceDeliveryCount[slot] -=
+            amount;
+
+    building->
+        resourceIn[slot] +=
+            amount;
+
+    return true;
+}
+
+
 bool buildingsOverlap(
     const Building& a,
     BuildingType type,
