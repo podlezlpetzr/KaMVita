@@ -1,0 +1,8 @@
+id=1200
+width=11
+height=28
+pivot_x=-8
+pivot_y=-29
+move_x=54
+move_y=-64
+source=original houses.rx

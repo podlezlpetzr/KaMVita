@@ -289,7 +289,8 @@ void renderBuildings(
     float cameraX,
     float cameraY,
     int tileSize,
-    const KaMPlanResources* planResources
+    const KaMPlanResources* planResources,
+    bool bakeryHasInsideBaker
 );
 
 
@@ -345,12 +346,23 @@ struct BuildingResources {
     SDL_Texture* storeWoodAtlas;
     SDL_Texture* storeStoneAtlas;
 
+    // Originalni Store ha_Flag1 / ha_Flag2.
+    SDL_Texture* storeFlag1Atlas;
+    SDL_Texture* storeFlag2Atlas;
+
     SDL_Texture* bakeryWoodAtlas;
     SDL_Texture* bakeryStoneAtlas;
 
     // Originalni Bakery House work overlaye z houses.rx.
     SDL_Texture* bakeryWork2Atlas;
     SDL_Texture* bakeryWork3Atlas;
+
+    // Originalni Bakery ha_Idle, RX 1077..1082.
+    SDL_Texture* bakeryIdleAtlas;
+
+    // Originalni Bakery ha_Flagpole / ha_Flag1.
+    SDL_Texture* bakeryFlagpole;
+    SDL_Texture* bakeryFlag1Atlas;
 
     // Originalni Bakery ha_Smoke, RX 889..892.
     SDL_Texture* bakerySmokeAtlas;

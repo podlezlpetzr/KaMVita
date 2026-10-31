@@ -1,0 +1,10 @@
+source=original units.rx
+thoughts=eat,death,quest
+eat_bounds=6250,6257
+death_bounds=6290,6297
+quest_bounds=6298,6305
+frames_per_thought=8
+animation=reverse
+thought_x_offset=0.02
+custom_assets=none
+temporary_assets=none

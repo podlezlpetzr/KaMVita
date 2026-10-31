@@ -287,6 +287,43 @@ vita_create_vpk(
         assets/ui/school/worker_scroll.bmp
 
     FILE
+        assets/units/thoughts/eat_atlas.bmp
+        assets/units/thoughts/eat_atlas.bmp
+    FILE
+        assets/units/thoughts/death_atlas.bmp
+        assets/units/thoughts/death_atlas.bmp
+    FILE
+        assets/units/thoughts/quest_atlas.bmp
+        assets/units/thoughts/quest_atlas.bmp
+    FILE
+        assets/units/baker/complete/actions/walk_atlas.bmp
+        assets/units/baker/complete/actions/walk_atlas.bmp
+
+    FILE
+        assets/units/baker/complete/actions/work_atlas.bmp
+        assets/units/baker/complete/actions/work_atlas.bmp
+
+    FILE
+        assets/units/baker/complete/actions/eat_atlas.bmp
+        assets/units/baker/complete/actions/eat_atlas.bmp
+
+    FILE
+        assets/units/baker/complete/actions/die_atlas.bmp
+        assets/units/baker/complete/actions/die_atlas.bmp
+
+    FILE
+        assets/units/worker/complete/actions/eat_atlas.bmp
+        assets/units/worker/complete/actions/eat_atlas.bmp
+    FILE
+        assets/units/worker/complete/actions/die_atlas.bmp
+        assets/units/worker/complete/actions/die_atlas.bmp
+    FILE
+        assets/units/serf/complete/actions/eat_atlas.bmp
+        assets/units/serf/complete/actions/eat_atlas.bmp
+    FILE
+        assets/units/serf/complete/actions/die_atlas.bmp
+        assets/units/serf/complete/actions/die_atlas.bmp
+    FILE
         assets/units/worker/complete/actions/walk_atlas.bmp
         assets/units/worker/complete/actions/walk_atlas.bmp
 
@@ -302,13 +339,7 @@ vita_create_vpk(
         assets/units/worker/complete/actions/work2_atlas.bmp
         assets/units/worker/complete/actions/work2_atlas.bmp
 
-    FILE
-        assets/units/worker/complete/actions/die_atlas.bmp
-        assets/units/worker/complete/actions/die_atlas.bmp
 
-    FILE
-        assets/units/worker/complete/actions/eat_atlas.bmp
-        assets/units/worker/complete/actions/eat_atlas.bmp
 
     FILE
         assets/buildings/bakery/runtime/bread_supply_atlas.bmp
@@ -317,6 +348,26 @@ vita_create_vpk(
     FILE
         assets/buildings/bakery/runtime/smoke_atlas.bmp
         assets/buildings/bakery/runtime/smoke_atlas.bmp
+
+    FILE
+        assets/buildings/store/runtime/flag1_atlas.bmp
+        assets/buildings/store/runtime/flag1_atlas.bmp
+
+    FILE
+        assets/buildings/store/runtime/flag2_atlas.bmp
+        assets/buildings/store/runtime/flag2_atlas.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/flagpole.bmp
+        assets/buildings/bakery/runtime/flagpole.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/flag1_atlas.bmp
+        assets/buildings/bakery/runtime/flag1_atlas.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/idle_atlas.bmp
+        assets/buildings/bakery/runtime/idle_atlas.bmp
 
     FILE
         assets/buildings/bakery/runtime/work2_atlas.bmp

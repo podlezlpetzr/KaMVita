@@ -89,6 +89,82 @@ UnitResources loadUnitResources(
             "app0:assets/units/serf/carry_bread_atlas.bmp"
         );
 
+    // =====================================================
+    // BAKER ORIGINAL UNIT RUNTIME
+    //
+    // Atlasy byly vytvoreny primo z originalniho:
+    // - unit.dat
+    // - units.rx
+    //
+    // Zadny synteticky ani temporary frame.
+    // =====================================================
+
+    resources.workerEatAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/worker/complete/actions/eat_atlas.bmp"
+        );
+
+    resources.workerDieAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/worker/complete/actions/die_atlas.bmp"
+        );
+
+    resources.serfEatAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/complete/actions/eat_atlas.bmp"
+        );
+
+    resources.serfDieAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/complete/actions/die_atlas.bmp"
+        );
+
+    resources.bakerWalkAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/baker/complete/actions/walk_atlas.bmp"
+        );
+
+    resources.bakerWorkAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/baker/complete/actions/work_atlas.bmp"
+        );
+
+    resources.bakerEatAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/baker/complete/actions/eat_atlas.bmp"
+        );
+
+    resources.bakerDieAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/baker/complete/actions/die_atlas.bmp"
+        );
+
+    resources.thoughtEatAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/thoughts/eat_atlas.bmp"
+        );
+
+    resources.thoughtDeathAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/thoughts/death_atlas.bmp"
+        );
+
+    resources.thoughtQuestAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/thoughts/quest_atlas.bmp"
+        );
+
     return resources;
 }
 
@@ -110,6 +186,21 @@ void destroyUnitResources(
     SDL_DestroyTexture(resources->serfCarryFlourAtlas);
     SDL_DestroyTexture(resources->serfCarryBreadAtlas);
 
+    SDL_DestroyTexture(resources->workerEatAtlas);
+    SDL_DestroyTexture(resources->workerDieAtlas);
+
+    SDL_DestroyTexture(resources->serfEatAtlas);
+    SDL_DestroyTexture(resources->serfDieAtlas);
+
+    SDL_DestroyTexture(resources->bakerWalkAtlas);
+    SDL_DestroyTexture(resources->bakerWorkAtlas);
+    SDL_DestroyTexture(resources->bakerEatAtlas);
+    SDL_DestroyTexture(resources->bakerDieAtlas);
+
+    SDL_DestroyTexture(resources->thoughtEatAtlas);
+    SDL_DestroyTexture(resources->thoughtDeathAtlas);
+    SDL_DestroyTexture(resources->thoughtQuestAtlas);
+
     resources->workerIdle = nullptr;
     resources->workerWalkAtlas = nullptr;
     resources->workerWorkAtlas = nullptr;
@@ -120,6 +211,21 @@ void destroyUnitResources(
     resources->serfCarryGoldAtlas = nullptr;
     resources->serfCarryFlourAtlas = nullptr;
     resources->serfCarryBreadAtlas = nullptr;
+
+    resources->workerEatAtlas = nullptr;
+    resources->workerDieAtlas = nullptr;
+
+    resources->serfEatAtlas = nullptr;
+    resources->serfDieAtlas = nullptr;
+
+    resources->bakerWalkAtlas = nullptr;
+    resources->bakerWorkAtlas = nullptr;
+    resources->bakerEatAtlas = nullptr;
+    resources->bakerDieAtlas = nullptr;
+
+    resources->thoughtEatAtlas = nullptr;
+    resources->thoughtDeathAtlas = nullptr;
+    resources->thoughtQuestAtlas = nullptr;
 }
 
 // ============================================================
@@ -369,38 +475,249 @@ void renderUnits(
             }
         }
 
-        bool isSerf =
+        // =================================================
+        // ORIGINAL KaM EAT DIE RUNTIME
+        //
+        // ua_Eat:
+        //   Worker 37x56, anchor 12,-26, 30 frames
+        //   Serf   34x56, anchor 13,-26, 30 frames
+        //   Baker  33x57, anchor 14,-27, 30 frames
+        //
+        // ua_Die:
+        //   shared cell 92x81, anchor -44,-70
+        //   variable frame count by direction:
+        //   16,16,14,14,15,15,18,18
+        // =================================================
+
+        if (
+            units[i].state == UnitState::Eating ||
+            units[i].state == UnitState::Dying
+        ) {
+            SDL_Texture* actionAtlas = nullptr;
+
+            int actionCellWidth = 0;
+            int actionCellHeight = 0;
+            int actionAnchorX = 0;
+            int actionAnchorY = 0;
+            int actionFrameCount = 0;
+
+            if (
+                units[i].state ==
+                    UnitState::Eating
+            ) {
+                actionFrameCount = 30;
+
+                if (
+                    units[i].type ==
+                        UnitType::Worker
+                ) {
+                    actionAtlas =
+                        resources.workerEatAtlas;
+
+                    actionCellWidth = 37;
+                    actionCellHeight = 56;
+                    actionAnchorX = 12;
+                    actionAnchorY = -26;
+                } else if (
+                    units[i].type ==
+                        UnitType::Serf
+                ) {
+                    actionAtlas =
+                        resources.serfEatAtlas;
+
+                    actionCellWidth = 34;
+                    actionCellHeight = 56;
+                    actionAnchorX = 13;
+                    actionAnchorY = -26;
+                } else if (
+                    units[i].type ==
+                        UnitType::Baker
+                ) {
+                    actionAtlas =
+                        resources.bakerEatAtlas;
+
+                    actionCellWidth = 33;
+                    actionCellHeight = 57;
+                    actionAnchorX = 14;
+                    actionAnchorY = -27;
+                }
+            } else {
+                static const int
+                    dieFrameCounts[8] = {
+                        16, 16, 14, 14,
+                        15, 15, 18, 18
+                    };
+
+                actionFrameCount =
+                    dieFrameCounts[direction];
+
+                actionCellWidth = 92;
+                actionCellHeight = 81;
+                actionAnchorX = -44;
+                actionAnchorY = -70;
+
+                if (
+                    units[i].type ==
+                        UnitType::Worker
+                ) {
+                    actionAtlas =
+                        resources.workerDieAtlas;
+                } else if (
+                    units[i].type ==
+                        UnitType::Serf
+                ) {
+                    actionAtlas =
+                        resources.serfDieAtlas;
+                } else if (
+                    units[i].type ==
+                        UnitType::Baker
+                ) {
+                    actionAtlas =
+                        resources.bakerDieAtlas;
+                }
+            }
+
+            if (
+                actionAtlas &&
+                actionFrameCount > 0
+            ) {
+                int actionFrame =
+                    units[i].animationFrame;
+
+                if (actionFrame < 0)
+                    actionFrame = 0;
+
+                if (
+                    actionFrame >=
+                        actionFrameCount
+                ) {
+                    actionFrame =
+                        actionFrameCount - 1;
+                }
+
+                SDL_Rect actionSource = {
+                    actionFrame *
+                        actionCellWidth,
+                    direction *
+                        actionCellHeight,
+                    actionCellWidth,
+                    actionCellHeight
+                };
+
+                SDL_Rect actionDestination = {
+                    (int)units[i].worldX -
+                        (int)cameraX +
+                        scaleKaMUnitPixel(
+                            actionAnchorX
+                        ),
+
+                    (int)units[i].worldY -
+                        (int)cameraY +
+                        scaleKaMUnitPixel(
+                            actionAnchorY
+                        ),
+
+                    scaleKaMUnitPixel(
+                        actionCellWidth
+                    ),
+
+                    scaleKaMUnitPixel(
+                        actionCellHeight
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    actionAtlas,
+                    &actionSource,
+                    &actionDestination
+                );
+            }
+
+            // Thought se vykresluje az v normalnim shared
+            // thought bloku. Pri Dying uz jej nechceme.
+            if (
+                units[i].state ==
+                    UnitState::Dying
+            ) {
+                continue;
+            }
+
+            // Eating muze mit Eat thought podle condition.
+            // Normalni walk sprite se pod Eat atlas nekresli.
+            continue;
+        }
+
+
+        const bool isSerf =
             units[i].type == UnitType::Serf;
 
-        SDL_Texture* walkAtlas =
-            isSerf
-                ? resources.serfWalkAtlas
-                : resources.workerWalkAtlas;
+        const bool isBaker =
+            units[i].type == UnitType::Baker;
+
+        SDL_Texture* walkAtlas = nullptr;
+
+        int walkCellWidth = 0;
+        int walkCellHeight = 0;
+
+        int walkAnchorX = 0;
+        int walkAnchorY = 0;
+
+        if (isSerf) {
+            walkAtlas =
+                resources.serfWalkAtlas;
+
+            walkCellWidth = 43;
+            walkCellHeight = 47;
+
+            walkAnchorX = -18;
+            walkAnchorY = -38;
+        } else if (isBaker) {
+            // Originalni Baker ua_Walk:
+            // cell 36x47
+            // anchor -15,-39
+            // 8 smeru x 8 framu.
+            walkAtlas =
+                resources.bakerWalkAtlas;
+
+            walkCellWidth = 36;
+            walkCellHeight = 47;
+
+            walkAnchorX = -15;
+            walkAnchorY = -39;
+        } else {
+            walkAtlas =
+                resources.workerWalkAtlas;
+
+            walkCellWidth = 56;
+            walkCellHeight = 50;
+
+            walkAnchorX = -21;
+            walkAnchorY = -42;
+        }
 
         if (!walkAtlas)
             continue;
 
-        int walkCellWidth =
-            isSerf ? 43 : 56;
-
-        int walkCellHeight =
-            isSerf ? 47 : 50;
-
-        int walkAnchorX =
-            isSerf ? -18 : -21;
-
-        int walkAnchorY =
-            isSerf ? -38 : -42;
-
         int frame = 0;
 
-        if (units[i].state == UnitState::Walking) {
+        if (
+            units[i].state == UnitState::Walking ||
+            units[i].state ==
+                UnitState::ApproachingBuilding ||
+            units[i].state ==
+                UnitState::EnteringBuilding ||
+            units[i].state ==
+                UnitState::LeavingBuilding
+        ) {
             frame =
                 units[i].animationFrame % 8;
 
             if (frame < 0)
                 frame += 8;
         } else if (!isSerf) {
+            // Worker i Baker pouzivaji originalni
+            // Remake UnitStillFrames.
             frame = stillFrames[direction];
         }
 
@@ -655,6 +972,105 @@ void renderUnits(
                 &flourDestination
             );
         }
+
+        // =================================================
+        // ORIGINAL KaM CONDITION THOUGHT RENDER
+        //
+        // Visual-only:
+        // Worker = Eat
+        // Serf   = Death
+        // Baker  = Quest
+        //
+        // No condition/Eat/Die gameplay yet.
+        // =================================================
+
+        // =================================================
+        // ORIGINAL KaM CONDITION THOUGHTS
+        //
+        // Remake UpdateThoughts:
+        //
+        // condition <= 120 -> th_Death
+        // condition <  360 -> th_Eat
+        // otherwise        -> th_None
+        //
+        // th_Death ma vyssi prioritu nez th_Eat.
+        //
+        // Quest bude pripojen samostatne spolu s
+        // originalni idle/home logikou.
+        // =================================================
+
+        SDL_Texture* thoughtTexture = nullptr;
+
+        if (
+            units[i].state != UnitState::Eating &&
+            units[i].state != UnitState::Dying &&
+            units[i].condition <=
+                UNIT_DEATH_THOUGHT_CONDITION
+        ) {
+            thoughtTexture =
+                resources.thoughtDeathAtlas;
+        } else if (
+            units[i].condition <
+                UNIT_MIN_CONDITION
+        ) {
+            thoughtTexture =
+                resources.thoughtEatAtlas;
+        }
+
+        if (thoughtTexture) {
+            constexpr int thoughtCellWidth = 18;
+            constexpr int thoughtCellHeight = 23;
+            constexpr int thoughtFrameCount = 8;
+
+            const int forwardFrame =
+                (SDL_GetTicks() / 100) %
+                thoughtFrameCount;
+
+            const int thoughtFrame =
+                thoughtFrameCount -
+                1 -
+                forwardFrame;
+
+            SDL_Rect thoughtSource = {
+                thoughtFrame * thoughtCellWidth,
+                0,
+                thoughtCellWidth,
+                thoughtCellHeight
+            };
+
+            constexpr int
+                THOUGHT_TEST_OFFSET_Y_40 = -62;
+
+            SDL_Rect thoughtDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX -
+                    scaleKaMUnitPixel(
+                        thoughtCellWidth / 2
+                    ),
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    scaleKaMUnitPixel(
+                        THOUGHT_TEST_OFFSET_Y_40
+                    ),
+
+                scaleKaMUnitPixel(
+                    thoughtCellWidth
+                ),
+
+                scaleKaMUnitPixel(
+                    thoughtCellHeight
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                thoughtTexture,
+                &thoughtSource,
+                &thoughtDestination
+            );
+        }
+
     }
 }
 
@@ -1951,6 +2367,417 @@ void updateUnits(
             continue;
 
         // =================================================
+        // ORIGINAL KaM EAT DIE RUNTIME
+        //
+        // First controlled lifecycle slice:
+        //
+        // condition <= 0:
+        //   ua_Die -> full directional sequence -> inactive
+        //
+        // visible Idle + condition < 360:
+        //   ua_Eat -> 30 frames -> Bread restore +40 percent
+        //
+        // Inn pathing and food inventory consumption are a
+        // separate following slice.
+        //
+        // Existing work, doorway and Serf logistics are not
+        // interrupted in this checkpoint.
+        // =================================================
+
+        if (
+            unit.state ==
+                UnitState::Dying
+        ) {
+            static const int
+                dieFrameCounts[8] = {
+                    16, 16, 14, 14,
+                    15, 15, 18, 18
+                };
+
+            int dieDirection =
+                unit.direction;
+
+            if (dieDirection < 0)
+                dieDirection = 0;
+
+            if (dieDirection > 7)
+                dieDirection = 7;
+
+            const int dieFrameCount =
+                dieFrameCounts[dieDirection];
+
+            unit.animationTimer +=
+                deltaSeconds;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame++;
+
+                if (
+                    unit.animationFrame >=
+                        dieFrameCount
+                ) {
+                    unit.animationFrame =
+                        dieFrameCount - 1;
+
+                    unit.active = false;
+                    unit.visible = false;
+
+                    unit.pathLength = 0;
+                    unit.pathIndex = 0;
+
+                    unit.targetBuilding = -1;
+                    unit.targetRoadX = -1;
+                    unit.targetRoadY = -1;
+
+                    unit.workAction =
+                        UnitWorkAction::None;
+
+                    unit.logisticsState =
+                        SerfLogisticsState::Idle;
+
+                    unit.assignedWare =
+                        WareType::Count;
+
+                    unit.carriedWare =
+                        WareType::Count;
+
+                    break;
+                }
+            }
+
+            continue;
+        }
+
+        if (
+            unit.state ==
+                UnitState::Eating
+        ) {
+            constexpr int eatFrameCount = 30;
+
+            unit.animationTimer +=
+                deltaSeconds;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame++;
+
+                if (
+                    unit.animationFrame >=
+                        eatFrameCount
+                ) {
+                    // Remake Bread restore:
+                    // UNIT_MAX_CONDITION * 0.4
+                    unit.condition +=
+                        UNIT_MAX_CONDITION *
+                        4 / 10;
+
+                    if (
+                        unit.condition >
+                            UNIT_MAX_CONDITION
+                    ) {
+                        unit.condition =
+                            UNIT_MAX_CONDITION;
+                    }
+
+                    unit.state =
+                        UnitState::Idle;
+
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+                    unit.workTimer = 0.0f;
+
+                    break;
+                }
+            }
+
+            continue;
+        }
+
+        if (unit.condition <= 0) {
+            // Serf nesmi pri smrti dal drzet nebo
+            // dispatchovat logistickou ulohu.
+            if (
+                unit.type ==
+                    UnitType::Serf
+            ) {
+                if (
+                    unit.assignedWare ==
+                        WareType::Flour &&
+                    buildings &&
+                    unit.destinationBuilding >= 0 &&
+                    unit.destinationBuilding <
+                        buildingCount
+                ) {
+                    cancelHouseWareDelivery(
+                        &buildings[
+                            unit.destinationBuilding
+                        ],
+                        WareType::Flour,
+                        1
+                    );
+                }
+
+                cancelSerfTransport(
+                    &unit
+                );
+            }
+
+            unit.state =
+                UnitState::Dying;
+
+            unit.visible = true;
+            unit.condition = 0;
+
+            unit.pathLength = 0;
+            unit.pathIndex = 0;
+
+            unit.workAction =
+                UnitWorkAction::None;
+
+            unit.workTimer = 0.0f;
+            unit.animationFrame = 0;
+            unit.animationTimer = 0.0f;
+
+            continue;
+        }
+
+        if (
+            unit.visible &&
+            unit.state == UnitState::Idle &&
+            unit.condition <
+                UNIT_MIN_CONDITION
+        ) {
+            // Controlled pre-Inn checkpoint.
+            //
+            // Po pridani Inn se tento primy prechod
+            // nahradi:
+            // Find Inn -> walk -> enter -> consume food
+            // -> ua_Eat -> leave.
+            unit.state =
+                UnitState::Eating;
+
+            unit.pathLength = 0;
+            unit.pathIndex = 0;
+
+            unit.workAction =
+                UnitWorkAction::None;
+
+            unit.workTimer = 0.0f;
+            unit.animationFrame = 0;
+            unit.animationTimer = 0.0f;
+
+            continue;
+        }
+
+        // =================================================
+        // BAKER AUTOMATIC BAKERY OCCUPATION
+        //
+        // Originalni Baker obsluhuje Bakery zevnitr House.
+        //
+        // Prvni bezpecny runtime slice:
+        //
+        // Idle Baker
+        // -> najde volnou dokoncenou Bakery
+        // -> jde na PointBelowEntrance
+        // -> vstoupi shared doorway
+        // -> zustane skryty ve Working
+        //
+        // Baker exit, Eat a Die zustavaji pro dalsi slice.
+        //
+        // targetBuilding je soucasne:
+        // - rezervace Bakery behem cesty,
+        // - identita obsazene Bakery uvnitr.
+        //
+        // Nepridavame zadne persisted Unit pole.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Baker &&
+            unit.state == UnitState::Idle &&
+            unit.targetBuilding < 0 &&
+            buildings &&
+            buildingCount > 0
+        ) {
+            for (
+                int bakeryIndex = 0;
+                bakeryIndex < buildingCount;
+                ++bakeryIndex
+            ) {
+                const Building& bakery =
+                    buildings[bakeryIndex];
+
+                if (
+                    !bakery.active ||
+                    bakery.type !=
+                        BuildingType::Bakery ||
+                    !isBuildingComplete(bakery)
+                ) {
+                    continue;
+                }
+
+                // Jedna Bakery muze mit pouze jednoho Bakera.
+                //
+                // Pocitame Bakera:
+                // - na ceste,
+                // - u doorway,
+                // - uvnitr ve Working.
+                bool bakeryReserved = false;
+
+                for (
+                    int otherIndex = 0;
+                    otherIndex < unitCount;
+                    ++otherIndex
+                ) {
+                    if (otherIndex == i)
+                        continue;
+
+                    const Unit& other =
+                        units[otherIndex];
+
+                    if (
+                        other.active &&
+                        other.type ==
+                            UnitType::Baker &&
+                        other.targetBuilding ==
+                            bakeryIndex
+                    ) {
+                        bakeryReserved = true;
+                        break;
+                    }
+                }
+
+                if (bakeryReserved)
+                    continue;
+
+                const BuildingEntrance entrance =
+                    getBuildingEntrance(
+                        bakery.type
+                    );
+
+                const int entranceTileX =
+                    bakery.tileX +
+                    entrance.tileOffsetX;
+
+                const int entranceTileY =
+                    bakery.tileY +
+                    entrance.tileOffsetY;
+
+                const int approachTileX =
+                    entranceTileX;
+
+                const int approachTileY =
+                    entranceTileY + 1;
+
+                if (
+                    approachTileX < 0 ||
+                    approachTileX >= mapWidth ||
+                    approachTileY < 0 ||
+                    approachTileY >= mapHeight
+                ) {
+                    continue;
+                }
+
+                const float approachWorldX =
+                    (
+                        approachTileX +
+                        0.5f
+                    ) * tileSize;
+
+                const float approachWorldY =
+                    (
+                        approachTileY +
+                        0.5f
+                    ) * tileSize;
+
+                if (
+                    !setUnitMoveTarget(
+                        &unit,
+                        approachWorldX,
+                        approachWorldY,
+                        buildings,
+                        buildingCount,
+                        mapWidth,
+                        mapHeight,
+                        tileSize
+                    )
+                ) {
+                    continue;
+                }
+
+                unit.targetBuilding =
+                    bakeryIndex;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                // Pokud Baker uz na approach tile stal,
+                // setUnitMoveTarget vratil uspech s prazdnou
+                // cestou a ponechal state Idle.
+                //
+                // V takovem pripade zahajime doorway rovnou.
+                if (
+                    unit.state ==
+                        UnitState::Idle
+                ) {
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            bakery,
+                            tileSize
+                        );
+
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayTargetX =
+                        doorway.doorX;
+
+                    unit.doorwayTargetY =
+                        doorway.doorY;
+
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
+
+                    unit.state =
+                        UnitState::ApproachingBuilding;
+                }
+
+                break;
+            }
+
+            if (
+                unit.targetBuilding >= 0
+            ) {
+                continue;
+            }
+        }
+
+
+        // =================================================
         // SERF LOGISTICS STATE PROGRESSION
         //
         // Dva dulezite pripady:
@@ -2495,6 +3322,78 @@ void updateUnits(
             if (unit.doorwayProgress < 1.0f)
                 continue;
 
+            // ---------------------------------------------
+            // BAKER OCCUPIES BAKERY
+            //
+            // Baker nema Serf transfer a po vstupu se nesmi
+            // automaticky otocit zpet ven.
+            //
+            // Working + invisible + targetBuilding identifikuje
+            // fyzicky pritomneho Bakera uvnitr Bakery.
+            // ---------------------------------------------
+
+            if (
+                unit.type == UnitType::Baker
+            ) {
+                const bool validBakery =
+                    buildings &&
+                    unit.targetBuilding >= 0 &&
+                    unit.targetBuilding <
+                        buildingCount &&
+                    buildings[
+                        unit.targetBuilding
+                    ].active &&
+                    buildings[
+                        unit.targetBuilding
+                    ].type ==
+                        BuildingType::Bakery &&
+                    isBuildingComplete(
+                        buildings[
+                            unit.targetBuilding
+                        ]
+                    );
+
+                if (validBakery) {
+                    unit.worldX = doorX;
+                    unit.worldY = doorY;
+
+                    unit.targetWorldX = doorX;
+                    unit.targetWorldY = doorY;
+
+                    unit.pathLength = 0;
+                    unit.pathIndex = 0;
+
+                    unit.doorwayProgress = 0.0f;
+
+                    // Baker je po vstupu fyzicky uvnitr,
+                    // ale bez aktivni produkce odpociva.
+                    unit.visible = false;
+                    unit.state = UnitState::Idle;
+
+                    unit.workAction =
+                        UnitWorkAction::None;
+
+                    unit.workTimer = 0.0f;
+
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+
+                    continue;
+                }
+
+                // Bakery mezitim prestala byt platna.
+                unit.targetBuilding = -1;
+                unit.visible = true;
+                unit.state = UnitState::Idle;
+
+                unit.doorwayProgress = 0.0f;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
             bool transferSucceeded = false;
 
             // ---------------------------------------------
@@ -2751,6 +3650,58 @@ void updateUnits(
 
             continue;
         }
+
+        // =================================================
+        // BAKER INSIDE BAKERY
+        //
+        // Baker zustava uvnitr, dokud je prirazena Bakery
+        // aktivni a dokoncena.
+        //
+        // Samotnou vyrobu a House Work2/Work3 ridi Bakery.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Baker &&
+            (
+                unit.state == UnitState::Idle ||
+                unit.state == UnitState::Working
+            ) &&
+            !unit.visible &&
+            unit.targetBuilding >= 0
+        ) {
+            const bool validBakery =
+                buildings &&
+                unit.targetBuilding >= 0 &&
+                unit.targetBuilding <
+                    buildingCount &&
+                buildings[
+                    unit.targetBuilding
+                ].active &&
+                buildings[
+                    unit.targetBuilding
+                ].type ==
+                    BuildingType::Bakery &&
+                isBuildingComplete(
+                    buildings[
+                        unit.targetBuilding
+                    ]
+                );
+
+            if (!validBakery) {
+                // Bez platne Bakery nesmi Baker zustat
+                // navzdy skryty.
+                unit.targetBuilding = -1;
+                unit.visible = true;
+                unit.state = UnitState::Idle;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            }
+
+            continue;
+        }
+
 
         // -------------------------------------------------
         // House terrain preparation.
@@ -3159,6 +4110,85 @@ void updateUnits(
                 unit.pathIndex = 0;
 
                 // =========================================
+                // BAKER ENTER ASSIGNED BAKERY
+                //
+                // Baker dokoncil normalni pathfinding na
+                // connected entrance-road tile.
+                //
+                // Dalsi faze pouziva stejny Vita-overeny
+                // Bakery doorway jako Flour/Bread Serf.
+                // =========================================
+
+                if (
+                    unit.type == UnitType::Baker &&
+                    unit.targetBuilding >= 0
+                ) {
+                    const bool validBakery =
+                        buildings &&
+                        unit.targetBuilding <
+                            buildingCount &&
+                        buildings[
+                            unit.targetBuilding
+                        ].active &&
+                        buildings[
+                            unit.targetBuilding
+                        ].type ==
+                            BuildingType::Bakery &&
+                        isBuildingComplete(
+                            buildings[
+                                unit.targetBuilding
+                            ]
+                        );
+
+                    if (!validBakery) {
+                        unit.targetBuilding = -1;
+                        unit.state = UnitState::Idle;
+                        unit.visible = true;
+                        continue;
+                    }
+
+                    const Building& bakery =
+                        buildings[
+                            unit.targetBuilding
+                        ];
+
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            bakery,
+                            tileSize
+                        );
+
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayTargetX =
+                        doorway.doorX;
+
+                    unit.doorwayTargetY =
+                        doorway.doorY;
+
+                    // Nejdříve kratke horizontalni
+                    // zarovnani na osu dveri.
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
+
+                    unit.state =
+                        UnitState::ApproachingBuilding;
+
+                    continue;
+                }
+
+
+                // =========================================
                 // SERF ENTER DESTINATION
                 //
                 // Transfer uz neprobiha pred budovou.
@@ -3497,6 +4527,7 @@ UnitMovementType getUnitMovementType(
     if (type == UnitType::Serf)
         return UnitMovementType::Carrier;
 
+    // Worker i Baker pouzivaji citizen/worker movement.
     return UnitMovementType::Worker;
 }
 

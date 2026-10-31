@@ -468,7 +468,8 @@ void renderBuildings(
     float cameraX,
     float cameraY,
     int tileSize,
-    const KaMPlanResources* planResources
+    const KaMPlanResources* planResources,
+    bool bakeryHasInsideBaker
 )
 {
     for (int i = 0; i < buildingCount; ++i) {
@@ -987,6 +988,304 @@ void renderBuildings(
         static constexpr int BAKERY_BREAD_SUPPLY_ANCHOR_Y = 5;
 
         // =================================================
+        // STORE ORIGINAL FLAG1 FLAG2 OVERLAYS
+        //
+        // Store nema ha_Flagpole.
+        //
+        // Flag1:
+        // RX = 1166,1167,1168,1164,1165
+        // Move = (15,-74)
+        //
+        // Flag2:
+        // RX = 1164,1165,1166,1167,1168
+        // Move = (-54,-76)
+        //
+        // Oba overlaye pouzivaji House 40 -> 32 scale.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Store &&
+            isBuildingComplete(building)
+        ) {
+            const int storeFlagFrame =
+                (SDL_GetTicks() / 120) % 5;
+
+            if (resources.storeFlag1Atlas) {
+                constexpr int cellW =
+                    18;
+
+                constexpr int cellH =
+                    11;
+
+                constexpr int anchorX =
+                    -1;
+
+                constexpr int anchorY =
+                    -21;
+
+                constexpr int moveX =
+                    15;
+
+                constexpr int moveY =
+                    -74;
+
+                SDL_Rect src = {
+                    storeFlagFrame * cellW,
+                    0,
+                    cellW,
+                    cellH
+                };
+
+                SDL_Rect dst = {
+                    stoneDestinationX +
+                        scaleKaMHousePixel(
+                            anchorX +
+                                moveX -
+                                stonePivotX,
+                            tileSize
+                        ),
+
+                    stoneDestinationY +
+                        scaleKaMHousePixel(
+                            anchorY +
+                                moveY -
+                                stonePivotY,
+                            tileSize
+                        ),
+
+                    scaleKaMHousePixel(
+                        cellW,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        cellH,
+                        tileSize
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.storeFlag1Atlas,
+                    &src,
+                    &dst
+                );
+            }
+
+            if (resources.storeFlag2Atlas) {
+                constexpr int cellW =
+                    18;
+
+                constexpr int cellH =
+                    11;
+
+                constexpr int anchorX =
+                    -1;
+
+                constexpr int anchorY =
+                    -21;
+
+                constexpr int moveX =
+                    -54;
+
+                constexpr int moveY =
+                    -76;
+
+                SDL_Rect src = {
+                    storeFlagFrame * cellW,
+                    0,
+                    cellW,
+                    cellH
+                };
+
+                SDL_Rect dst = {
+                    stoneDestinationX +
+                        scaleKaMHousePixel(
+                            anchorX +
+                                moveX -
+                                stonePivotX,
+                            tileSize
+                        ),
+
+                    stoneDestinationY +
+                        scaleKaMHousePixel(
+                            anchorY +
+                                moveY -
+                                stonePivotY,
+                            tileSize
+                        ),
+
+                    scaleKaMHousePixel(
+                        cellW,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        cellH,
+                        tileSize
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.storeFlag2Atlas,
+                    &src,
+                    &dst
+                );
+            }
+        }
+
+
+        // =================================================
+        // BAKERY ORIGINAL FLAGPOLE FLAG1 OVERLAY
+        //
+        // StonePic pivot = (-44,-98)
+        //
+        // Flagpole:
+        // RX   = 1200
+        // Move = (54,-64)
+        //
+        // Flag1:
+        // RX =
+        // 1181,1182,1183,1204,1205,
+        // 1206,1207,1208,1179,1180
+        // Move = (103,-56)
+        //
+        // Flag2 / Flag3 jsou v originalu prazdne.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Bakery &&
+            isBuildingComplete(building)
+        ) {
+            if (resources.bakeryFlagpole) {
+                constexpr int poleWidth =
+                    11;
+
+                constexpr int poleHeight =
+                    28;
+
+                constexpr int polePivotX =
+                    -8;
+
+                constexpr int polePivotY =
+                    -29;
+
+                constexpr int poleMoveX =
+                    54;
+
+                constexpr int poleMoveY =
+                    -64;
+
+                SDL_Rect poleDestination = {
+                    stoneDestinationX +
+                        scaleKaMHousePixel(
+                            polePivotX +
+                                poleMoveX -
+                                stonePivotX,
+                            tileSize
+                        ),
+
+                    stoneDestinationY +
+                        scaleKaMHousePixel(
+                            polePivotY +
+                                poleMoveY -
+                                stonePivotY,
+                            tileSize
+                        ),
+
+                    scaleKaMHousePixel(
+                        poleWidth,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        poleHeight,
+                        tileSize
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.bakeryFlagpole,
+                    nullptr,
+                    &poleDestination
+                );
+            }
+
+            if (resources.bakeryFlag1Atlas) {
+                constexpr int flagCellWidth =
+                    22;
+
+                constexpr int flagCellHeight =
+                    21;
+
+                constexpr int flagFrames =
+                    10;
+
+                constexpr int flagAnchorX =
+                    -49;
+
+                constexpr int flagAnchorY =
+                    -33;
+
+                constexpr int flagMoveX =
+                    103;
+
+                constexpr int flagMoveY =
+                    -56;
+
+                const int flagFrame =
+                    (SDL_GetTicks() / 120) %
+                    flagFrames;
+
+                SDL_Rect flagSource = {
+                    flagFrame *
+                        flagCellWidth,
+                    0,
+                    flagCellWidth,
+                    flagCellHeight
+                };
+
+                SDL_Rect flagDestination = {
+                    stoneDestinationX +
+                        scaleKaMHousePixel(
+                            flagAnchorX +
+                                flagMoveX -
+                                stonePivotX,
+                            tileSize
+                        ),
+
+                    stoneDestinationY +
+                        scaleKaMHousePixel(
+                            flagAnchorY +
+                                flagMoveY -
+                                stonePivotY,
+                            tileSize
+                        ),
+
+                    scaleKaMHousePixel(
+                        flagCellWidth,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        flagCellHeight,
+                        tileSize
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.bakeryFlag1Atlas,
+                    &flagSource,
+                    &flagDestination
+                );
+            }
+        }
+
+
+        // =================================================
         // BAKERY ORIGINAL BREAD SUPPLYOUT
         //
         // Remake AddHouseSupply:
@@ -1058,6 +1357,92 @@ void renderBuildings(
                 resources.bakeryBreadSupplyAtlas,
                 &breadSource,
                 &breadDestination
+            );
+        }
+
+
+        // =================================================
+        // BAKERY ORIGINAL OCCUPIED IDLE OVERLAY
+        //
+        // Originalni Bakery ha_Idle:
+        //
+        // count  = 30
+        // cell   = 16x37
+        // anchor = (-8,-12)
+        // move   = (18,5)
+        //
+        // RX sekvence pouziva 1077..1082.
+        //
+        // Vykresluje se pouze pokud je skutecny Baker
+        // fyzicky uvnitr teto Bakery a House prave nevyrabi.
+        //
+        // Baker unit zustava uvnitr invisible.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Bakery &&
+            isBuildingComplete(building) &&
+            bakeryHasInsideBaker &&
+            !building.bakeryProductionActive &&
+            resources.bakeryIdleAtlas
+        ) {
+            constexpr int idleCellWidth = 16;
+            constexpr int idleCellHeight = 37;
+
+            constexpr int idleFrameCount = 30;
+
+            constexpr int idleAnchorX = -8;
+            constexpr int idleAnchorY = -12;
+
+            constexpr int idleMoveX = 18;
+            constexpr int idleMoveY = 5;
+
+            // House production tick pouziva 100 ms.
+            // Idle zachovava stejnou 100ms House cadence.
+            const int idleFrame =
+                (SDL_GetTicks() / 100) %
+                idleFrameCount;
+
+            SDL_Rect idleSource = {
+                idleFrame * idleCellWidth,
+                0,
+                idleCellWidth,
+                idleCellHeight
+            };
+
+            SDL_Rect idleDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        idleAnchorX +
+                            idleMoveX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        idleAnchorY +
+                            idleMoveY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    idleCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    idleCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.bakeryIdleAtlas,
+                &idleSource,
+                &idleDestination
             );
         }
 
@@ -1946,6 +2331,18 @@ BuildingResources loadBuildingResources(
         "app0:assets/buildings/construction/store/stone_atlas.bmp"
     );
 
+    resources.storeFlag1Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/store/runtime/flag1_atlas.bmp"
+        );
+
+    resources.storeFlag2Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/store/runtime/flag2_atlas.bmp"
+        );
+
     resources.bakeryWoodAtlas = loadColorKeyTexture(
         renderer,
         "app0:assets/buildings/construction/bakery/wood_atlas.bmp"
@@ -1966,6 +2363,24 @@ BuildingResources loadBuildingResources(
         loadColorKeyTexture(
             renderer,
             "app0:assets/buildings/bakery/runtime/work3_atlas.bmp"
+        );
+
+    resources.bakeryIdleAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/idle_atlas.bmp"
+        );
+
+    resources.bakeryFlagpole =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/flagpole.bmp"
+        );
+
+    resources.bakeryFlag1Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/flag1_atlas.bmp"
         );
 
     resources.bakerySmokeAtlas =
@@ -2052,6 +2467,9 @@ void destroyBuildingResources(
     SDL_DestroyTexture(resources->storeWoodAtlas);
     SDL_DestroyTexture(resources->storeStoneAtlas);
 
+    SDL_DestroyTexture(resources->storeFlag1Atlas);
+    SDL_DestroyTexture(resources->storeFlag2Atlas);
+
     SDL_DestroyTexture(resources->bakeryWoodAtlas);
     SDL_DestroyTexture(resources->bakeryStoneAtlas);
 
@@ -2061,6 +2479,18 @@ void destroyBuildingResources(
 
     SDL_DestroyTexture(
         resources->bakeryWork3Atlas
+    );
+
+    SDL_DestroyTexture(
+        resources->bakeryIdleAtlas
+    );
+
+    SDL_DestroyTexture(
+        resources->bakeryFlagpole
+    );
+
+    SDL_DestroyTexture(
+        resources->bakeryFlag1Atlas
     );
 
     SDL_DestroyTexture(
@@ -2107,10 +2537,16 @@ void destroyBuildingResources(
     resources->storeWoodAtlas = nullptr;
     resources->storeStoneAtlas = nullptr;
 
+    resources->storeFlag1Atlas = nullptr;
+    resources->storeFlag2Atlas = nullptr;
+
     resources->bakeryWoodAtlas = nullptr;
     resources->bakeryStoneAtlas = nullptr;
     resources->bakeryWork2Atlas = nullptr;
     resources->bakeryWork3Atlas = nullptr;
+    resources->bakeryIdleAtlas = nullptr;
+    resources->bakeryFlagpole = nullptr;
+    resources->bakeryFlag1Atlas = nullptr;
     resources->bakerySmokeAtlas = nullptr;
     resources->bakeryBreadSupplyAtlas = nullptr;
 

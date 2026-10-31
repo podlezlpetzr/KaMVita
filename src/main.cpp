@@ -5163,6 +5163,10 @@ int main(int argc, char* argv[])
                     profession ==
                         static_cast<int>(
                             GameUISchoolSelection::Worker
+                        ) ||
+                    profession ==
+                        static_cast<int>(
+                            GameUISchoolSelection::Baker
                         );
 
                 // Ostatni profese zatim nemaji vlastni UnitType.
@@ -5205,13 +5209,26 @@ int main(int argc, char* argv[])
 
                 trainedUnit = {};
 
-                trainedUnit.type =
+                if (
                     profession ==
-                        static_cast<int>(
-                            GameUISchoolSelection::Serf
-                        )
-                        ? UnitType::Serf
-                        : UnitType::Worker;
+                    static_cast<int>(
+                        GameUISchoolSelection::Serf
+                    )
+                ) {
+                    trainedUnit.type =
+                        UnitType::Serf;
+                } else if (
+                    profession ==
+                    static_cast<int>(
+                        GameUISchoolSelection::Baker
+                    )
+                ) {
+                    trainedUnit.type =
+                        UnitType::Baker;
+                } else {
+                    trainedUnit.type =
+                        UnitType::Worker;
+                }
 
                 trainedUnit.condition =
                     UNIT_START_CONDITION;
@@ -5469,9 +5486,88 @@ int main(int argc, char* argv[])
                 continue;
             }
 
+            // =============================================
+            // BAKERY REQUIRES PHYSICAL BAKER
+            //
+            // Bakery smi vyrabet pouze pokud je uvnitr
+            // skutecny Baker:
+            //
+            // type           = Baker
+            // state          = Working
+            // visible        = false
+            // targetBuilding = tato Bakery
+            //
+            // Baker na ceste ani u doorway jeste neplati.
+            // =============================================
+
+            // =============================================
+            // BAKER INSIDE IDLE WORKING LIFECYCLE
+            //
+            // Hidden + targetBuilding identifikuje Bakera
+            // fyzicky uvnitr Bakery.
+            //
+            // Idle    = ceka na Flour nebo volny vystup.
+            // Working = Bakery ma aktivni vyrobni cyklus.
+            // =============================================
+
+            int insideBakerIndex = -1;
+
+            for (
+                int unitIndex = 0;
+                unitIndex < unitCount;
+                ++unitIndex
+            ) {
+                const Unit& candidate =
+                    units[unitIndex];
+
+                const bool validInsideState =
+                    candidate.state ==
+                        UnitState::Idle ||
+                    candidate.state ==
+                        UnitState::Working;
+
+                if (
+                    candidate.active &&
+                    candidate.type ==
+                        UnitType::Baker &&
+                    validInsideState &&
+                    !candidate.visible &&
+                    candidate.targetBuilding ==
+                        bakeryIndex
+                ) {
+                    insideBakerIndex = unitIndex;
+                    break;
+                }
+            }
+
+            if (insideBakerIndex < 0) {
+                // Bez Bakera nezahajujeme ani neposouvame
+                // vyrobni cyklus.
+                //
+                // Jiz rozpracovany cyklus zustava pozastaveny,
+                // aby se Flour ani progress neztratily.
+                bakeryProductionTimers[
+                    bakeryIndex
+                ] = 0.0f;
+
+                continue;
+            }
+
+            Unit& insideBaker =
+                units[insideBakerIndex];
+
+            // Existujici aktivni cyklus znamena skutecnou
+            // praci. Jinak Baker uvnitr ceka v Idle.
+            insideBaker.state =
+                bakery.bakeryProductionActive
+                    ? UnitState::Working
+                    : UnitState::Idle;
+
+            insideBaker.visible = false;
+
             // Neaktivni Bakery muze zahajit novy cyklus
-            // pouze pokud ma vstup a vystupni kapacitu
-            // pro cele 2 Bread.
+            // pouze pokud ma Bakera, vstup a vystupni
+            // kapacitu pro cele 2 Bread.
             if (!bakery.bakeryProductionActive) {
                 bakery.bakeryProductionTick = 0;
 
@@ -5503,6 +5599,14 @@ int main(int argc, char* argv[])
 
                 bakery.bakeryProductionActive =
                     true;
+
+                // Baker zacina skutecne pracovat az spolu
+                // se zahajenim House production cyklu.
+                insideBaker.state =
+                    UnitState::Working;
+
+                insideBaker.animationFrame = 0;
+                insideBaker.animationTimer = 0.0f;
 
                 bakery.bakeryProductionTick = 0;
 
@@ -5541,6 +5645,15 @@ int main(int argc, char* argv[])
 
                 bakery.bakeryProductionActive =
                     false;
+
+                // Dokonceny cyklus vraci Bakera do Idle
+                // uvnitr Bakery. Dalsi cyklus ho znovu
+                // prepne na Working.
+                insideBaker.state =
+                    UnitState::Idle;
+
+                insideBaker.animationFrame = 0;
+                insideBaker.animationTimer = 0.0f;
 
                 bakery.bakeryProductionTick = 0;
 
@@ -5637,6 +5750,45 @@ int main(int argc, char* argv[])
             worldRenderEntries
         ) {
             if (entry.kind == 0) {
+                bool bakeryHasInsideBaker = false;
+
+                const Building& renderBuilding =
+                    buildings[entry.index];
+
+                if (
+                    renderBuilding.type ==
+                        BuildingType::Bakery &&
+                    renderBuilding.active &&
+                    isBuildingComplete(renderBuilding)
+                ) {
+                    for (
+                        int bakerIndex = 0;
+                        bakerIndex < unitCount;
+                        ++bakerIndex
+                    ) {
+                        const Unit& baker =
+                            units[bakerIndex];
+
+                        if (
+                            baker.active &&
+                            baker.type ==
+                                UnitType::Baker &&
+                            !baker.visible &&
+                            baker.targetBuilding ==
+                                entry.index &&
+                            (
+                                baker.state ==
+                                    UnitState::Idle ||
+                                baker.state ==
+                                    UnitState::Working
+                            )
+                        ) {
+                            bakeryHasInsideBaker = true;
+                            break;
+                        }
+                    }
+                }
+
                 renderBuildings(
                     renderer,
                     buildingResources,
@@ -5645,7 +5797,8 @@ int main(int argc, char* argv[])
                     cameraX,
                     cameraY,
                     TILE_SIZE,
-                    &kamPlanResources
+                    &kamPlanResources,
+                    bakeryHasInsideBaker
                 );
             } else {
                 renderUnits(

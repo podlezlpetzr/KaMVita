@@ -5,7 +5,10 @@
 
 enum class UnitType {
     Worker = 0,
-    Serf = 1
+    Serf = 1,
+
+    // Originalni KaM ut_Baker, unit.dat index 6.
+    Baker = 2
 };
 
 enum class UnitState {
@@ -21,7 +24,11 @@ enum class UnitState {
     EnteringBuilding,
 
     // Kratky pohyb ze dveri zpet do bodu pod nimi.
-    LeavingBuilding
+    LeavingBuilding,
+    // Originalni ua_Eat / ua_Die lifecycle.
+    Eating,
+    Dying
+
 };
 
 enum class UnitWorkAction {
@@ -87,6 +94,14 @@ enum class LandPlanState : unsigned char {
 // KaM Remake condition maximum: 45 * 60.
 static constexpr int UNIT_MAX_CONDITION =
     45 * 60;
+
+// Originalni KaM/Remake hunger threshold.
+static constexpr int UNIT_MIN_CONDITION =
+    6 * 60;
+
+// Originalni th_Death threshold.
+static constexpr int UNIT_DEATH_THOUGHT_CONDITION =
+    UNIT_MIN_CONDITION / 3;
 
 // New KaMVita units start at the Remake base 60 percent.
 static constexpr int UNIT_START_CONDITION =
@@ -206,7 +221,15 @@ struct UnitResources {
     SDL_Texture* workerDigAtlas;
     SDL_Texture* workerPaveAtlas;
 
+    // Originalni Worker ua_Eat / ua_Die.
+    SDL_Texture* workerEatAtlas;
+    SDL_Texture* workerDieAtlas;
+
     SDL_Texture* serfWalkAtlas;
+
+    // Originalni Serf ua_Eat / ua_Die.
+    SDL_Texture* serfEatAtlas;
+    SDL_Texture* serfDieAtlas;
     SDL_Texture* serfCarryStoneAtlas;
 
     // Originalni KaM SerfCarry[wt_Gold].
@@ -220,6 +243,27 @@ struct UnitResources {
     // Originalni KaM SerfCarry[wt_Bread].
     // 8 smeru x 8 animacnich kroku.
     SDL_Texture* serfCarryBreadAtlas;
+
+    // ========================================================
+    // ORIGINAL KaM BAKER UNIT
+    //
+    // unit.dat index 6.
+    //
+    // Walk: 8 smeru x 8 framu.
+    // Work: 8 smeru x 1 frame.
+    // Eat:  8 smeru x 30 framu.
+    // Die:  promenlivy pocet framu podle smeru.
+    // ========================================================
+
+    SDL_Texture* bakerWalkAtlas;
+    SDL_Texture* bakerWorkAtlas;
+    SDL_Texture* bakerEatAtlas;
+    SDL_Texture* bakerDieAtlas;
+
+    // Originalni KaM thought bubbles z units.rx.
+    SDL_Texture* thoughtEatAtlas;
+    SDL_Texture* thoughtDeathAtlas;
+    SDL_Texture* thoughtQuestAtlas;
 };
 
 static constexpr int MAX_UNITS = 32;
