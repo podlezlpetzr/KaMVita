@@ -434,6 +434,96 @@ static bool isBuildingTileBlocked(
 // SERF TRANSPORT ASSIGNMENT API
 // ============================================================
 
+// ============================================================
+// DESTINATION WARE DEMAND
+//
+// Prvni funkcni rez:
+// - Store prijima ware pres existujici Store Ware API
+// - School prijima Gold do fyzicke zasoby schoolGold
+//
+// SCHOOL_GOLD_CAPACITY odpovida soucasne sestimistne
+// School training fronte.
+// ============================================================
+
+static constexpr int SCHOOL_GOLD_CAPACITY = 6;
+
+
+static bool canBuildingAcceptDeliveredWare(
+    const Building& destination,
+    WareType ware
+)
+{
+    if (!destination.active)
+        return false;
+
+    if (!isBuildingComplete(destination))
+        return false;
+
+    if (!destination.wareDeliveryEnabled)
+        return false;
+
+    if (!isValidWareType(ware))
+        return false;
+
+    if (destination.type == BuildingType::Store) {
+        return canStoreAcceptWare(
+            destination,
+            ware,
+            1
+        );
+    }
+
+    if (
+        destination.type == BuildingType::School &&
+        ware == WareType::Gold
+    ) {
+        return
+            destination.schoolGold >= 0 &&
+            destination.schoolGold <
+                SCHOOL_GOLD_CAPACITY;
+    }
+
+    return false;
+}
+
+
+static bool deliverWareToBuilding(
+    Building* destination,
+    WareType ware
+)
+{
+    if (!destination)
+        return false;
+
+    if (
+        !canBuildingAcceptDeliveredWare(
+            *destination,
+            ware
+        )
+    ) {
+        return false;
+    }
+
+    if (destination->type == BuildingType::Store) {
+        return addStoreWare(
+            destination,
+            ware,
+            1
+        );
+    }
+
+    if (
+        destination->type == BuildingType::School &&
+        ware == WareType::Gold
+    ) {
+        ++destination->schoolGold;
+        return true;
+    }
+
+    return false;
+}
+
+
 bool canAssignSerfTransport(
     const Unit& serf,
     WareType ware,
@@ -510,11 +600,16 @@ bool canAssignSerfTransport(
         return false;
     }
 
-    // Destination musi existovat a byt dokoncena.
-    // Konkretni demand pravidla pridame samostatne.
+    // Assignment smi vzniknout pouze pro cil,
+    // ktery tento konkretni ware prave prijima.
+    //
+    // Jde o prvni demand kontrolu. Stejna kontrola se
+    // zopakuje pred cestou a autoritativne pri delivery.
     if (
-        !destination.active ||
-        !isBuildingComplete(destination)
+        !canBuildingAcceptDeliveredWare(
+            destination,
+            ware
+        )
     ) {
         return false;
     }
@@ -774,8 +869,10 @@ bool startSerfTransportToDestination(
         ];
 
     if (
-        !destination.active ||
-        !isBuildingComplete(destination)
+        !canBuildingAcceptDeliveredWare(
+            destination,
+            serf->carriedWare
+        )
     ) {
         return false;
     }
@@ -898,6 +995,101 @@ bool setUnitMoveTarget(
         return false;
     }
 
+    // =====================================================
+    // DIRECT STRAIGHT ROUTE
+    //
+    // Pokud jsou start a cil na stejne rade a vsechny
+    // mezilehle dlazdice jsou pruchozi, vytvorime primo
+    // vodorovnou cestu.
+    //
+    // To odpovida soucasnemu development layoutu:
+    // Store PointBelowEntrance  -> School PointBelowEntrance
+    // a zpet.
+    //
+    // BFS zustava fallbackem pro obecne trasy.
+    // =====================================================
+
+    if (
+        startY == goalY &&
+        startX != goalX
+    ) {
+        const int stepX =
+            goalX > startX
+                ? 1
+                : -1;
+
+        bool straightRouteClear = true;
+        int straightLength = 0;
+
+        for (
+            int tileX = startX + stepX;
+            ;
+            tileX += stepX
+        ) {
+            if (
+                isBuildingTileBlocked(
+                    tileX,
+                    startY,
+                    buildings,
+                    buildingCount
+                )
+            ) {
+                straightRouteClear = false;
+                break;
+            }
+
+            ++straightLength;
+
+            if (tileX == goalX)
+                break;
+        }
+
+        if (
+            straightRouteClear &&
+            straightLength > 0 &&
+            straightLength <= MAX_UNIT_PATH
+        ) {
+            unit->pathLength =
+                straightLength;
+
+            unit->pathIndex = 0;
+
+            for (
+                int pathIndex = 0;
+                pathIndex < straightLength;
+                ++pathIndex
+            ) {
+                unit->pathX[pathIndex] =
+                    startX +
+                    stepX *
+                        (pathIndex + 1);
+
+                unit->pathY[pathIndex] =
+                    startY;
+            }
+
+            unit->targetWorldX =
+                (
+                    unit->pathX[0] +
+                    0.5f
+                ) * tileSize;
+
+            unit->targetWorldY =
+                (
+                    unit->pathY[0] +
+                    0.5f
+                ) * tileSize;
+
+            unit->state =
+                UnitState::Walking;
+
+            unit->animationFrame = 0;
+            unit->animationTimer = 0.0f;
+
+            return true;
+        }
+    }
+
     const int nodeCount =
         mapWidth * mapHeight;
 
@@ -945,9 +1137,105 @@ bool setUnitMoveTarget(
         int currentY =
             current / mapWidth;
 
-        for (int direction = 0;
-             direction < 8;
-             ++direction) {
+        // Preferujeme sousedy smerujici primo k cili.
+        //
+        // BFS stale garantuje nejmensi pocet dlazdic,
+        // ale mezi vice stejne dlouhymi cestami uz
+        // nepreferuje sever jen kvuli poradi offsets[].
+        //
+        // To odstranuje zbytecna kolecka mezi body
+        // PointBelowEntrance sousednich budov.
+        int directionOrder[8] = {
+            0, 1, 2, 3, 4, 5, 6, 7
+        };
+
+        for (
+            int orderIndex = 0;
+            orderIndex < 7;
+            ++orderIndex
+        ) {
+            int bestIndex = orderIndex;
+
+            int bestDirection =
+                directionOrder[bestIndex];
+
+            int bestX =
+                currentX +
+                offsets[bestDirection][0];
+
+            int bestY =
+                currentY +
+                offsets[bestDirection][1];
+
+            int bestDx = goalX - bestX;
+            int bestDy = goalY - bestY;
+
+            int bestDistance =
+                std::max(
+                    std::abs(bestDx),
+                    std::abs(bestDy)
+                );
+
+            for (
+                int candidateIndex =
+                    orderIndex + 1;
+                candidateIndex < 8;
+                ++candidateIndex
+            ) {
+                int candidateDirection =
+                    directionOrder[
+                        candidateIndex
+                    ];
+
+                int candidateX =
+                    currentX +
+                    offsets[
+                        candidateDirection
+                    ][0];
+
+                int candidateY =
+                    currentY +
+                    offsets[
+                        candidateDirection
+                    ][1];
+
+                int candidateDx =
+                    goalX - candidateX;
+
+                int candidateDy =
+                    goalY - candidateY;
+
+                int candidateDistance =
+                    std::max(
+                        std::abs(candidateDx),
+                        std::abs(candidateDy)
+                    );
+
+                if (
+                    candidateDistance <
+                        bestDistance
+                ) {
+                    bestIndex =
+                        candidateIndex;
+
+                    bestDistance =
+                        candidateDistance;
+                }
+            }
+
+            std::swap(
+                directionOrder[orderIndex],
+                directionOrder[bestIndex]
+            );
+        }
+
+        for (
+            int orderIndex = 0;
+            orderIndex < 8;
+            ++orderIndex
+        ) {
+            int direction =
+                directionOrder[orderIndex];
 
             int nextX =
                 currentX +
@@ -1107,6 +1395,225 @@ void updateUnits(
 
         if (!unit.active)
             continue;
+
+        // =================================================
+        // SERF LOGISTICS STATE PROGRESSION
+        //
+        // Dva dulezite pripady:
+        //
+        // 1. Serf uz stoji na source approach tile.
+        //    setUnitMoveTarget() pak vrati uspech s prazdnou
+        //    cestou a state zustane Idle. Pickup proto
+        //    provedeme primo zde.
+        //
+        // 2. Po pickup je logisticky stav Carrying.
+        //    Automaticky zahajime cestu k destination.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Serf &&
+            unit.state == UnitState::Idle &&
+            unit.logisticsState ==
+                SerfLogisticsState::ToSource
+        ) {
+            const bool validSource =
+                buildings &&
+                unit.sourceBuilding >= 0 &&
+                unit.sourceBuilding < buildingCount &&
+                buildings[
+                    unit.sourceBuilding
+                ].active &&
+                buildings[
+                    unit.sourceBuilding
+                ].type == BuildingType::Store &&
+                isBuildingComplete(
+                    buildings[
+                        unit.sourceBuilding
+                    ]
+                );
+
+            const bool validWare =
+                isValidWareType(
+                    unit.assignedWare
+                );
+
+            bool pickedUp = false;
+
+            if (
+                validSource &&
+                validWare &&
+                unit.carriedWare ==
+                    WareType::Count
+            ) {
+                pickedUp =
+                    takeStoreWare(
+                        &buildings[
+                            unit.sourceBuilding
+                        ],
+                        unit.assignedWare,
+                        1
+                    );
+            }
+
+            if (pickedUp) {
+                unit.carriedWare =
+                    unit.assignedWare;
+
+                unit.logisticsState =
+                    SerfLogisticsState::Carrying;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            } else {
+                cancelSerfTransport(
+                    &unit
+                );
+            }
+        }
+
+        if (
+            unit.type == UnitType::Serf &&
+            unit.state == UnitState::Idle &&
+            unit.logisticsState ==
+                SerfLogisticsState::Carrying
+        ) {
+            // Serf fyzicky vlastni ware.
+            // Pokud cil ware stale prijima a existuje cesta,
+            // okamzite zahajime transport k destination.
+            //
+            // Pri neuspechu zustava Carrying a ware se
+            // nikdy potichu neztrati.
+            startSerfTransportToDestination(
+                &unit,
+                buildings,
+                buildingCount,
+                mapWidth,
+                mapHeight,
+                tileSize
+            );
+
+            if (
+                unit.state ==
+                    UnitState::Walking
+            ) {
+                continue;
+            }
+        }
+
+        // =================================================
+        // SERF AUTOMATIC TRANSPORT DISPATCH
+        //
+        // Prvni funkcni logisticky dispatcher:
+        // volny Serf hleda Store s Gold a School,
+        // ktera Gold skutecne prijima.
+        //
+        // Ware se pri assignmentu neodebira.
+        // Pickup zustava fyzicky az po prichodu ke Store.
+        // =================================================
+        if (
+            unit.type == UnitType::Serf &&
+            unit.state == UnitState::Idle &&
+            unit.logisticsState ==
+                SerfLogisticsState::Idle &&
+            unit.carriedWare == WareType::Count &&
+            buildings &&
+            buildingCount > 0
+        ) {
+            bool dispatched = false;
+
+            for (
+                int sourceIndex = 0;
+                sourceIndex < buildingCount &&
+                    !dispatched;
+                ++sourceIndex
+            ) {
+                if (
+                    !buildings[sourceIndex].active ||
+                    buildings[sourceIndex].type !=
+                        BuildingType::Store ||
+                    !isBuildingComplete(
+                        buildings[sourceIndex]
+                    )
+                ) {
+                    continue;
+                }
+
+                if (
+                    !canStoreTakeWare(
+                        buildings[sourceIndex],
+                        WareType::Gold,
+                        1
+                    )
+                ) {
+                    continue;
+                }
+
+                for (
+                    int destinationIndex = 0;
+                    destinationIndex <
+                        buildingCount;
+                    ++destinationIndex
+                ) {
+                    if (
+                        destinationIndex ==
+                            sourceIndex
+                    ) {
+                        continue;
+                    }
+
+                    if (
+                        !canAssignSerfTransport(
+                            unit,
+                            WareType::Gold,
+                            sourceIndex,
+                            destinationIndex,
+                            buildings,
+                            buildingCount
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    if (
+                        !assignSerfTransport(
+                            &unit,
+                            WareType::Gold,
+                            sourceIndex,
+                            destinationIndex,
+                            buildings,
+                            buildingCount
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    if (
+                        startSerfTransportToSource(
+                            &unit,
+                            buildings,
+                            buildingCount,
+                            mapWidth,
+                            mapHeight,
+                            tileSize
+                        )
+                    ) {
+                        dispatched = true;
+                        break;
+                    }
+
+                    // Assignment probehl, ale cesta
+                    // ke Store nevznikla. Protoze Serf
+                    // jeste nic nenese, muzeme ulohu
+                    // bezpecne zrusit.
+                    cancelSerfTransport(
+                        &unit
+                    );
+                }
+            }
+
+            if (dispatched)
+                continue;
+        }
 
         if (
             unit.state ==
@@ -1606,6 +2113,91 @@ void updateUnits(
                 unit.animationTimer = 0.0f;
                 unit.pathLength = 0;
                 unit.pathIndex = 0;
+
+                // =========================================
+                // SERF PHYSICAL DESTINATION DELIVERY
+                //
+                // Ware se odevzda az po skutecnem
+                // dokonceni cesty ke vstupu cile.
+                //
+                // Pokud demand mezitim zmizel, Serf
+                // naklad neztrati. Zustane Carrying
+                // a muze dostat novy cil.
+                // =========================================
+                if (
+                    unit.type == UnitType::Serf &&
+                    unit.logisticsState ==
+                        SerfLogisticsState::ToDestination
+                ) {
+                    const bool validDestination =
+                        buildings &&
+                        unit.destinationBuilding >= 0 &&
+                        unit.destinationBuilding <
+                            buildingCount;
+
+                    const bool validCargo =
+                        isValidWareType(
+                            unit.assignedWare
+                        ) &&
+                        isValidWareType(
+                            unit.carriedWare
+                        ) &&
+                        unit.assignedWare ==
+                            unit.carriedWare;
+
+                    bool delivered = false;
+
+                    if (
+                        validDestination &&
+                        validCargo
+                    ) {
+                        Building& destination =
+                            buildings[
+                                unit.destinationBuilding
+                            ];
+
+                        // Autoritativni demand kontrola
+                        // a fyzicky zapis do cilove zasoby.
+                        delivered =
+                            deliverWareToBuilding(
+                                &destination,
+                                unit.carriedWare
+                            );
+                    }
+
+                    if (delivered) {
+                        // Ware uz fyzicky vlastni cil.
+                        unit.carriedWare =
+                            WareType::Count;
+
+                        unit.assignedWare =
+                            WareType::Count;
+
+                        unit.sourceBuilding = -1;
+                        unit.destinationBuilding = -1;
+
+                        unit.logisticsState =
+                            SerfLogisticsState::Idle;
+
+                        unit.state = UnitState::Idle;
+                    } else {
+                        // Cesta skoncila, ale delivery
+                        // nebyla prijata. Naklad zustava
+                        // fyzicky u Serfa.
+                        unit.logisticsState =
+                            SerfLogisticsState::Carrying;
+
+                        unit.state = UnitState::Idle;
+                    }
+
+                    unit.targetWorldX = unit.worldX;
+                    unit.targetWorldY = unit.worldY;
+
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+
+                    continue;
+                }
 
                 // =========================================
                 // SERF STORE PICKUP
