@@ -212,6 +212,10 @@ struct UnitResources {
     // Originalni KaM SerfCarry[wt_Gold].
     // 8 smeru x 8 animacnich kroku.
     SDL_Texture* serfCarryGoldAtlas;
+
+    // Originalni KaM SerfCarry[wt_Flour].
+    // 8 smeru x 8 animacnich kroku.
+    SDL_Texture* serfCarryFlourAtlas;
 };
 
 static constexpr int MAX_UNITS = 32;

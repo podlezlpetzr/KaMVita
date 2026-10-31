@@ -77,6 +77,12 @@ UnitResources loadUnitResources(
             "app0:assets/units/serf/carry_gold_atlas.bmp"
         );
 
+    resources.serfCarryFlourAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/carry_flour_atlas.bmp"
+        );
+
     return resources;
 }
 
@@ -95,6 +101,7 @@ void destroyUnitResources(
     SDL_DestroyTexture(resources->serfWalkAtlas);
     SDL_DestroyTexture(resources->serfCarryStoneAtlas);
     SDL_DestroyTexture(resources->serfCarryGoldAtlas);
+    SDL_DestroyTexture(resources->serfCarryFlourAtlas);
 
     resources->workerIdle = nullptr;
     resources->workerWalkAtlas = nullptr;
@@ -104,6 +111,7 @@ void destroyUnitResources(
     resources->serfWalkAtlas = nullptr;
     resources->serfCarryStoneAtlas = nullptr;
     resources->serfCarryGoldAtlas = nullptr;
+    resources->serfCarryFlourAtlas = nullptr;
 }
 
 void renderUnits(
@@ -438,6 +446,64 @@ void renderUnits(
                 &goldDestination
             );
         }
+
+        // =================================================
+        // ORIGINAL KaM SERF FLOUR CARRY LAYER
+        //
+        // unit.dat WareTypeToIndex[wt_Flour] = 11
+        //
+        // Atlas:
+        // cell 40x28
+        // anchor -20,-39
+        // 8 smeru x 8 kroku.
+        // =================================================
+        if (
+            isSerf &&
+            units[i].carriedWare ==
+                WareType::Flour &&
+            resources.serfCarryFlourAtlas
+        ) {
+            constexpr int flourCellWidth = 40;
+            constexpr int flourCellHeight = 28;
+
+            constexpr int flourAnchorX = -20;
+            constexpr int flourAnchorY = -39;
+
+            int flourFrame =
+                units[i].animationFrame % 8;
+
+            if (flourFrame < 0)
+                flourFrame += 8;
+
+            SDL_Rect flourSource = {
+                flourFrame * flourCellWidth,
+                direction * flourCellHeight,
+                flourCellWidth,
+                flourCellHeight
+            };
+
+            SDL_Rect flourDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX +
+                    flourAnchorX +
+                    doorwaySlideX,
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    flourAnchorY +
+                    doorwaySlideY,
+
+                flourCellWidth,
+                flourCellHeight
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.serfCarryFlourAtlas,
+                &flourSource,
+                &flourDestination
+            );
+        }
     }
 }
 
@@ -541,6 +607,17 @@ static bool canBuildingAcceptDeliveredWare(
                 SCHOOL_GOLD_CAPACITY;
     }
 
+    if (
+        destination.type == BuildingType::Bakery &&
+        ware == WareType::Flour
+    ) {
+        return canHouseAcceptWare(
+            destination,
+            ware,
+            1
+        );
+    }
+
     return false;
 }
 
@@ -552,6 +629,20 @@ static bool deliverWareToBuilding(
 {
     if (!destination)
         return false;
+
+    // Bakery Flour ma kapacitu rezervovanou od okamziku
+    // dispatch assignmentu. Delivery tuto rezervaci
+    // autoritativne prevede na resourceIn[0].
+    if (
+        destination->type == BuildingType::Bakery &&
+        ware == WareType::Flour
+    ) {
+        return deliverHouseWare(
+            destination,
+            ware,
+            1
+        );
+    }
 
     if (
         !canBuildingAcceptDeliveredWare(
@@ -1523,6 +1614,26 @@ void updateUnits(
                 unit.animationFrame = 0;
                 unit.animationTimer = 0.0f;
             } else {
+                // Flour rezervace byla vytvorena jeste
+                // pred cestou ke Store. Pokud pickup selze,
+                // musi se kapacita Bakery znovu uvolnit.
+                if (
+                    buildings &&
+                    unit.assignedWare ==
+                        WareType::Flour &&
+                    unit.destinationBuilding >= 0 &&
+                    unit.destinationBuilding <
+                        buildingCount
+                ) {
+                    cancelHouseWareDelivery(
+                        &buildings[
+                            unit.destinationBuilding
+                        ],
+                        WareType::Flour,
+                        1
+                    );
+                }
+
                 cancelSerfTransport(
                     &unit
                 );
@@ -1561,12 +1672,13 @@ void updateUnits(
         // =================================================
         // SERF AUTOMATIC TRANSPORT DISPATCH
         //
-        // Prvni funkcni logisticky dispatcher:
-        // volny Serf hleda Store s Gold a School,
-        // ktera Gold skutecne prijima.
+        // Aktualne podporovane fyzicke transporty:
         //
-        // Ware se pri assignmentu neodebira.
-        // Pickup zustava fyzicky az po prichodu ke Store.
+        // 1. Store Gold  -> School
+        // 2. Store Flour -> Bakery
+        //
+        // Flour kapacita je rezervovana pred zahajenim
+        // cesty. Gold zachovava dosavadni School runtime.
         // =================================================
         if (
             unit.type == UnitType::Serf &&
@@ -1579,93 +1691,144 @@ void updateUnits(
         ) {
             bool dispatched = false;
 
-            for (
-                int sourceIndex = 0;
-                sourceIndex < buildingCount &&
-                    !dispatched;
-                ++sourceIndex
-            ) {
-                if (
-                    !buildings[sourceIndex].active ||
-                    buildings[sourceIndex].type !=
-                        BuildingType::Store ||
-                    !isBuildingComplete(
-                        buildings[sourceIndex]
-                    )
-                ) {
-                    continue;
-                }
+            static const WareType transportWares[] = {
+                WareType::Gold,
+                WareType::Flour
+            };
 
-                if (
-                    !canStoreTakeWare(
-                        buildings[sourceIndex],
-                        WareType::Gold,
-                        1
-                    )
-                ) {
-                    continue;
-                }
+            for (
+                WareType transportWare :
+                    transportWares
+            ) {
+                if (dispatched)
+                    break;
 
                 for (
-                    int destinationIndex = 0;
-                    destinationIndex <
-                        buildingCount;
-                    ++destinationIndex
+                    int sourceIndex = 0;
+                    sourceIndex < buildingCount &&
+                        !dispatched;
+                    ++sourceIndex
                 ) {
                     if (
-                        destinationIndex ==
-                            sourceIndex
-                    ) {
-                        continue;
-                    }
-
-                    if (
-                        !canAssignSerfTransport(
-                            unit,
-                            WareType::Gold,
-                            sourceIndex,
-                            destinationIndex,
-                            buildings,
-                            buildingCount
+                        !buildings[sourceIndex].active ||
+                        buildings[sourceIndex].type !=
+                            BuildingType::Store ||
+                        !isBuildingComplete(
+                            buildings[sourceIndex]
                         )
                     ) {
                         continue;
                     }
 
                     if (
-                        !assignSerfTransport(
-                            &unit,
-                            WareType::Gold,
-                            sourceIndex,
-                            destinationIndex,
-                            buildings,
-                            buildingCount
+                        !canStoreTakeWare(
+                            buildings[sourceIndex],
+                            transportWare,
+                            1
                         )
                     ) {
                         continue;
                     }
 
-                    if (
-                        startSerfTransportToSource(
-                            &unit,
-                            buildings,
-                            buildingCount,
-                            mapWidth,
-                            mapHeight,
-                            tileSize
-                        )
+                    for (
+                        int destinationIndex = 0;
+                        destinationIndex <
+                            buildingCount;
+                        ++destinationIndex
                     ) {
-                        dispatched = true;
-                        break;
-                    }
+                        if (
+                            destinationIndex ==
+                                sourceIndex
+                        ) {
+                            continue;
+                        }
 
-                    // Assignment probehl, ale cesta
-                    // ke Store nevznikla. Protoze Serf
-                    // jeste nic nenese, muzeme ulohu
-                    // bezpecne zrusit.
-                    cancelSerfTransport(
-                        &unit
-                    );
+                        if (
+                            !canAssignSerfTransport(
+                                unit,
+                                transportWare,
+                                sourceIndex,
+                                destinationIndex,
+                                buildings,
+                                buildingCount
+                            )
+                        ) {
+                            continue;
+                        }
+
+                        bool reservationCreated =
+                            false;
+
+                        if (
+                            transportWare ==
+                                WareType::Flour
+                        ) {
+                            reservationCreated =
+                                reserveHouseWareDelivery(
+                                    &buildings[
+                                        destinationIndex
+                                    ],
+                                    transportWare,
+                                    1
+                                );
+
+                            if (!reservationCreated)
+                                continue;
+                        }
+
+                        if (
+                            !assignSerfTransport(
+                                &unit,
+                                transportWare,
+                                sourceIndex,
+                                destinationIndex,
+                                buildings,
+                                buildingCount
+                            )
+                        ) {
+                            if (reservationCreated) {
+                                cancelHouseWareDelivery(
+                                    &buildings[
+                                        destinationIndex
+                                    ],
+                                    transportWare,
+                                    1
+                                );
+                            }
+
+                            continue;
+                        }
+
+                        if (
+                            startSerfTransportToSource(
+                                &unit,
+                                buildings,
+                                buildingCount,
+                                mapWidth,
+                                mapHeight,
+                                tileSize
+                            )
+                        ) {
+                            dispatched = true;
+                            break;
+                        }
+
+                        // Assignment probehl, ale cesta
+                        // ke Store nevznikla.
+                        if (reservationCreated) {
+                            cancelHouseWareDelivery(
+                                &buildings[
+                                    destinationIndex
+                                ],
+                                transportWare,
+                                1
+                            );
+                        }
+
+                        cancelSerfTransport(
+                            &unit
+                        );
+                    }
                 }
             }
 
@@ -1913,6 +2076,26 @@ void updateUnits(
                     unit.logisticsState =
                         SerfLogisticsState::Carrying;
                 } else {
+                    // Pickup uvnitr Store selhal.
+                    // U Flour musime vratit rezervovanou
+                    // kapacitu cilove Bakery.
+                    if (
+                        buildings &&
+                        unit.assignedWare ==
+                            WareType::Flour &&
+                        unit.destinationBuilding >= 0 &&
+                        unit.destinationBuilding <
+                            buildingCount
+                    ) {
+                        cancelHouseWareDelivery(
+                            &buildings[
+                                unit.destinationBuilding
+                            ],
+                            WareType::Flour,
+                            1
+                        );
+                    }
+
                     unit.carriedWare =
                         WareType::Count;
 

@@ -1884,11 +1884,17 @@ BuildingEntrance getBuildingEntrance(
             };
 
         case BuildingType::Bakery:
+            // Originalni houses.dat:
+            // EntranceOffsetPx = (17, 12)
+            //
+            // Aktivni KaMVita footprint entrance zustava
+            // na local (2,2). Pixelovy offset nyni odpovida
+            // skutecnemu Bakery vstupu v originalnim sprite.
             return {
                 2,
                 2,
-                0,
-                0
+                17,
+                12
             };
 
         case BuildingType::Farm:
