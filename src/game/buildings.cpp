@@ -1,4 +1,5 @@
 #include "buildings.h"
+#include <climits>
 #include "house_plan_catalog.h"
 
 static SDL_Texture* loadColorKeyTexture(
@@ -1621,4 +1622,166 @@ BuildingEntrance getBuildingEntrance(
                 0
             };
     }
+}
+
+// ============================================================
+// STORE WARE API
+// ============================================================
+
+bool isValidWareType(
+    WareType ware
+)
+{
+    const int wareIndex =
+        wareTypeToIndex(ware);
+
+    return
+        wareIndex >= 0 &&
+        wareIndex < STORE_WARE_COUNT;
+}
+
+
+static bool isUsableStore(
+    const Building& store
+)
+{
+    return
+        store.active &&
+        store.type == BuildingType::Store &&
+        isBuildingComplete(store);
+}
+
+
+int getStoreWareAmount(
+    const Building& store,
+    WareType ware
+)
+{
+    if (
+        !isUsableStore(store) ||
+        !isValidWareType(ware)
+    ) {
+        return 0;
+    }
+
+    const int wareIndex =
+        wareTypeToIndex(ware);
+
+    const int amount =
+        store.storeWares[wareIndex];
+
+    return amount > 0
+        ? amount
+        : 0;
+}
+
+
+bool canStoreAcceptWare(
+    const Building& store,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !isUsableStore(store) ||
+        !isValidWareType(ware) ||
+        amount <= 0
+    ) {
+        return false;
+    }
+
+    if (!store.wareDeliveryEnabled)
+        return false;
+
+    const int wareIndex =
+        wareTypeToIndex(ware);
+
+    if (store.storeNotAccept[wareIndex])
+        return false;
+
+    const int currentAmount =
+        getStoreWareAmount(
+            store,
+            ware
+        );
+
+    // Ochrana proti preteceni int.
+    return amount <=
+        INT_MAX - currentAmount;
+}
+
+
+bool addStoreWare(
+    Building* store,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !store ||
+        !canStoreAcceptWare(
+            *store,
+            ware,
+            amount
+        )
+    ) {
+        return false;
+    }
+
+    const int wareIndex =
+        wareTypeToIndex(ware);
+
+    store->storeWares[wareIndex] +=
+        amount;
+
+    return true;
+}
+
+
+bool canStoreTakeWare(
+    const Building& store,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !isUsableStore(store) ||
+        !isValidWareType(ware) ||
+        amount <= 0
+    ) {
+        return false;
+    }
+
+    return
+        getStoreWareAmount(
+            store,
+            ware
+        ) >= amount;
+}
+
+
+bool takeStoreWare(
+    Building* store,
+    WareType ware,
+    int amount
+)
+{
+    if (
+        !store ||
+        !canStoreTakeWare(
+            *store,
+            ware,
+            amount
+        )
+    ) {
+        return false;
+    }
+
+    const int wareIndex =
+        wareTypeToIndex(ware);
+
+    store->storeWares[wareIndex] -=
+        amount;
+
+    return true;
 }

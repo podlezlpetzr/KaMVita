@@ -129,6 +129,58 @@ struct Building {
 
 static constexpr int MAX_BUILDINGS = 32;
 
+
+// ============================================================
+// STORE WARE API
+//
+// Herni systemy vcetne Serf logistiky nesmi menit
+// Building::storeWares primo.
+//
+// Vsechny funkce overuji:
+// - platny Store
+// - dokoncenou budovu
+// - platny WareType
+// - kladne mnozstvi
+//
+// canStoreAcceptWare respektuje take:
+// - globalni House ware delivery toggle
+// - Store NotAcceptFlag daneho ware
+// ============================================================
+
+bool isValidWareType(
+    WareType ware
+);
+
+int getStoreWareAmount(
+    const Building& store,
+    WareType ware
+);
+
+bool canStoreAcceptWare(
+    const Building& store,
+    WareType ware,
+    int amount = 1
+);
+
+bool addStoreWare(
+    Building* store,
+    WareType ware,
+    int amount = 1
+);
+
+bool canStoreTakeWare(
+    const Building& store,
+    WareType ware,
+    int amount = 1
+);
+
+bool takeStoreWare(
+    Building* store,
+    WareType ware,
+    int amount = 1
+);
+
+
 bool buildingsOverlap(
     const Building& a,
     BuildingType type,
