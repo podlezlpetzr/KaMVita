@@ -16,6 +16,7 @@ enum class GameUISection {
     Options,
     School,
     Store,
+    Bakery,
     Unit
 };
 
@@ -98,6 +99,10 @@ struct GameUIState {
     // Aktualne otevreny dokoncený Store.
     // -1 = zadny Store panel.
     int selectedStoreBuilding;
+
+    // Aktualne otevrena dokoncena Bakery.
+    // -1 = zadny Bakery panel.
+    int selectedBakeryBuilding;
 
     // Store GUI focus.
     // 0..27 odpovida WareType a GUI 351..378.

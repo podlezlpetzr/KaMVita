@@ -1257,6 +1257,7 @@ int main(int argc, char* argv[])
 
         buildings[1].schoolTrainingActive = false;
         buildings[1].schoolFinishingTraining = false;
+
     }
     unsigned int previousButtons = 0;
     bool previousTouchDown = false;
@@ -1658,6 +1659,178 @@ int main(int argc, char* argv[])
                 }
             }
         }
+
+        // -------------------------------------------------
+        // STORE HOUSE HEADER INPUT
+        //
+        // Stejna House header geometrie jako Bakery:
+        // Delivery = x 6..35,  y 249..278
+        // Repair   = x 36..65, y 249..278
+        //
+        // Originalni GUI:
+        // Delivery 37/38
+        // Repair   39/40
+        // -------------------------------------------------
+        if (
+            gameUI.section ==
+                GameUISection::Store &&
+            gameUI.selectedStoreBuilding >= 0 &&
+            gameUI.selectedStoreBuilding <
+                buildingCount
+        ) {
+            Building& store =
+                buildings[
+                    gameUI.selectedStoreBuilding
+                ];
+
+            const bool validStore =
+                store.active &&
+                store.type ==
+                    BuildingType::Store &&
+                isBuildingComplete(store);
+
+            if (validStore && touchTapped) {
+                const SDL_Rect deliveryArea = {
+                    6,
+                    249,
+                    30,
+                    30
+                };
+
+                const SDL_Rect repairArea = {
+                    36,
+                    249,
+                    30,
+                    30
+                };
+
+                const bool insideDelivery =
+                    touchStartX >=
+                        deliveryArea.x &&
+                    touchStartX <
+                        deliveryArea.x +
+                            deliveryArea.w &&
+                    touchStartY >=
+                        deliveryArea.y &&
+                    touchStartY <
+                        deliveryArea.y +
+                            deliveryArea.h;
+
+                const bool insideRepair =
+                    touchStartX >=
+                        repairArea.x &&
+                    touchStartX <
+                        repairArea.x +
+                            repairArea.w &&
+                    touchStartY >=
+                        repairArea.y &&
+                    touchStartY <
+                        repairArea.y +
+                            repairArea.h;
+
+                if (insideDelivery) {
+                    store.wareDeliveryEnabled =
+                        !store.wareDeliveryEnabled;
+
+                    touchTapped = false;
+                    crossPressed = false;
+                } else if (insideRepair) {
+                    store.repairEnabled =
+                        !store.repairEnabled;
+
+                    touchTapped = false;
+                    crossPressed = false;
+                }
+            }
+        }
+
+
+        // -------------------------------------------------
+        // BAKERY HOUSE HEADER INPUT
+        //
+        // Stejna geometrie jako originalni House header:
+        // Delivery = x 6..35,  y 249..278
+        // Repair   = x 36..65, y 249..278
+        //
+        // Remake:
+        // Delivery 37/38
+        // Repair   39/40
+        // -------------------------------------------------
+        if (
+            gameUI.section ==
+                GameUISection::Bakery &&
+            gameUI.selectedBakeryBuilding >= 0 &&
+            gameUI.selectedBakeryBuilding <
+                buildingCount
+        ) {
+            Building& bakery =
+                buildings[
+                    gameUI.selectedBakeryBuilding
+                ];
+
+            const bool validBakery =
+                bakery.active &&
+                bakery.type ==
+                    BuildingType::Bakery &&
+                isBuildingComplete(bakery);
+
+            if (validBakery) {
+                const SDL_Rect deliveryArea = {
+                    6,
+                    249,
+                    30,
+                    30
+                };
+
+                const SDL_Rect repairArea = {
+                    36,
+                    249,
+                    30,
+                    30
+                };
+
+                if (touchTapped) {
+                    const bool insideDelivery =
+                        touchStartX >=
+                            deliveryArea.x &&
+                        touchStartX <
+                            deliveryArea.x +
+                                deliveryArea.w &&
+                        touchStartY >=
+                            deliveryArea.y &&
+                        touchStartY <
+                            deliveryArea.y +
+                                deliveryArea.h;
+
+                    const bool insideRepair =
+                        touchStartX >=
+                            repairArea.x &&
+                        touchStartX <
+                            repairArea.x +
+                                repairArea.w &&
+                        touchStartY >=
+                            repairArea.y &&
+                        touchStartY <
+                            repairArea.y +
+                                repairArea.h;
+
+                    if (insideDelivery) {
+                        bakery.wareDeliveryEnabled =
+                            !bakery.wareDeliveryEnabled;
+
+                        touchTapped = false;
+                        crossPressed = false;
+                    } else if (insideRepair) {
+                        bakery.repairEnabled =
+                            !bakery.repairEnabled;
+
+                        touchTapped = false;
+                        crossPressed = false;
+                    }
+                }
+            }
+        }
+
 
         // Originalni hlavni KaM toolbar 439..442.
         // Kazdy glyph prepina skutecnou GameUISection.
@@ -3408,6 +3581,7 @@ int main(int argc, char* argv[])
 
             bool openedStore = false;
             bool openedSchool = false;
+            bool openedBakery = false;
 
             if (
                 houseSelectScreenX >=
@@ -3493,9 +3667,98 @@ int main(int argc, char* argv[])
                     break;
                 }
 
-                // Nejdrive zkusime vybrat dokoncenou School.
+                // -----------------------------------------
+                // Dokoncena Bakery
+                //
+                // Stejny House-selection model jako
+                // Store a School. Zadna vlastni temporary
+                // grafika se zde nevytvari.
+                // -----------------------------------------
 
-            if (!openedStore) {
+                if (!openedStore) {
+                    for (
+                        int i = buildingCount - 1;
+                        i >= 0;
+                        --i
+                    ) {
+                        if (!buildings[i].active)
+                            continue;
+
+                        if (
+                            buildings[i].type !=
+                                BuildingType::Bakery
+                        ) {
+                            continue;
+                        }
+
+                        if (
+                            !isBuildingComplete(
+                                buildings[i]
+                            )
+                        ) {
+                            continue;
+                        }
+
+                        const int width =
+                            getBuildingWidth(
+                                buildings[i].type
+                            );
+
+                        const int height =
+                            getBuildingHeight(
+                                buildings[i].type
+                            );
+
+                        const bool insideBakery =
+                            houseSelectTileX >=
+                                buildings[i].tileX &&
+                            houseSelectTileX <
+                                buildings[i].tileX +
+                                    width &&
+                            houseSelectTileY >=
+                                buildings[i].tileY &&
+                            houseSelectTileY <
+                                buildings[i].tileY +
+                                    height;
+
+                        if (!insideBakery)
+                            continue;
+
+                        gameUI.section =
+                            GameUISection::Bakery;
+
+                        gameUI.selectedBakeryBuilding =
+                            i;
+
+                        gameUI.selectedStoreBuilding =
+                            -1;
+
+                        gameUI.selectedSchoolBuilding =
+                            -1;
+
+                        gameUI.buildSectionActive =
+                            false;
+
+                        gameUI.toolbarFocus =
+                            false;
+
+                        openedBakery = true;
+
+                        selectedTileX = -1;
+                        selectedTileY = -1;
+
+                        crossPressed = false;
+
+                        if (touchTapped)
+                            touchTapped = false;
+
+                        break;
+                    }
+                }
+
+                // Nakonec zkusime dokoncenou School.
+
+            if (!openedStore && !openedBakery) {
             for (int i = buildingCount - 1;
                  i >= 0;
                  --i) {
@@ -3563,6 +3826,7 @@ int main(int argc, char* argv[])
 
             if (
                 !openedStore &&
+                !openedBakery &&
                 !openedSchool &&
                 gameUI.section ==
                     GameUISection::Build &&

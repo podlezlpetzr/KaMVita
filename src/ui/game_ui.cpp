@@ -33,6 +33,7 @@ void initGameUI(
 
     ui->selectedSchoolBuilding = -1;
     ui->selectedStoreBuilding = -1;
+    ui->selectedBakeryBuilding = -1;
     ui->storeWareSelection = 0;
 }
 
@@ -56,6 +57,7 @@ void renderGameUI(
 
     const Building* selectedSchool = nullptr;
     const Building* selectedStore = nullptr;
+    const Building* selectedBakery = nullptr;
 
     if (
         buildings &&
@@ -71,6 +73,24 @@ void renderGameUI(
             candidate.type == BuildingType::Store
         ) {
             selectedStore = &candidate;
+        }
+    }
+
+    if (
+        buildings &&
+        ui.section == GameUISection::Bakery &&
+        ui.selectedBakeryBuilding >= 0 &&
+        ui.selectedBakeryBuilding < buildingCount
+    ) {
+        const Building& candidate =
+            buildings[ui.selectedBakeryBuilding];
+
+        if (
+            candidate.active &&
+            candidate.type == BuildingType::Bakery &&
+            isBuildingComplete(candidate)
+        ) {
+            selectedBakery = &candidate;
         }
     }
 
@@ -3060,6 +3080,429 @@ void renderGameUI(
             );
         }
     }
+
+    // =====================================================
+    // ORIGINAL KaM BAKERY PANEL_HOUSE_COMMON
+    //
+    // Pouzite jsou pouze puvodni KaM assety:
+    // - Bakery House icon
+    // - Baker unit icon
+    // - Flour GUI 362
+    // - Bread GUI 361
+    // - Delivery 37/38
+    // - Repair 39/40
+    // - puvodni sidebar a button stone
+    //
+    // Zadny vlastni podklad ani placeholder.
+    // =====================================================
+    if (
+        ui.section == GameUISection::Bakery &&
+        selectedBakery
+    ) {
+        const int panelX = 6;
+        const int houseTop = 198;
+        const int houseControlsY = 249;
+        const int contentY = 286;
+        const int contentWidth = 180;
+
+        // Originalni Bakery title z Build House katalogu.
+        SDL_Texture* bakeryTitle =
+            schoolResources.buildHouseNameText[
+                static_cast<int>(
+                    HouseIconType::Bakery
+                )
+            ];
+
+        if (bakeryTitle) {
+            int titleW = 0;
+            int titleH = 0;
+
+            SDL_QueryTexture(
+                bakeryTitle,
+                nullptr,
+                nullptr,
+                &titleW,
+                &titleH
+            );
+
+            SDL_Rect titleDst = {
+                panelX +
+                    (contentWidth - titleW) / 2,
+                229,
+                titleW,
+                titleH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                bakeryTitle,
+                nullptr,
+                &titleDst
+            );
+        }
+
+        SDL_Rect deliveryButton = {
+            panelX,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect repairButton = {
+            panelX + 30,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect houseLogoArea = {
+            panelX + 60,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect workerArea = {
+            panelX + 90,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect healthBar = {
+            panelX + 120,
+            houseTop + 66,
+            55,
+            15
+        };
+
+        SDL_Rect headerButtons[2] = {
+            deliveryButton,
+            repairButton
+        };
+
+        for (int buttonIndex = 0;
+             buttonIndex < 2;
+             ++buttonIndex) {
+            if (schoolResources.buttonStone) {
+                SDL_Rect source = {
+                    12 + buttonIndex * 34,
+                    40,
+                    30,
+                    30
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.buttonStone,
+                    &source,
+                    &headerButtons[buttonIndex]
+                );
+            }
+        }
+
+        SDL_Texture* deliveryGlyph =
+            selectedBakery->wareDeliveryEnabled
+                ? schoolResources.deliveryOn
+                : schoolResources.deliveryOff;
+
+        if (deliveryGlyph) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                deliveryGlyph,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect destination = {
+                deliveryButton.x +
+                    (deliveryButton.w - w) / 2,
+                deliveryButton.y +
+                    (deliveryButton.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                deliveryGlyph,
+                nullptr,
+                &destination
+            );
+        }
+
+        SDL_Texture* repairGlyph =
+            selectedBakery->repairEnabled
+                ? schoolResources.repairOn
+                : schoolResources.repairOff;
+
+        if (repairGlyph) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                repairGlyph,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect destination = {
+                repairButton.x +
+                    (repairButton.w - w) / 2,
+                repairButton.y +
+                    (repairButton.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                repairGlyph,
+                nullptr,
+                &destination
+            );
+        }
+
+        SDL_Texture* bakeryHouseIcon =
+            getHouseIcon(
+                houseIcons,
+                HouseIconType::Bakery
+            );
+
+        if (bakeryHouseIcon) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                bakeryHouseIcon,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect destination = {
+                houseLogoArea.x +
+                    (houseLogoArea.w - w) / 2,
+                houseLogoArea.y +
+                    (houseLogoArea.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                bakeryHouseIcon,
+                nullptr,
+                &destination
+            );
+        }
+
+        // Originalni Baker GUI ikona.
+        SDL_Texture* bakerIcon =
+            schoolResources.professions[
+                static_cast<int>(
+                    GameUISchoolSelection::Baker
+                )
+            ].icon;
+
+        if (bakerIcon) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                bakerIcon,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect destination = {
+                workerArea.x +
+                    (workerArea.w - w) / 2,
+                workerArea.y +
+                    (workerArea.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                bakerIcon,
+                nullptr,
+                &destination
+            );
+        }
+
+        // House health.
+        SDL_SetRenderDrawColor(
+            renderer,
+            43, 35, 28, 255
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &healthBar
+        );
+
+        int healthWidth = 0;
+
+        if (selectedBakery->maxHealth > 0) {
+            healthWidth =
+                (
+                    (healthBar.w - 2) *
+                    selectedBakery->health
+                ) /
+                selectedBakery->maxHealth;
+        }
+
+        if (healthWidth < 0)
+            healthWidth = 0;
+
+        if (healthWidth > healthBar.w - 2)
+            healthWidth = healthBar.w - 2;
+
+        if (healthWidth > 0) {
+            SDL_Rect healthFill = {
+                healthBar.x + 1,
+                healthBar.y + 1,
+                healthWidth,
+                healthBar.h - 2
+            };
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                86, 154, 67, 255
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &healthFill
+            );
+        }
+
+        // ---------------------------------------------
+        // NEEDS
+        // ---------------------------------------------
+        if (schoolResources.needsText) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                schoolResources.needsText,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect destination = {
+                panelX +
+                    (contentWidth - w) / 2,
+                contentY,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.needsText,
+                nullptr,
+                &destination
+            );
+        }
+
+        // Originalni GUI 362 = Flour.
+        SDL_Texture* flourIcon =
+            schoolResources.storeWareIcons[
+                wareTypeToIndex(
+                    WareType::Flour
+                )
+            ];
+
+        const int flourAmount =
+            selectedBakery->resourceIn[0] > 0
+                ? selectedBakery->resourceIn[0]
+                : 0;
+
+        if (flourIcon) {
+            for (
+                int flourIndex = 0;
+                flourIndex < flourAmount &&
+                    flourIndex <
+                        HOUSE_INPUT_CAPACITY;
+                ++flourIndex
+            ) {
+                SDL_Rect destination = {
+                    panelX + 8 +
+                        flourIndex * 20,
+                    contentY + 22,
+                    18,
+                    17
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    flourIcon,
+                    nullptr,
+                    &destination
+                );
+            }
+        }
+
+        // ---------------------------------------------
+        // DELIVERS
+        //
+        // Bread je skutecny resourceOut[0].
+        // Protoze Bakery production zatim neni aktivni,
+        // radek zustane prazdny, ale pouziva realny stav.
+        // ---------------------------------------------
+
+        SDL_Texture* breadIcon =
+            schoolResources.storeWareIcons[
+                wareTypeToIndex(
+                    WareType::Bread
+                )
+            ];
+
+        const int breadAmount =
+            selectedBakery->resourceOut[0] > 0
+                ? selectedBakery->resourceOut[0]
+                : 0;
+
+        if (breadIcon) {
+            for (
+                int breadIndex = 0;
+                breadIndex < breadAmount &&
+                    breadIndex <
+                        HOUSE_INPUT_CAPACITY;
+                ++breadIndex
+            ) {
+                SDL_Rect destination = {
+                    panelX + 8 +
+                        breadIndex * 20,
+                    contentY + 72,
+                    18,
+                    16
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    breadIcon,
+                    nullptr,
+                    &destination
+                );
+            }
+        }
+    }
+
 
     // =====================================================
     // ORIGINAL KaM STORE PANEL
