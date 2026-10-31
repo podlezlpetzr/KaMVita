@@ -1480,6 +1480,117 @@ void updateUnits(
                 unit.pathLength = 0;
                 unit.pathIndex = 0;
 
+                // =========================================
+                // SERF STORE PICKUP
+                //
+                // Pickup se provede az po fyzickem
+                // dokonceni cesty ke zdrojovemu Store.
+                //
+                // Do teto chvile zustaval ware ve skladu.
+                // =========================================
+                if (
+                    unit.type == UnitType::Serf &&
+                    unit.logisticsState ==
+                        SerfLogisticsState::ToSource
+                ) {
+                    const bool validSource =
+                        buildings &&
+                        unit.sourceBuilding >= 0 &&
+                        unit.sourceBuilding <
+                            buildingCount &&
+                        buildings[
+                            unit.sourceBuilding
+                        ].active &&
+                        buildings[
+                            unit.sourceBuilding
+                        ].type ==
+                            BuildingType::Store &&
+                        isBuildingComplete(
+                            buildings[
+                                unit.sourceBuilding
+                            ]
+                        );
+
+                    const bool validWare =
+                        isValidWareType(
+                            unit.assignedWare
+                        );
+
+                    bool pickedUp = false;
+
+                    if (
+                        validSource &&
+                        validWare &&
+                        unit.carriedWare ==
+                            WareType::Count
+                    ) {
+                        Building& source =
+                            buildings[
+                                unit.sourceBuilding
+                            ];
+
+                        // takeStoreWare() je posledni
+                        // autoritativni kontrola dostupnosti.
+                        // Pokud mezitim ware odvezl jiny Serf,
+                        // pickup korektne selze.
+                        pickedUp =
+                            takeStoreWare(
+                                &source,
+                                unit.assignedWare,
+                                1
+                            );
+                    }
+
+                    if (pickedUp) {
+                        unit.carriedWare =
+                            unit.assignedWare;
+
+                        unit.logisticsState =
+                            SerfLogisticsState::Carrying;
+
+                        unit.state =
+                            UnitState::Idle;
+
+                        unit.targetWorldX =
+                            unit.worldX;
+
+                        unit.targetWorldY =
+                            unit.worldY;
+
+                        unit.animationFrame = 0;
+                        unit.animationTimer = 0.0f;
+                    } else {
+                        // Zdroj nebo ware prestal byt platny.
+                        // Protoze Serf nic nevyzvedl,
+                        // muzeme ulohu bezpecne zrusit.
+                        unit.carriedWare =
+                            WareType::Count;
+
+                        unit.assignedWare =
+                            WareType::Count;
+
+                        unit.sourceBuilding = -1;
+                        unit.destinationBuilding = -1;
+
+                        unit.logisticsState =
+                            SerfLogisticsState::Idle;
+
+                        unit.state =
+                            UnitState::Idle;
+
+                        unit.targetWorldX =
+                            unit.worldX;
+
+                        unit.targetWorldY =
+                            unit.worldY;
+
+                        unit.animationFrame = 0;
+                        unit.animationTimer = 0.0f;
+                    }
+
+                    continue;
+                }
+
                 const bool hasRoadWork =
                     unit.targetRoadX >= 0 &&
                     unit.targetRoadY >= 0;
