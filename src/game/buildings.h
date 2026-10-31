@@ -10,6 +10,64 @@ enum class BuildingType {
     School = 3
 };
 
+// Originalni KaM WareType poradi pouzivane Store GUI.
+// Poradi odpovida STORE_RES_COUNT a GUI ikonam 351..378.
+enum class WareType {
+    Trunk = 0,
+    Stone,
+    Wood,
+    IronOre,
+    GoldOre,
+    Coal,
+    Steel,
+    Gold,
+    Wine,
+    Corn,
+    Bread,
+    Flour,
+    Leather,
+    Sausage,
+    Pig,
+    Skin,
+    WoodenShield,
+    IronShield,
+    LeatherArmor,
+    IronArmor,
+    Axe,
+    Sword,
+    Lance,
+    Pike,
+    Bow,
+    Crossbow,
+    Horse,
+    Fish,
+
+    Count
+};
+
+static constexpr int STORE_WARE_COUNT =
+    static_cast<int>(WareType::Count);
+
+static_assert(
+    STORE_WARE_COUNT == 28,
+    "KaM Store musi obsahovat presne 28 ware typu"
+);
+
+static constexpr int STORE_GUI_FIRST_WARE_SPRITE = 351;
+static constexpr int STORE_GUI_ACCEPT_SPRITE = 49;
+
+inline int wareTypeToIndex(WareType type)
+{
+    return static_cast<int>(type);
+}
+
+inline int getWareGUIIcon(WareType type)
+{
+    return
+        STORE_GUI_FIRST_WARE_SPRITE +
+        wareTypeToIndex(type);
+}
+
 struct Building {
     int tileX;
     int tileY;
@@ -49,6 +107,19 @@ struct Building {
 
     // Zasoba zlata uvnitr School.
     int schoolGold;
+
+    // Store inventory podle puvodniho KaM.
+    //
+    // Index odpovida WareType a originalnimu poradi
+    // StoreResType. Hodnota je skutecny pocet kusu ware
+    // uvnitr skladu.
+    int storeWares[STORE_WARE_COUNT];
+
+    // false = Store ware prijima
+    // true  = prijem daneho ware je zakazan
+    //
+    // Nazev a vyznam odpovida Remake NotAcceptFlag.
+    bool storeNotAccept[STORE_WARE_COUNT];
 
     bool schoolTrainingActive;
     bool schoolFinishingTraining;
