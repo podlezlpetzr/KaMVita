@@ -32,6 +32,7 @@ void initGameUI(
     ui->schoolQueueSelection = 0;
 
     ui->selectedSchoolBuilding = -1;
+    ui->selectedStoreBuilding = -1;
 }
 
 void renderGameUI(
@@ -53,6 +54,24 @@ void renderGameUI(
         return;
 
     const Building* selectedSchool = nullptr;
+    const Building* selectedStore = nullptr;
+
+    if (
+        buildings &&
+        ui.section == GameUISection::Store &&
+        ui.selectedStoreBuilding >= 0 &&
+        ui.selectedStoreBuilding < buildingCount
+    ) {
+        const Building& candidate =
+            buildings[ui.selectedStoreBuilding];
+
+        if (
+            candidate.active &&
+            candidate.type == BuildingType::Store
+        ) {
+            selectedStore = &candidate;
+        }
+    }
 
     if (
         buildings &&
@@ -3038,6 +3057,469 @@ void renderGameUI(
                 255,
                 255
             );
+        }
+    }
+
+    // =====================================================
+    // ORIGINAL KaM STORE PANEL
+    //
+    // KM_GUIGameHouse:
+    // Panel_HouseStore 180x266
+    // 5 sloupcu
+    // dX = 2 + (index mod 5) * 36
+    // dY = 19 + (index div 5) * 42
+    // ware area = 32x36
+    //
+    // Vita:
+    // panelX = 6
+    // panelY = 274
+    // =====================================================
+    if (
+        ui.section == GameUISection::Store &&
+        selectedStore
+    ) {
+        const int storePanelX = 6;
+        const int storePanelY = 274;
+
+        // Nazev budovy. Pouzivame uz existujici
+        // originalni text Store z Build resources.
+        SDL_Texture* storeTitle =
+            schoolResources.buildNameText[1];
+
+        if (storeTitle) {
+            int titleW = 0;
+            int titleH = 0;
+
+            SDL_QueryTexture(
+                storeTitle,
+                nullptr,
+                nullptr,
+                &titleW,
+                &titleH
+            );
+
+            SDL_Rect titleDst = {
+                storePanelX +
+                    (180 - titleW) / 2,
+                229,
+                titleW,
+                titleH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                storeTitle,
+                nullptr,
+                &titleDst
+            );
+        }
+
+        // -------------------------------------------------
+        // House header
+        // Stejna Vita geometrie jako u School.
+        // -------------------------------------------------
+        const int houseTop = 198;
+        const int houseControlsY = 249;
+
+        SDL_Rect deliveryButton = {
+            storePanelX,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect repairButton = {
+            storePanelX + 30,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect houseLogoArea = {
+            storePanelX + 60,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect workerArea = {
+            storePanelX + 90,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect healthBar = {
+            storePanelX + 120,
+            houseTop + 66,
+            55,
+            15
+        };
+
+        SDL_Rect headerButtons[2] = {
+            deliveryButton,
+            repairButton
+        };
+
+        for (int i = 0; i < 2; ++i) {
+            if (schoolResources.buttonStone) {
+                SDL_Rect src = {
+                    12 + i * 34,
+                    40,
+                    30,
+                    30
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.buttonStone,
+                    &src,
+                    &headerButtons[i]
+                );
+            }
+        }
+
+        SDL_Texture* deliveryGlyph =
+            selectedStore->wareDeliveryEnabled
+                ? schoolResources.deliveryOn
+                : schoolResources.deliveryOff;
+
+        if (deliveryGlyph) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                deliveryGlyph,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect dst = {
+                deliveryButton.x +
+                    (deliveryButton.w - w) / 2,
+                deliveryButton.y +
+                    (deliveryButton.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                deliveryGlyph,
+                nullptr,
+                &dst
+            );
+        }
+
+        SDL_Texture* repairGlyph =
+            selectedStore->repairEnabled
+                ? schoolResources.repairOn
+                : schoolResources.repairOff;
+
+        if (repairGlyph) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                repairGlyph,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect dst = {
+                repairButton.x +
+                    (repairButton.w - w) / 2,
+                repairButton.y +
+                    (repairButton.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                repairGlyph,
+                nullptr,
+                &dst
+            );
+        }
+
+        SDL_Texture* storeHouseIcon =
+            getHouseIcon(
+                houseIcons,
+                HouseIconType::Store
+            );
+
+        if (storeHouseIcon) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                storeHouseIcon,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect dst = {
+                houseLogoArea.x +
+                    (houseLogoArea.w - w) / 2,
+                houseLogoArea.y +
+                    (houseLogoArea.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                storeHouseIcon,
+                nullptr,
+                &dst
+            );
+        }
+
+        if (schoolResources.houseWorker) {
+            int w = 0;
+            int h = 0;
+
+            SDL_QueryTexture(
+                schoolResources.houseWorker,
+                nullptr,
+                nullptr,
+                &w,
+                &h
+            );
+
+            SDL_Rect dst = {
+                workerArea.x +
+                    (workerArea.w - w) / 2,
+                workerArea.y +
+                    (workerArea.h - h) / 2,
+                w,
+                h
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.houseWorker,
+                nullptr,
+                &dst
+            );
+        }
+
+        // House health.
+        SDL_SetRenderDrawColor(
+            renderer,
+            43, 35, 28, 255
+        );
+        SDL_RenderFillRect(
+            renderer,
+            &healthBar
+        );
+
+        int healthWidth = 0;
+
+        if (selectedStore->maxHealth > 0) {
+            healthWidth =
+                (
+                    (healthBar.w - 2) *
+                    selectedStore->health
+                ) /
+                selectedStore->maxHealth;
+        }
+
+        if (healthWidth < 0)
+            healthWidth = 0;
+
+        if (healthWidth > healthBar.w - 2)
+            healthWidth = healthBar.w - 2;
+
+        SDL_Rect healthFill = {
+            healthBar.x + 1,
+            healthBar.y + 1,
+            healthWidth,
+            healthBar.h - 2
+        };
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            86, 154, 67, 255
+        );
+        SDL_RenderFillRect(
+            renderer,
+            &healthFill
+        );
+
+        // -------------------------------------------------
+        // 28 ware slots
+        // -------------------------------------------------
+        for (
+            int wareIndex = 0;
+            wareIndex < STORE_WARE_COUNT;
+            ++wareIndex
+        ) {
+            const int column =
+                wareIndex % 5;
+
+            const int row =
+                wareIndex / 5;
+
+            SDL_Rect wareArea = {
+                storePanelX +
+                    2 +
+                    column * 36,
+                storePanelY +
+                    19 +
+                    row * 42,
+                32,
+                36
+            };
+
+            // Jemny puvodni game-panel relief.
+            SDL_SetRenderDrawColor(
+                renderer,
+                45, 38, 30, 210
+            );
+            SDL_RenderFillRect(
+                renderer,
+                &wareArea
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                31, 26, 21, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                wareArea.x,
+                wareArea.y,
+                wareArea.x + wareArea.w - 1,
+                wareArea.y
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                wareArea.x,
+                wareArea.y,
+                wareArea.x,
+                wareArea.y + wareArea.h - 1
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                174, 154, 119, 255
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                wareArea.x,
+                wareArea.y + wareArea.h - 1,
+                wareArea.x + wareArea.w - 1,
+                wareArea.y + wareArea.h - 1
+            );
+
+            SDL_RenderDrawLine(
+                renderer,
+                wareArea.x + wareArea.w - 1,
+                wareArea.y,
+                wareArea.x + wareArea.w - 1,
+                wareArea.y + wareArea.h - 1
+            );
+
+            SDL_Texture* wareIcon =
+                schoolResources
+                    .storeWareIcons[wareIndex];
+
+            if (wareIcon) {
+                int iconW = 0;
+                int iconH = 0;
+
+                SDL_QueryTexture(
+                    wareIcon,
+                    nullptr,
+                    nullptr,
+                    &iconW,
+                    &iconH
+                );
+
+                SDL_Rect iconDst = {
+                    wareArea.x +
+                        (wareArea.w - iconW) / 2,
+                    wareArea.y + 2,
+                    iconW,
+                    iconH
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    wareIcon,
+                    nullptr,
+                    &iconDst
+                );
+            }
+
+            // NotAcceptFlag:
+            // marker GUI 49 se zobrazi jen pokud
+            // je prijem daneho ware zakazan.
+            if (
+                selectedStore->
+                    storeNotAccept[wareIndex] &&
+                schoolResources.storeAcceptFlag
+            ) {
+                SDL_Rect flagDst = {
+                    wareArea.x +
+                        wareArea.w - 12,
+                    wareArea.y,
+                    12,
+                    12
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    schoolResources.storeAcceptFlag,
+                    nullptr,
+                    &flagDst
+                );
+            }
+
+            // Pocitadlo zatim zobrazi alespon nenulove
+            // stavy jednoduchym indikacnim prouzkem.
+            // Skutecny KaM font pro cisla pripojime
+            // v dalsim samostatnem rezu.
+            if (
+                selectedStore->
+                    storeWares[wareIndex] > 0
+            ) {
+                int amount =
+                    selectedStore->
+                        storeWares[wareIndex];
+
+                if (amount > 28)
+                    amount = 28;
+
+                SDL_Rect amountBar = {
+                    wareArea.x + 2,
+                    wareArea.y +
+                        wareArea.h - 5,
+                    amount,
+                    3
+                };
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    220, 204, 157, 255
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &amountBar
+                );
+            }
         }
     }
 

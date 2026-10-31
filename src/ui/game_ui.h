@@ -15,6 +15,7 @@ enum class GameUISection {
     Statistics,
     Options,
     School,
+    Store,
     Unit
 };
 
@@ -93,6 +94,10 @@ struct GameUIState {
     int schoolQueueSelection;
 
     int selectedSchoolBuilding;
+
+    // Aktualne otevreny dokoncený Store.
+    // -1 = zadny Store panel.
+    int selectedStoreBuilding;
 };
 
 void initGameUI(

@@ -2711,13 +2711,19 @@ int main(int argc, char* argv[])
 
         if (
             circlePressed &&
-            gameUI.section == GameUISection::School
+            (
+                gameUI.section == GameUISection::School ||
+                gameUI.section == GameUISection::Store
+            )
         ) {
             gameUI.section =
                 GameUISection::Build;
 
             gameUI.selectedSchoolBuilding = -1;
+            gameUI.selectedStoreBuilding = -1;
             gameUI.buildSectionActive = true;
+
+            circlePressed = false;
 
         } else if (circlePressed) {
             for (int i = buildingCount - 1; i >= 0; --i) {
@@ -2745,16 +2751,125 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (!buildMenuOpen &&
-            crossPressed &&
-            hoverTileX >= 0 &&
-            hoverTileX < MAP_WIDTH &&
-            hoverTileY >= 0 &&
-            hoverTileY < MAP_HEIGHT) {
+        if (
+            !buildMenuOpen &&
+            (
+                crossPressed ||
+                touchTapped
+            )
+        ) {
+            const float houseSelectScreenX =
+                touchTapped
+                    ? touchStartX
+                    : cursorX;
 
+            const float houseSelectScreenY =
+                touchTapped
+                    ? touchStartY
+                    : cursorY;
+
+            const int houseSelectTileX =
+                (
+                    (int)houseSelectScreenX +
+                    (int)cameraX
+                ) /
+                TILE_SIZE;
+
+            const int houseSelectTileY =
+                (
+                    (int)houseSelectScreenY +
+                    (int)cameraY
+                ) /
+                TILE_SIZE;
+
+            bool openedStore = false;
             bool openedSchool = false;
 
-            // Nejdrive zkusime vybrat dokoncenou School.
+            if (
+                houseSelectScreenX >=
+                    GAME_UI_PANEL_WIDTH &&
+                houseSelectTileX >= 0 &&
+                houseSelectTileX < MAP_WIDTH &&
+                houseSelectTileY >= 0 &&
+                houseSelectTileY < MAP_HEIGHT
+            ) {
+                // Store ma stejnou prioritu jako ostatni
+                // House detail pages. Unit selection uz
+                // probehl drive a pripadny vstup spotreboval.
+                for (
+                    int i = buildingCount - 1;
+                    i >= 0;
+                    --i
+                ) {
+                    if (!buildings[i].active)
+                        continue;
+
+                    if (
+                        buildings[i].type !=
+                            BuildingType::Store
+                    ) {
+                        continue;
+                    }
+
+                    if (!isBuildingComplete(buildings[i]))
+                        continue;
+
+                    const int width =
+                        getBuildingWidth(
+                            buildings[i].type
+                        );
+
+                    const int height =
+                        getBuildingHeight(
+                            buildings[i].type
+                        );
+
+                    const bool insideStore =
+                        houseSelectTileX >=
+                            buildings[i].tileX &&
+                        houseSelectTileX <
+                            buildings[i].tileX +
+                                width &&
+                        houseSelectTileY >=
+                            buildings[i].tileY &&
+                        houseSelectTileY <
+                            buildings[i].tileY +
+                                height;
+
+                    if (!insideStore)
+                        continue;
+
+                    gameUI.section =
+                        GameUISection::Store;
+
+                    gameUI.selectedStoreBuilding =
+                        i;
+
+                    gameUI.selectedSchoolBuilding =
+                        -1;
+
+                    gameUI.buildSectionActive =
+                        false;
+
+                    gameUI.toolbarFocus =
+                        false;
+
+                    openedStore = true;
+
+                    selectedTileX = -1;
+                    selectedTileY = -1;
+
+                    crossPressed = false;
+
+                    if (touchTapped)
+                        touchTapped = false;
+
+                    break;
+                }
+
+                // Nejdrive zkusime vybrat dokoncenou School.
+
+            if (!openedStore) {
             for (int i = buildingCount - 1;
                  i >= 0;
                  --i) {
@@ -2802,6 +2917,7 @@ int main(int argc, char* argv[])
                     GameUISchoolSelection::Serf;
 
                 gameUI.selectedSchoolBuilding = i;
+                gameUI.selectedStoreBuilding = -1;
 
                 gameUI.buildSectionActive = false;
 
@@ -2810,15 +2926,32 @@ int main(int argc, char* argv[])
                 selectedTileX = -1;
                 selectedTileY = -1;
 
+                crossPressed = false;
+
+                if (touchTapped)
+                    touchTapped = false;
+
                 break;
             }
+            }
 
-            if (!openedSchool &&
+            if (
+                !openedStore &&
+                !openedSchool &&
                 gameUI.section ==
-                    GameUISection::Build) {
+                    GameUISection::Build &&
+                crossPressed &&
+                houseSelectTileX >= 0 &&
+                houseSelectTileX < MAP_WIDTH &&
+                houseSelectTileY >= 0 &&
+                houseSelectTileY < MAP_HEIGHT
+            ) {
+                selectedTileX =
+                    houseSelectTileX;
 
-                selectedTileX = hoverTileX;
-                selectedTileY = hoverTileY;
+                selectedTileY =
+                    houseSelectTileY;
+            }
             }
         }
         // -------------------------------------------------
