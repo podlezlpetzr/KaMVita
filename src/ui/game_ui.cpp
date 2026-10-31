@@ -3487,37 +3487,49 @@ void renderGameUI(
                 );
             }
 
-            // Pocitadlo zatim zobrazi alespon nenulove
-            // stavy jednoduchym indikacnim prouzkem.
-            // Skutecny KaM font pro cisla pripojime
-            // v dalsim samostatnem rezu.
-            if (
-                selectedStore->
-                    storeWares[wareIndex] > 0
-            ) {
+            // -------------------------------------------------
+            // Store ware count
+            //
+            // Pouzivame stejny originalni KaM game.fntx atlas
+            // jako Statistics a Build.
+            //
+            // statisticsCounts:
+            // 33 bunek 32x18 pro hodnoty 0..32.
+            // -------------------------------------------------
+
+            if (schoolResources.statisticsCounts) {
                 int amount =
                     selectedStore->
                         storeWares[wareIndex];
 
-                if (amount > 28)
-                    amount = 28;
+                if (amount < 0)
+                    amount = 0;
 
-                SDL_Rect amountBar = {
-                    wareArea.x + 2,
-                    wareArea.y +
-                        wareArea.h - 5,
-                    amount,
-                    3
+                if (amount > 32)
+                    amount = 32;
+
+                SDL_Rect amountSource = {
+                    0,
+                    amount * 18,
+                    32,
+                    18
                 };
 
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    220, 204, 157, 255
-                );
+                // Originalni Store slot ma 32x36.
+                // Pocet je zarovnany do spodni casti slotu.
+                SDL_Rect amountDestination = {
+                    wareArea.x,
+                    wareArea.y +
+                        wareArea.h - 18,
+                    32,
+                    18
+                };
 
-                SDL_RenderFillRect(
+                SDL_RenderCopy(
                     renderer,
-                    &amountBar
+                    schoolResources.statisticsCounts,
+                    &amountSource,
+                    &amountDestination
                 );
             }
         }
