@@ -85,6 +85,37 @@ static constexpr int UNIT_START_CONDITION =
 
 static constexpr int MAX_UNIT_PATH = 256;
 
+// ============================================================
+// SERF LOGISTICS
+//
+// Samostatny logisticky stav je oddeleny od UnitState.
+// UnitState zustava zodpovedny za fyzicky pohyb / akci,
+// SerfLogisticsState popisuje logistickou ulohu.
+//
+// Zatim pouze datovy zaklad. Automaticke taskovani se
+// prida az v samostatnem kroku.
+// ============================================================
+
+enum class SerfLogisticsState {
+    Idle = 0,
+
+    // Uloha byla Serfovi pridelena.
+    Assigned,
+
+    // Serf smeruje ke zdrojove budove.
+    ToSource,
+
+    // Ware byl vyzvednut.
+    Carrying,
+
+    // Serf smeruje k cilove budove.
+    ToDestination,
+
+    // Ware byl dorucen a Serf se vraci.
+    Returning
+};
+
+
 struct Unit {
     UnitType type;
     UnitState state;
@@ -110,6 +141,25 @@ struct Unit {
     float animationTimer;
 
     int targetBuilding;
+
+    // ========================================================
+    // Serf logistics runtime
+    //
+    // carriedWare == WareType::Count znamena, ze Serf
+    // momentalne zadny ware nenese.
+    //
+    // sourceBuilding / destinationBuilding jsou indexy do
+    // hlavniho Building pole. -1 znamena zadnou budovu.
+    //
+    // Tyto hodnoty zatim nepouziva automaticke taskovani.
+    // ========================================================
+
+    SerfLogisticsState logisticsState;
+
+    WareType carriedWare;
+
+    int sourceBuilding;
+    int destinationBuilding;
 
     int targetRoadX;
     int targetRoadY;

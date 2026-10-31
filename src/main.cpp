@@ -906,6 +906,16 @@ int main(int argc, char* argv[])
         serf.pathIndex = 0;
 
         serf.targetBuilding = -1;
+
+        serf.logisticsState =
+            SerfLogisticsState::Idle;
+
+        serf.carriedWare =
+            WareType::Count;
+
+        serf.sourceBuilding = -1;
+        serf.destinationBuilding = -1;
+
         serf.targetRoadX = -1;
         serf.targetRoadY = -1;
 
@@ -4631,6 +4641,16 @@ int main(int argc, char* argv[])
                 trainedUnit.pathIndex = 0;
 
                 trainedUnit.targetBuilding = -1;
+
+                trainedUnit.logisticsState =
+                    SerfLogisticsState::Idle;
+
+                trainedUnit.carriedWare =
+                    WareType::Count;
+
+                trainedUnit.sourceBuilding = -1;
+                trainedUnit.destinationBuilding = -1;
+
                 trainedUnit.targetRoadX = -1;
                 trainedUnit.targetRoadY = -1;
 
