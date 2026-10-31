@@ -59,6 +59,50 @@ static_assert(
 );
 
 
+// Save v6 a puvodni save v7 vznikly po pridani
+// House runtime stavu, ale pred Store inventory.
+//
+// Tento layout musi zustat pevny. Nesmime pro legacy
+// save pouzivat sizeof(Building), protoze Building se
+// dale rozsiruje.
+struct BuildingSaveV7 {
+    int tileX;
+    int tileY;
+    BuildingType type;
+    int constructionProgress;
+
+    int woodDelivered;
+    int stoneDelivered;
+    int woodStep;
+    int stoneStep;
+
+    int health;
+    int maxHealth;
+
+    bool repairEnabled;
+    bool wareDeliveryEnabled;
+
+    int schoolQueue[6];
+    int schoolTrainingStep;
+    int schoolIdleStep;
+    int schoolGold;
+
+    bool schoolTrainingActive;
+    bool schoolFinishingTraining;
+    bool active;
+};
+
+static_assert(
+    sizeof(BuildingSaveV7) == 84,
+    "BuildingSaveV7 musi mit presne 84 bajtu"
+);
+
+static_assert(
+    sizeof(Building) == 224,
+    "Save v8 ocekava Building o velikosti 224 bajtu"
+);
+
+
 static int getDefaultBuildingMaxHealth(
     BuildingType type
 )
@@ -138,6 +182,78 @@ static Building migrateBuildingSaveV5(
 
 
 
+static Building migrateBuildingSaveV7(
+    const BuildingSaveV7& old
+)
+{
+    Building building = {};
+
+    building.tileX = old.tileX;
+    building.tileY = old.tileY;
+    building.type = old.type;
+
+    building.constructionProgress =
+        old.constructionProgress;
+
+    building.woodDelivered =
+        old.woodDelivered;
+
+    building.stoneDelivered =
+        old.stoneDelivered;
+
+    building.woodStep = old.woodStep;
+    building.stoneStep = old.stoneStep;
+
+    building.health = old.health;
+    building.maxHealth = old.maxHealth;
+
+    building.repairEnabled =
+        old.repairEnabled;
+
+    building.wareDeliveryEnabled =
+        old.wareDeliveryEnabled;
+
+    for (
+        int queueIndex = 0;
+        queueIndex < SCHOOL_QUEUE_SIZE;
+        ++queueIndex
+    ) {
+        building.schoolQueue[queueIndex] =
+            old.schoolQueue[queueIndex];
+    }
+
+    building.schoolTrainingStep =
+        old.schoolTrainingStep;
+
+    building.schoolIdleStep =
+        old.schoolIdleStep;
+
+    building.schoolGold =
+        old.schoolGold;
+
+    // Store pole zustanou z value initialization
+    // nastavena na 0 a false.
+    for (
+        int wareIndex = 0;
+        wareIndex < STORE_WARE_COUNT;
+        ++wareIndex
+    ) {
+        building.storeWares[wareIndex] = 0;
+        building.storeNotAccept[wareIndex] = false;
+    }
+
+    building.schoolTrainingActive =
+        old.schoolTrainingActive;
+
+    building.schoolFinishingTraining =
+        old.schoolFinishingTraining;
+
+    building.active = old.active;
+
+    return building;
+}
+
+
 static bool saveGame(
     const Building* buildings,
     int buildingCount,
@@ -161,10 +277,14 @@ static bool saveGame(
 
     header.magic = 0x4B414D56;
 
-    // Save v7:
-    // za blokem budov je ulozenych presne
-    // 16 bajtu WareDistribution.
-    header.version = 7;
+    // Save v8:
+    // - aktualni Building vcetne Store inventory
+    // - za blokem budov 16 bajtu WareDistribution
+    //
+    // Store pole jsou soucasti Building:
+    // 28 x int  storeWares
+    // 28 x bool storeNotAccept
+    header.version = 8;
     header.buildingCount = buildingCount;
 
     if (
@@ -253,7 +373,8 @@ static bool loadGame(
             header.version != 4 &&
             header.version != 5 &&
             header.version != 6 &&
-            header.version != 7
+            header.version != 7 &&
+            header.version != 8
         ) ||
         header.buildingCount < 0 ||
         header.buildingCount > MAX_BUILDINGS
@@ -264,9 +385,72 @@ static bool loadGame(
 
     Building loadedBuildings[MAX_BUILDINGS] = {};
 
+    // Behem Store implementace mohl kratce vzniknout
+    // save oznaceny jako v7, ale uz s novym 224bajtovym
+    // Building layoutem. Rozlisime jej podle velikosti
+    // souboru, aby fungoval puvodni i prechodny v7.
+    long saveFileSize = 0;
+
+    if (fseek(file, 0, SEEK_END) == 0) {
+        saveFileSize = ftell(file);
+
+        if (
+            fseek(
+                file,
+                static_cast<long>(
+                    sizeof(SaveHeader)
+                ),
+                SEEK_SET
+            ) != 0
+        ) {
+            fclose(file);
+            return false;
+        }
+    } else {
+        fclose(file);
+        return false;
+    }
+
+    const long legacyV7FileSize =
+        static_cast<long>(sizeof(SaveHeader)) +
+        static_cast<long>(
+            sizeof(BuildingSaveV7) *
+            MAX_BUILDINGS
+        ) +
+        static_cast<long>(
+            sizeof(WareDistribution)
+        );
+
+    const long currentV7FileSize =
+        static_cast<long>(sizeof(SaveHeader)) +
+        static_cast<long>(
+            sizeof(Building) *
+            MAX_BUILDINGS
+        ) +
+        static_cast<long>(
+            sizeof(WareDistribution)
+        );
+
+    const bool v7UsesCurrentLayout =
+        header.version == 7 &&
+        saveFileSize == currentV7FileSize;
+
+    const bool v7UsesLegacyLayout =
+        header.version == 7 &&
+        saveFileSize == legacyV7FileSize;
+
     if (
-        header.version == 6 ||
-        header.version == 7
+        header.version == 7 &&
+        !v7UsesCurrentLayout &&
+        !v7UsesLegacyLayout
+    ) {
+        fclose(file);
+        return false;
+    }
+
+    if (
+        header.version == 8 ||
+        v7UsesCurrentLayout
     ) {
         if (
             fread(
@@ -278,6 +462,36 @@ static bool loadGame(
         ) {
             fclose(file);
             return false;
+        }
+    } else if (
+        header.version == 6 ||
+        v7UsesLegacyLayout
+    ) {
+        BuildingSaveV7 legacyBuildings[
+            MAX_BUILDINGS
+        ] = {};
+
+        if (
+            fread(
+                legacyBuildings,
+                sizeof(BuildingSaveV7),
+                MAX_BUILDINGS,
+                file
+            ) != MAX_BUILDINGS
+        ) {
+            fclose(file);
+            return false;
+        }
+
+        for (
+            int buildingIndex = 0;
+            buildingIndex < MAX_BUILDINGS;
+            ++buildingIndex
+        ) {
+            loadedBuildings[buildingIndex] =
+                migrateBuildingSaveV7(
+                    legacyBuildings[buildingIndex]
+                );
         }
     } else {
         BuildingSaveV5 legacyBuildings[
@@ -297,18 +511,21 @@ static bool loadGame(
         }
 
         for (
-            int i = 0;
-            i < MAX_BUILDINGS;
-            ++i
+            int buildingIndex = 0;
+            buildingIndex < MAX_BUILDINGS;
+            ++buildingIndex
         ) {
-            loadedBuildings[i] =
+            loadedBuildings[buildingIndex] =
                 migrateBuildingSaveV5(
-                    legacyBuildings[i]
+                    legacyBuildings[buildingIndex]
                 );
         }
     }
 
-    if (header.version == 7) {
+    if (
+        header.version == 7 ||
+        header.version == 8
+    ) {
         WareDistribution loadedDistribution = {};
 
         if (
@@ -432,6 +649,27 @@ static bool loadGame(
             ) {
                 loadedBuildings[i].health =
                     loadedBuildings[i].maxHealth;
+            }
+
+            // Store save ochrana:
+            // zaporne mnozstvi ware neni platne.
+            if (
+                loadedBuildings[i].type ==
+                    BuildingType::Store
+            ) {
+                for (
+                    int wareIndex = 0;
+                    wareIndex < STORE_WARE_COUNT;
+                    ++wareIndex
+                ) {
+                    if (
+                        loadedBuildings[i]
+                            .storeWares[wareIndex] < 0
+                    ) {
+                        loadedBuildings[i]
+                            .storeWares[wareIndex] = 0;
+                    }
+                }
             }
         }
 
