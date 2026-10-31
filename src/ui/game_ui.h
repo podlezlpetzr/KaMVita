@@ -195,6 +195,11 @@ struct SchoolUIResources {
     // Originalni texty generovane z KaM FNTX fontu.
     SDL_Texture* needsText;
     SDL_Texture* goldText;
+
+    // Originalni game.fntx Bakery captiony.
+    SDL_Texture* bakeryFlourText;
+    SDL_Texture* bakeryLoavesText;
+    SDL_Texture* bakeryDeliversX2Text;
     SDL_Texture* professionText[SCHOOL_PROFESSION_COUNT];
 
     SchoolProfessionUIResources

@@ -17,6 +17,7 @@
 #include <psp2/io/stat.h>
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 
 
 static constexpr int SCREEN_WIDTH  = 960;
@@ -26,6 +27,25 @@ static constexpr int MAP_WIDTH = 64;
 static constexpr int MAP_HEIGHT = 64;
 static constexpr int WORLD_WIDTH = MAP_WIDTH * TILE_SIZE;
 static constexpr int WORLD_HEIGHT = MAP_HEIGHT * TILE_SIZE;
+
+// ============================================================
+// ORIGINAL KaM BAKERY PRODUCTION
+//
+// houses.dat / Remake workplan:
+// 1 Flour -> 2 Bread
+// 7x Work2(24) + Work3(30) = 378 animation ticks.
+// House output capacity = 5.
+// ============================================================
+
+static constexpr int BAKERY_FLOUR_PER_CYCLE = 1;
+static constexpr int BAKERY_BREAD_PER_CYCLE = 2;
+static constexpr int BAKERY_PRODUCTION_TICKS = 378;
+static constexpr int BAKERY_OUTPUT_CAPACITY = 5;
+
+// Jeden originalni House animation tick.
+// Zpracovani pouziva accumulator, takze nepropadaji tick kroky
+// ani pri delsim frame delta.
+static constexpr float BAKERY_TICK_SECONDS = 0.1f;
 
 
 struct SaveHeader {
@@ -143,9 +163,26 @@ static_assert(
     "BuildingSaveV8 musi mit presne 224 bajtu"
 );
 
+// ===========================================================
+// SAVE V9 FIXED BUILDING LAYOUT
+//
+// Save v9 zapisoval tehdejsi Building primo jako 272 bajtu.
+// Novy Building ma Bakery production runtime na konci,
+// proto v9 musime nacitat pres pevny 272bajtovy zaznam.
+// ===========================================================
+
+struct BuildingSaveV9 {
+    unsigned char bytes[272];
+};
+
 static_assert(
-    sizeof(Building) == 272,
-    "Save v9 ocekava Building o velikosti 272 bajtu"
+    sizeof(BuildingSaveV9) == 272,
+    "BuildingSaveV9 musi mit presne 272 bajtu"
+);
+
+static_assert(
+    sizeof(Building) == 280,
+    "Save v10 ocekava Building o velikosti 280 bajtu"
 );
 
 
@@ -178,6 +215,9 @@ static void initializeHouseRuntimeState(
     building->health = building->maxHealth;
     building->repairEnabled = false;
     building->wareDeliveryEnabled = true;
+
+    building->bakeryProductionActive = false;
+    building->bakeryProductionTick = 0;
 }
 
 
@@ -408,17 +448,12 @@ static bool saveGame(
 
     header.magic = 0x4B414D56;
 
-    // Save v9:
-    // - Store inventory z v8
-    // - obecna House input/output inventory
-    // - rezervace ware aktivni dopravou
+    // Save v10:
+    // - kompletni save v9 House inventory
+    // - Bakery production active state
+    // - Bakery production tick 0..378
     // - za blokem budov 16 bajtu WareDistribution
-    //
-    // Nova pole Building:
-    // 4 x int resourceIn
-    // 4 x int resourceDeliveryCount
-    // 4 x int resourceOut
-    header.version = 9;
+    header.version = 10;
     header.buildingCount = buildingCount;
 
     if (
@@ -509,7 +544,8 @@ static bool loadGame(
             header.version != 6 &&
             header.version != 7 &&
             header.version != 8 &&
-            header.version != 9
+            header.version != 9 &&
+            header.version != 10
         ) ||
         header.buildingCount < 0 ||
         header.buildingCount > MAX_BUILDINGS
@@ -583,7 +619,7 @@ static bool loadGame(
         return false;
     }
 
-    if (header.version == 9) {
+    if (header.version == 10) {
         if (
             fread(
                 loadedBuildings,
@@ -594,6 +630,48 @@ static bool loadGame(
         ) {
             fclose(file);
             return false;
+        }
+    } else if (header.version == 9) {
+        BuildingSaveV9 legacyBuildings[
+            MAX_BUILDINGS
+        ] = {};
+
+        if (
+            fread(
+                legacyBuildings,
+                sizeof(BuildingSaveV9),
+                MAX_BUILDINGS,
+                file
+            ) != MAX_BUILDINGS
+        ) {
+            fclose(file);
+            return false;
+        }
+
+        for (
+            int buildingIndex = 0;
+            buildingIndex < MAX_BUILDINGS;
+            ++buildingIndex
+        ) {
+            loadedBuildings[buildingIndex] = {};
+
+            static_assert(
+                sizeof(BuildingSaveV9) <
+                    sizeof(Building),
+                "v9 layout musi byt mensi nez v10"
+            );
+
+            std::memcpy(
+                &loadedBuildings[buildingIndex],
+                legacyBuildings[buildingIndex].bytes,
+                sizeof(BuildingSaveV9)
+            );
+
+            loadedBuildings[buildingIndex]
+                .bakeryProductionActive = false;
+
+            loadedBuildings[buildingIndex]
+                .bakeryProductionTick = 0;
         }
     } else if (
         header.version == 8 ||
@@ -687,7 +765,8 @@ static bool loadGame(
     if (
         header.version == 7 ||
         header.version == 8 ||
-        header.version == 9
+        header.version == 9 ||
+        header.version == 10
     ) {
         WareDistribution loadedDistribution = {};
 
@@ -854,6 +933,43 @@ static bool loadGame(
                     .resourceDeliveryCount[slot] = 0;
             }
 
+            // Bakery production save ochrana.
+            //
+            // Platny rozpracovany cyklus ma tick 0..377.
+            // Tick 378 znamena dokonceni a nesmi zustat
+            // ulozen jako aktivni stav.
+            if (
+                loadedBuildings[i].type ==
+                    BuildingType::Bakery
+            ) {
+                if (
+                    loadedBuildings[i]
+                        .bakeryProductionTick < 0 ||
+                    loadedBuildings[i]
+                        .bakeryProductionTick >= 378
+                ) {
+                    loadedBuildings[i]
+                        .bakeryProductionActive = false;
+
+                    loadedBuildings[i]
+                        .bakeryProductionTick = 0;
+                }
+
+                if (
+                    !loadedBuildings[i]
+                        .bakeryProductionActive
+                ) {
+                    loadedBuildings[i]
+                        .bakeryProductionTick = 0;
+                }
+            } else {
+                loadedBuildings[i]
+                    .bakeryProductionActive = false;
+
+                loadedBuildings[i]
+                    .bakeryProductionTick = 0;
+            }
+
             // Store save ochrana:
             // zaporne mnozstvi ware neni platne.
             if (
@@ -992,6 +1108,11 @@ int main(int argc, char* argv[])
 
     Building buildings[MAX_BUILDINGS] = {};
     int buildingCount = 0;
+
+    // Pouze podsekundovy runtime accumulator.
+    // Autoritativni produkcni stav a tick jsou v Building
+    // a ukladaji se v save v10.
+    float bakeryProductionTimers[MAX_BUILDINGS] = {};
 
     // Stav vystavby cesty pro kazdou dlazdici.
     RoadState roads[MAP_HEIGHT][MAP_WIDTH] = {};
@@ -4693,6 +4814,73 @@ int main(int argc, char* argv[])
         }
 
 
+        // =================================================
+        // ORIGINAL KaM HOUSE ENTRANCE ROAD
+        //
+        // Remake pri dokonceni House:
+        //
+        //   gTerrain.SetRoad(fHouse.Entrance, Owner)
+        //
+        // Entrance tedy neni specialni House textura.
+        // Je to normalni road tile a musi byt soucasti
+        // stejne RoadsConnectivity site jako ostatni cesty.
+        //
+        // KaMVita nema samostatny terrain-house overlay,
+        // proto zde synchronizujeme entrance vsech hotovych
+        // Houses do RoadState::Complete.
+        //
+        // Nemenime:
+        // - House footprint
+        // - House render scale
+        // - House visual X anchor
+        // - doorway pixel geometrii
+        // =================================================
+
+        for (
+            int buildingIndex = 0;
+            buildingIndex < buildingCount;
+            ++buildingIndex
+        ) {
+            const Building& building =
+                buildings[buildingIndex];
+
+            if (
+                !building.active ||
+                !isBuildingComplete(building)
+            ) {
+                continue;
+            }
+
+            const BuildingEntrance entrance =
+                getBuildingEntrance(
+                    building.type
+                );
+
+            const int entranceX =
+                building.tileX +
+                entrance.tileOffsetX;
+
+            const int entranceY =
+                building.tileY +
+                entrance.tileOffsetY;
+
+            if (
+                entranceX < 0 ||
+                entranceX >= MAP_WIDTH ||
+                entranceY < 0 ||
+                entranceY >= MAP_HEIGHT
+            ) {
+                continue;
+            }
+
+            roads[
+                entranceY
+            ][
+                entranceX
+            ] = RoadState::Complete;
+        }
+
+
         // Vykresleni planu a fazi vystavby cest.
         SDL_SetRenderDrawBlendMode(
             renderer,
@@ -5033,14 +5221,27 @@ int main(int argc, char* argv[])
                         school.type
                     );
 
-                // Logicky stred vstupni dlazdice.
+                // =========================================
+                // SCHOOL TRAINING EXIT
+                //
+                // Puvodni logicka osa School entrance tile.
+                //
+                // Stary development/debug spawn obsahoval
+                // pevny posun -18 px. Jednotka proto stale
+                // vychazela z pozice odstraneneho debug
+                // krizku.
+                //
+                // Training spawn nepouziva Serf transportni
+                // doorway. Vratime jej na stred originalni
+                // School entrance tile.
+                // =========================================
+
                 trainedUnit.doorwayStartX =
                     (
                         school.tileX +
                         entrance.tileOffsetX +
                         0.5f
-                    ) * TILE_SIZE -
-                    18.0f;
+                    ) * TILE_SIZE;
 
                 trainedUnit.doorwayStartY =
                     (
@@ -5230,6 +5431,122 @@ int main(int argc, char* argv[])
                 }
 
                 schoolStepTimers[schoolIndex] = 0.0f;
+            }
+        }
+
+        // =================================================
+        // BAKERY PRODUCTION UPDATE
+        //
+        // Originalni prevod:
+        // 1 Flour -> 2 Bread
+        //
+        // Start:
+        // - aktivni dokoncena Bakery
+        // - alespon 1 fyzicky doruceny Flour
+        // - misto pro cele 2 Bread
+        //
+        // Flour se odebere pri startu.
+        // Bread vznikne az po ticku 378.
+        // =================================================
+
+        for (
+            int bakeryIndex = 0;
+            bakeryIndex < buildingCount;
+            ++bakeryIndex
+        ) {
+            Building& bakery =
+                buildings[bakeryIndex];
+
+            if (
+                !bakery.active ||
+                bakery.type != BuildingType::Bakery ||
+                !isBuildingComplete(bakery)
+            ) {
+                bakeryProductionTimers[
+                    bakeryIndex
+                ] = 0.0f;
+
+                continue;
+            }
+
+            // Neaktivni Bakery muze zahajit novy cyklus
+            // pouze pokud ma vstup a vystupni kapacitu
+            // pro cele 2 Bread.
+            if (!bakery.bakeryProductionActive) {
+                bakery.bakeryProductionTick = 0;
+
+                const bool hasFlour =
+                    bakery.resourceIn[0] >=
+                        BAKERY_FLOUR_PER_CYCLE;
+
+                const bool hasBreadCapacity =
+                    bakery.resourceOut[0] >= 0 &&
+                    bakery.resourceOut[0] <=
+                        BAKERY_OUTPUT_CAPACITY -
+                        BAKERY_BREAD_PER_CYCLE;
+
+                if (
+                    !hasFlour ||
+                    !hasBreadCapacity
+                ) {
+                    bakeryProductionTimers[
+                        bakeryIndex
+                    ] = 0.0f;
+
+                    continue;
+                }
+
+                // Remake odebere vstup pred prvni
+                // House work action.
+                bakery.resourceIn[0] -=
+                    BAKERY_FLOUR_PER_CYCLE;
+
+                bakery.bakeryProductionActive =
+                    true;
+
+                bakery.bakeryProductionTick = 0;
+
+                bakeryProductionTimers[
+                    bakeryIndex
+                ] = 0.0f;
+            }
+
+            bakeryProductionTimers[
+                bakeryIndex
+            ] += deltaSeconds;
+
+            while (
+                bakery.bakeryProductionActive &&
+                bakeryProductionTimers[
+                    bakeryIndex
+                ] >= BAKERY_TICK_SECONDS
+            ) {
+                bakeryProductionTimers[
+                    bakeryIndex
+                ] -= BAKERY_TICK_SECONDS;
+
+                ++bakery.bakeryProductionTick;
+
+                if (
+                    bakery.bakeryProductionTick <
+                        BAKERY_PRODUCTION_TICKS
+                ) {
+                    continue;
+                }
+
+                // Remake prida produkt az po posledni
+                // House work action.
+                bakery.resourceOut[0] +=
+                    BAKERY_BREAD_PER_CYCLE;
+
+                bakery.bakeryProductionActive =
+                    false;
+
+                bakery.bakeryProductionTick = 0;
+
+                bakeryProductionTimers[
+                    bakeryIndex
+                ] = 0.0f;
             }
         }
 

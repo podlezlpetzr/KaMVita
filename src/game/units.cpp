@@ -83,6 +83,12 @@ UnitResources loadUnitResources(
             "app0:assets/units/serf/carry_flour_atlas.bmp"
         );
 
+    resources.serfCarryBreadAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/carry_bread_atlas.bmp"
+        );
+
     return resources;
 }
 
@@ -102,6 +108,7 @@ void destroyUnitResources(
     SDL_DestroyTexture(resources->serfCarryStoneAtlas);
     SDL_DestroyTexture(resources->serfCarryGoldAtlas);
     SDL_DestroyTexture(resources->serfCarryFlourAtlas);
+    SDL_DestroyTexture(resources->serfCarryBreadAtlas);
 
     resources->workerIdle = nullptr;
     resources->workerWalkAtlas = nullptr;
@@ -112,7 +119,47 @@ void destroyUnitResources(
     resources->serfCarryStoneAtlas = nullptr;
     resources->serfCarryGoldAtlas = nullptr;
     resources->serfCarryFlourAtlas = nullptr;
+    resources->serfCarryBreadAtlas = nullptr;
 }
+
+// ============================================================
+// KAM UNIT RENDER SCALE 40 TO 32
+//
+// Originalni units.rx / unit.dat grafika zustava beze zmeny.
+// Source recty zustavaji v originalnich pixelech.
+//
+// KaMVita world pouziva 32px tile, proto destination:
+// - width / height
+// - anchor X / Y
+//
+// prevadime stejne jako House render: 40 -> 32.
+//
+// worldX / worldY se NESKALUJI.
+// Pathfinding ani doorway world body se NESKALUJI.
+// ============================================================
+
+static int scaleKaMUnitPixel(
+    int value
+)
+{
+    constexpr int ORIGINAL_KAM_CELL_SIZE = 40;
+    constexpr int KAMVITA_TILE_SIZE = 32;
+
+    if (value >= 0) {
+        return (
+            value * KAMVITA_TILE_SIZE +
+            ORIGINAL_KAM_CELL_SIZE / 2
+        ) / ORIGINAL_KAM_CELL_SIZE;
+    }
+
+    return -(
+        (
+            -value * KAMVITA_TILE_SIZE +
+            ORIGINAL_KAM_CELL_SIZE / 2
+        ) / ORIGINAL_KAM_CELL_SIZE
+    );
+}
+
 
 void renderUnits(
     SDL_Renderer* renderer,
@@ -290,16 +337,25 @@ void renderUnits(
                 SDL_Rect actionDestination = {
                     (int)units[i].worldX -
                         (int)cameraX +
-                        actionAnchorX +
+                        scaleKaMUnitPixel(
+                            actionAnchorX
+                        ) +
                         workingOffsetX,
 
                     (int)units[i].worldY -
                         (int)cameraY +
-                        actionAnchorY +
+                        scaleKaMUnitPixel(
+                            actionAnchorY
+                        ) +
                         workingOffsetY,
 
-                    actionCellWidth,
-                    actionCellHeight
+                    scaleKaMUnitPixel(
+                        actionCellWidth
+                    ),
+
+                    scaleKaMUnitPixel(
+                        actionCellHeight
+                    )
                 };
 
                 SDL_RenderCopy(
@@ -364,16 +420,25 @@ void renderUnits(
         SDL_Rect destination = {
             (int)units[i].worldX -
                 (int)cameraX +
-                walkAnchorX +
+                scaleKaMUnitPixel(
+                    walkAnchorX
+                ) +
                 doorwaySlideX,
 
             (int)units[i].worldY -
                 (int)cameraY +
-                walkAnchorY +
+                scaleKaMUnitPixel(
+                    walkAnchorY
+                ) +
                 doorwaySlideY,
 
-            walkCellWidth,
-            walkCellHeight
+            scaleKaMUnitPixel(
+                walkCellWidth
+            ),
+
+            scaleKaMUnitPixel(
+                walkCellHeight
+            )
         };
 
         SDL_RenderCopy(
@@ -427,16 +492,25 @@ void renderUnits(
             SDL_Rect goldDestination = {
                 (int)units[i].worldX -
                     (int)cameraX +
-                    goldAnchorX +
+                    scaleKaMUnitPixel(
+                        goldAnchorX
+                    ) +
                     doorwaySlideX,
 
                 (int)units[i].worldY -
                     (int)cameraY +
-                    goldAnchorY +
+                    scaleKaMUnitPixel(
+                        goldAnchorY
+                    ) +
                     doorwaySlideY,
 
-                goldCellWidth,
-                goldCellHeight
+                scaleKaMUnitPixel(
+                    goldCellWidth
+                ),
+
+                scaleKaMUnitPixel(
+                    goldCellHeight
+                )
             };
 
             SDL_RenderCopy(
@@ -446,6 +520,74 @@ void renderUnits(
                 &goldDestination
             );
         }
+
+        // =================================================
+        // ORIGINAL KaM SERF BREAD CARRY LAYER
+        //
+        // unit.dat WareTypeToIndex[wt_Bread] = 10
+        //
+        // Atlas:
+        // cell 30x29
+        // anchor -15,-34
+        // 8 smeru x 8 kroku.
+        // =================================================
+        if (
+            isSerf &&
+            units[i].carriedWare ==
+                WareType::Bread &&
+            resources.serfCarryBreadAtlas
+        ) {
+            constexpr int breadCellWidth = 30;
+            constexpr int breadCellHeight = 29;
+
+            constexpr int breadAnchorX = -15;
+            constexpr int breadAnchorY = -34;
+
+            int breadFrame =
+                units[i].animationFrame % 8;
+
+            if (breadFrame < 0)
+                breadFrame += 8;
+
+            SDL_Rect breadSource = {
+                breadFrame * breadCellWidth,
+                direction * breadCellHeight,
+                breadCellWidth,
+                breadCellHeight
+            };
+
+            SDL_Rect breadDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX +
+                    scaleKaMUnitPixel(
+                        breadAnchorX
+                    ) +
+                    doorwaySlideX,
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    scaleKaMUnitPixel(
+                        breadAnchorY
+                    ) +
+                    doorwaySlideY,
+
+                scaleKaMUnitPixel(
+                    breadCellWidth
+                ),
+
+                scaleKaMUnitPixel(
+                    breadCellHeight
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.serfCarryBreadAtlas,
+                &breadSource,
+                &breadDestination
+            );
+        }
+
 
         // =================================================
         // ORIGINAL KaM SERF FLOUR CARRY LAYER
@@ -485,16 +627,25 @@ void renderUnits(
             SDL_Rect flourDestination = {
                 (int)units[i].worldX -
                     (int)cameraX +
-                    flourAnchorX +
+                    scaleKaMUnitPixel(
+                        flourAnchorX
+                    ) +
                     doorwaySlideX,
 
                 (int)units[i].worldY -
                     (int)cameraY +
-                    flourAnchorY +
+                    scaleKaMUnitPixel(
+                        flourAnchorY
+                    ) +
                     doorwaySlideY,
 
-                flourCellWidth,
-                flourCellHeight
+                scaleKaMUnitPixel(
+                    flourCellWidth
+                ),
+
+                scaleKaMUnitPixel(
+                    flourCellHeight
+                )
             };
 
             SDL_RenderCopy(
@@ -673,6 +824,273 @@ static bool deliverWareToBuilding(
 }
 
 
+// ============================================================
+// BAKERY BREAD TRANSPORT SOURCE API
+//
+// Store zustava obecnym zdrojem ware.
+// Bakery je zdrojem pouze pro fyzicky vyrobeny Bread
+// ulozeny v resourceOut[0].
+//
+// Assignment ani cesta ware neodebiraji.
+// Pickup probehne az fyzicky uvnitr source House.
+// ============================================================
+
+static bool canBuildingProvideTransportWare(
+    const Building& source,
+    WareType ware
+)
+{
+    if (!source.active)
+        return false;
+
+    if (!isBuildingComplete(source))
+        return false;
+
+    if (!isValidWareType(ware))
+        return false;
+
+    if (source.type == BuildingType::Store) {
+        return canStoreTakeWare(
+            source,
+            ware,
+            1
+        );
+    }
+
+    if (
+        source.type == BuildingType::Bakery &&
+        ware == WareType::Bread
+    ) {
+        return source.resourceOut[0] > 0;
+    }
+
+    return false;
+}
+
+
+static bool takeBuildingTransportWare(
+    Building* source,
+    WareType ware
+)
+{
+    if (!source)
+        return false;
+
+    if (
+        !canBuildingProvideTransportWare(
+            *source,
+            ware
+        )
+    ) {
+        return false;
+    }
+
+    if (source->type == BuildingType::Store) {
+        return takeStoreWare(
+            source,
+            ware,
+            1
+        );
+    }
+
+    if (
+        source->type == BuildingType::Bakery &&
+        ware == WareType::Bread
+    ) {
+        --source->resourceOut[0];
+        return true;
+    }
+
+    return false;
+}
+
+
+// ============================================================
+// FINAL SHARED HOUSE DOORWAY 40 TO 32
+//
+// Originalni EntranceOffsetPx je v KaM 40px prostoru.
+// KaMVita world pouziva tileSize 32.
+//
+// Doorway zaroven sleduje Vita overeny House visual anchor:
+//
+// Store  +9
+// School +13
+// Bakery  0
+// Farm    0
+//
+// Vstup, vystup i posledni walking waypoint musi pouzivat
+// stejny vypocet.
+// ============================================================
+
+struct HouseDoorwayGeometry {
+    float streetX;
+    float streetY;
+    float doorX;
+    float doorY;
+    int offsetX;
+    int offsetY;
+};
+
+
+static int scaleKaMDoorPixel(
+    int value,
+    int tileSize
+)
+{
+    constexpr int ORIGINAL_KAM_CELL_SIZE = 40;
+
+    if (value >= 0) {
+        return (
+            value * tileSize +
+            ORIGINAL_KAM_CELL_SIZE / 2
+        ) / ORIGINAL_KAM_CELL_SIZE;
+    }
+
+    return -(
+        (
+            -value * tileSize +
+            ORIGINAL_KAM_CELL_SIZE / 2
+        ) / ORIGINAL_KAM_CELL_SIZE
+    );
+}
+
+
+static int getHouseDoorVisualOffsetX(
+    BuildingType type,
+    int tileSize
+)
+{
+    int offsetAt32 = 0;
+
+    switch (type) {
+        case BuildingType::Store:
+            offsetAt32 = 9;
+            break;
+
+        case BuildingType::School:
+            // School doorway pouziva originalni
+            // EntranceOffsetPx (17,10) bez dodatecneho
+            // vizualniho House X posunu.
+            //
+            // School render samotny zustava +13.
+            offsetAt32 = 0;
+            break;
+
+        case BuildingType::Bakery:
+        case BuildingType::Farm:
+            offsetAt32 = 0;
+            break;
+    }
+
+    return (
+        offsetAt32 * tileSize + 16
+    ) / 32;
+}
+
+
+static HouseDoorwayGeometry
+getHouseDoorwayGeometry(
+    const Building& building,
+    int tileSize
+)
+{
+    const BuildingEntrance entrance =
+        getBuildingEntrance(
+            building.type
+        );
+
+    const int entranceTileX =
+        building.tileX +
+        entrance.tileOffsetX;
+
+    const int entranceTileY =
+        building.tileY +
+        entrance.tileOffsetY;
+
+    // =====================================================
+    // RESTORED ORIGINAL UNIT / DOOR ANCHOR
+    //
+    // Funkcni Gold/Flour doorway pouzival:
+    //
+    // EntranceOffsetXpx
+    // - tileSize / 2
+    // - 18
+    //
+    // Po prechodu House prostoru 40 -> 32 se skaluje
+    // pouze originalni House EntranceOffsetXpx.
+    //
+    // -tileSize/2 a -18 patri k pozici jednotky / doorway
+    // v KaMVita world prostoru a zustavaji v 32px soustave.
+    //
+    // Definitivni House visual offset se prida nakonec:
+    // Store +9, School +13, Bakery/Farm 0.
+    // =====================================================
+
+    // Vita doorway calibration after both House and Unit
+    // render spaces were converted from KaM 40px to Vita 32px.
+    //
+    // Observed bounds:
+    //   0 additional correction  = too far right
+    //   -18 additional correction = too far left
+    //
+    // Keep the tile-center correction and use the midpoint
+    // as the shared unit-door anchor.
+    constexpr int UNIT_DOOR_ANCHOR_X = -1;
+
+    const int offsetX =
+        scaleKaMDoorPixel(
+            entrance.pixelOffsetX,
+            tileSize
+        ) -
+        tileSize / 2 +
+        UNIT_DOOR_ANCHOR_X +
+        getHouseDoorVisualOffsetX(
+            building.type,
+            tileSize
+        );
+
+    const int offsetY =
+        scaleKaMDoorPixel(
+            entrance.pixelOffsetY,
+            tileSize
+        );
+
+    const float doorX =
+        (
+            entranceTileX +
+            0.5f
+        ) * tileSize +
+        offsetX;
+
+    const float doorY =
+        (
+            entranceTileY +
+            0.5f
+        ) * tileSize +
+        offsetY;
+
+    // Standardni road tile pod entrance.
+    // X zustava totozne s osou dveri.
+    const float streetX =
+        doorX;
+
+    const float streetY =
+        (
+            entranceTileY +
+            1.5f
+        ) * tileSize;
+
+    return {
+        streetX,
+        streetY,
+        doorX,
+        doorY,
+        offsetX,
+        offsetY
+    };
+}
+
+
 bool canAssignSerfTransport(
     const Unit& serf,
     WareType ware,
@@ -728,22 +1146,16 @@ bool canAssignSerfTransport(
     const Building& destination =
         buildings[destinationBuilding];
 
-    // Zdroj transportni ulohy musi byt funkcni Store.
+    // Zdroj musi ware fyzicky poskytovat.
+    //
+    // Store pouziva Store inventory.
+    // Bakery poskytuje pouze Bread z resourceOut[0].
+    //
+    // Assignment ware jeste neodebira.
     if (
-        !source.active ||
-        source.type != BuildingType::Store ||
-        !isBuildingComplete(source)
-    ) {
-        return false;
-    }
-
-    // Ware se zatim pouze overi.
-    // Pri assignmentu se ze Store NIC neodebira.
-    if (
-        !canStoreTakeWare(
+        !canBuildingProvideTransportWare(
             source,
-            ware,
-            1
+            ware
         )
     ) {
         return false;
@@ -878,21 +1290,14 @@ bool startSerfTransportToSource(
     const Building& source =
         buildings[serf->sourceBuilding];
 
-    if (
-        !source.active ||
-        source.type != BuildingType::Store ||
-        !isBuildingComplete(source)
-    ) {
-        return false;
-    }
-
     // Ware se mohl mezi assignmentem a startem cesty
-    // mezitim spotrebovat jinou ulohou.
+    // spotrebovat jinou ulohou.
+    //
+    // Pro Bakery kontrolujeme Bread v resourceOut[0].
     if (
-        !canStoreTakeWare(
+        !canBuildingProvideTransportWare(
             source,
-            serf->assignedWare,
-            1
+            serf->assignedWare
         )
     ) {
         return false;
@@ -1568,18 +1973,7 @@ void updateUnits(
             const bool validSource =
                 buildings &&
                 unit.sourceBuilding >= 0 &&
-                unit.sourceBuilding < buildingCount &&
-                buildings[
-                    unit.sourceBuilding
-                ].active &&
-                buildings[
-                    unit.sourceBuilding
-                ].type == BuildingType::Store &&
-                isBuildingComplete(
-                    buildings[
-                        unit.sourceBuilding
-                    ]
-                );
+                unit.sourceBuilding < buildingCount;
 
             const bool validWare =
                 isValidWareType(
@@ -1588,20 +1982,111 @@ void updateUnits(
 
             bool pickedUp = false;
 
+            // =================================================
+            // BAKERY BREAD MUST ENTER SOURCE HOUSE
+            //
+            // Store zachovava existujici fast-path pickup,
+            // kdy Serf muze uz stat na approach tile.
+            //
+            // Bakery Bread ale musi projit fyzickym doorway:
+            //
+            // approach -> EnteringBuilding -> pickup uvnitr
+            // -> LeavingBuilding.
+            //
+            // Autoritativni Bakery pickup proto zustava pouze
+            // v PICKUP INSIDE SOURCE HOUSE vetvi nize.
+            // =================================================
+
+            const bool sourceRequiresPhysicalEntry =
+                validSource &&
+                buildings[
+                    unit.sourceBuilding
+                ].type ==
+                    BuildingType::Bakery &&
+                unit.assignedWare ==
+                    WareType::Bread;
+
             if (
                 validSource &&
                 validWare &&
+                !sourceRequiresPhysicalEntry &&
                 unit.carriedWare ==
                     WareType::Count
             ) {
                 pickedUp =
-                    takeStoreWare(
+                    takeBuildingTransportWare(
                         &buildings[
                             unit.sourceBuilding
                         ],
-                        unit.assignedWare,
-                        1
+                        unit.assignedWare
                     );
+            }
+
+            if (sourceRequiresPhysicalEntry) {
+                // Serf je na source approach tile.
+                // Misto okamziteho pickup zahajime stejnou
+                // doorway fazi jako pri ostatnich fyzickych
+                // vstupech do budovy.
+
+                const Building& source =
+                    buildings[
+                        unit.sourceBuilding
+                    ];
+
+                const HouseDoorwayGeometry doorway =
+                    getHouseDoorwayGeometry(
+                        source,
+                        tileSize
+                    );
+
+                const float streetX =
+                    doorway.streetX;
+
+                const float streetY =
+                    doorway.streetY;
+
+                const float doorX =
+                    doorway.doorX;
+
+                const float doorY =
+                    doorway.doorY;
+
+                const int doorwayOffsetX =
+                    doorway.offsetX;
+
+                const int doorwayOffsetY =
+                    doorway.offsetY;
+
+                // =========================================
+                // BREAD PICKUP USES STANDARD PRE-DOOR TURN
+                //
+                // Zachovame posledni walking direction.
+                // Serf se nesmi otocit na sever predcasne.
+                //
+                // Standardni ApproachingBuilding ho nejdrive
+                // zarovna presne pod dvere a teprve pote
+                // nastavi direction = 0 a EnteringBuilding.
+                // =========================================
+
+                unit.targetWorldX = streetX;
+                unit.targetWorldY = streetY;
+
+                unit.doorwayTargetX = doorX;
+                unit.doorwayTargetY = doorY;
+
+                unit.doorwayOffsetX =
+                    doorwayOffsetX;
+
+                unit.doorwayOffsetY =
+                    doorway.offsetY;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                unit.state =
+                    UnitState::ApproachingBuilding;
+
+                continue;
             }
 
             if (pickedUp) {
@@ -1674,8 +2159,9 @@ void updateUnits(
         //
         // Aktualne podporovane fyzicke transporty:
         //
-        // 1. Store Gold  -> School
-        // 2. Store Flour -> Bakery
+        // 1. Store Gold   -> School
+        // 2. Store Flour  -> Bakery
+        // 3. Bakery Bread -> Store
         //
         // Flour kapacita je rezervovana pred zahajenim
         // cesty. Gold zachovava dosavadni School runtime.
@@ -1693,7 +2179,8 @@ void updateUnits(
 
             static const WareType transportWares[] = {
                 WareType::Gold,
-                WareType::Flour
+                WareType::Flour,
+                WareType::Bread
             };
 
             for (
@@ -1710,21 +2197,9 @@ void updateUnits(
                     ++sourceIndex
                 ) {
                     if (
-                        !buildings[sourceIndex].active ||
-                        buildings[sourceIndex].type !=
-                            BuildingType::Store ||
-                        !isBuildingComplete(
-                            buildings[sourceIndex]
-                        )
-                    ) {
-                        continue;
-                    }
-
-                    if (
-                        !canStoreTakeWare(
+                        !canBuildingProvideTransportWare(
                             buildings[sourceIndex],
-                            transportWare,
-                            1
+                            transportWare
                         )
                     ) {
                         continue;
@@ -1814,7 +2289,7 @@ void updateUnits(
                         }
 
                         // Assignment probehl, ale cesta
-                        // ke Store nevznikla.
+                        // ke zdrojove budove nevznikla.
                         if (reservationCreated) {
                             cancelHouseWareDelivery(
                                 &buildings[
@@ -2034,19 +2509,7 @@ void updateUnits(
                     buildings &&
                     unit.sourceBuilding >= 0 &&
                     unit.sourceBuilding <
-                        buildingCount &&
-                    buildings[
-                        unit.sourceBuilding
-                    ].active &&
-                    buildings[
-                        unit.sourceBuilding
-                    ].type ==
-                        BuildingType::Store &&
-                    isBuildingComplete(
-                        buildings[
-                            unit.sourceBuilding
-                        ]
-                    );
+                        buildingCount;
 
                 const bool validWare =
                     isValidWareType(
@@ -2060,12 +2523,11 @@ void updateUnits(
                         WareType::Count
                 ) {
                     transferSucceeded =
-                        takeStoreWare(
+                        takeBuildingTransportWare(
                             &buildings[
                                 unit.sourceBuilding
                             ],
-                            unit.assignedWare,
-                            1
+                            unit.assignedWare
                         );
                 }
 
@@ -2076,7 +2538,7 @@ void updateUnits(
                     unit.logisticsState =
                         SerfLogisticsState::Carrying;
                 } else {
-                    // Pickup uvnitr Store selhal.
+                    // Pickup uvnitr source House selhal.
                     // U Flour musime vratit rezervovanou
                     // kapacitu cilove Bakery.
                     if (
@@ -2736,46 +3198,23 @@ void updateUnits(
                             unit.destinationBuilding
                         ];
 
-                    const BuildingEntrance entrance =
-                        getBuildingEntrance(
-                            destination.type
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            destination,
+                            tileSize
                         );
 
-                    // Nejdrixe spocitame doorway offset
-                    // aktualni cilove budovy. Teprve potom
-                    // muzeme odvodit skutecny bod dveri.
-                    constexpr int BUILDING_DOOR_ANCHOR_X =
-                        -18;
-
                     unit.doorwayOffsetX =
-                        entrance.pixelOffsetX -
-                        tileSize / 2 +
-                        BUILDING_DOOR_ANCHOR_X;
+                        doorway.offsetX;
 
                     unit.doorwayOffsetY =
-                        entrance.pixelOffsetY;
-
-                    const float logicalDoorX =
-                        (
-                            destination.tileX +
-                            entrance.tileOffsetX +
-                            0.5f
-                        ) * tileSize;
-
-                    const float logicalDoorY =
-                        (
-                            destination.tileY +
-                            entrance.tileOffsetY +
-                            0.5f
-                        ) * tileSize;
+                        doorway.offsetY;
 
                     unit.doorwayTargetX =
-                        logicalDoorX +
-                        unit.doorwayOffsetX;
+                        doorway.doorX;
 
                     unit.doorwayTargetY =
-                        logicalDoorY +
-                        unit.doorwayOffsetY;
+                        doorway.doorY;
 
                     // Kratke zarovnani probiha po ulici.
                     // Serf se dostane pod stejne X jako dvere,
@@ -2837,46 +3276,23 @@ void updateUnits(
                             unit.sourceBuilding
                         ];
 
-                    const BuildingEntrance entrance =
-                        getBuildingEntrance(
-                            sourceBuilding.type
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            sourceBuilding,
+                            tileSize
                         );
 
-                    // Nejdrixe spocitame doorway offset
-                    // aktualniho Store. Teprve potom
-                    // muzeme odvodit skutecny bod dveri.
-                    constexpr int BUILDING_DOOR_ANCHOR_X =
-                        -18;
-
                     unit.doorwayOffsetX =
-                        entrance.pixelOffsetX -
-                        tileSize / 2 +
-                        BUILDING_DOOR_ANCHOR_X;
+                        doorway.offsetX;
 
                     unit.doorwayOffsetY =
-                        entrance.pixelOffsetY;
-
-                    const float logicalDoorX =
-                        (
-                            sourceBuilding.tileX +
-                            entrance.tileOffsetX +
-                            0.5f
-                        ) * tileSize;
-
-                    const float logicalDoorY =
-                        (
-                            sourceBuilding.tileY +
-                            entrance.tileOffsetY +
-                            0.5f
-                        ) * tileSize;
+                        doorway.offsetY;
 
                     unit.doorwayTargetX =
-                        logicalDoorX +
-                        unit.doorwayOffsetX;
+                        doorway.doorX;
 
                     unit.doorwayTargetY =
-                        logicalDoorY +
-                        unit.doorwayOffsetY;
+                        doorway.doorY;
 
                     // Presny bod pod dvermi, stale na ulici.
                     unit.targetWorldX =
@@ -2989,32 +3405,16 @@ void updateUnits(
                     const Building& house =
                         buildings[houseIndex];
 
-                    const BuildingEntrance entrance =
-                        getBuildingEntrance(
-                            house.type
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            house,
+                            tileSize
                         );
 
-                    constexpr int
-                        BUILDING_DOOR_ANCHOR_X = -18;
-
-                    const int doorOffsetX =
-                        entrance.pixelOffsetX -
-                        tileSize / 2 +
-                        BUILDING_DOOR_ANCHOR_X;
-
-                    const float logicalDoorX =
-                        (
-                            house.tileX +
-                            entrance.tileOffsetX +
-                            0.5f
-                        ) * tileSize;
-
-                    // Y zustava na volne pristupove
-                    // dlazdici. Menime pouze X posledniho
-                    // walking waypointu.
+                    // Posledni walking segment konci
+                    // na X ose entrance road a dveri.
                     unit.targetWorldX =
-                        logicalDoorX +
-                        doorOffsetX;
+                        doorway.streetX;
                 }
             }
 

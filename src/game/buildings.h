@@ -144,6 +144,21 @@ struct Building {
     int resourceDeliveryCount[4];
     int resourceOut[4];
 
+    // =====================================================
+    // BAKERY PRODUCTION RUNTIME
+    //
+    // Originalni Bakery workplan:
+    // 1 Flour -> 2 Bread
+    // 7x Work2(24) + Work3(30)
+    // celkem 378 House animacnich kroku.
+    //
+    // Flour se odebere pri startu cyklu.
+    // Bread se prida az po dokonceni celeho cyklu.
+    // =====================================================
+
+    bool bakeryProductionActive;
+    int bakeryProductionTick;
+
     bool schoolTrainingActive;
     bool schoolFinishingTraining;
 
@@ -332,6 +347,16 @@ struct BuildingResources {
 
     SDL_Texture* bakeryWoodAtlas;
     SDL_Texture* bakeryStoneAtlas;
+
+    // Originalni Bakery House work overlaye z houses.rx.
+    SDL_Texture* bakeryWork2Atlas;
+    SDL_Texture* bakeryWork3Atlas;
+
+    // Originalni Bakery ha_Smoke, RX 889..892.
+    SDL_Texture* bakerySmokeAtlas;
+
+    // Originalni Bakery SupplyOut[1], RX 105..109.
+    SDL_Texture* bakeryBreadSupplyAtlas;
 
     SDL_Texture* farmWoodAtlas;
     SDL_Texture* farmStoneAtlas;

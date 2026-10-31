@@ -755,34 +755,8 @@ void renderGameUI(
         // Worker 141
         // -------------------------------------------------
 
-        if (schoolResources.houseWorker) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                schoolResources.houseWorker,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect dst = {
-                workerArea.x +
-                    (workerArea.w - w) / 2,
-                workerArea.y +
-                    (workerArea.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                schoolResources.houseWorker,
-                nullptr,
-                &dst
-            );
-        }
+        // House nema OwnerType worker ikonu.
+        // Generic Serf glyph se zde nevykresluje.
 
         // -------------------------------------------------
         // Health 55x15 podle TKMPercentBar
@@ -3341,6 +3315,45 @@ void renderGameUI(
             );
         }
 
+        // -------------------------------------------------
+        // ORIGINAL BAKER PROFESSION TEXT
+        // -------------------------------------------------
+        SDL_Texture* bakerProfessionText =
+            schoolResources.professionText[
+                static_cast<int>(
+                    GameUISchoolSelection::Baker
+                )
+            ];
+
+        if (bakerProfessionText) {
+            int bakerTextW = 0;
+            int bakerTextH = 0;
+
+            SDL_QueryTexture(
+                bakerProfessionText,
+                nullptr,
+                nullptr,
+                &bakerTextW,
+                &bakerTextH
+            );
+
+            SDL_Rect bakerTextDst = {
+                panelX +
+                    (contentWidth - bakerTextW) / 2,
+                houseControlsY + 33,
+                bakerTextW,
+                bakerTextH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                bakerProfessionText,
+                nullptr,
+                &bakerTextDst
+            );
+        }
+
+
         // House health.
         SDL_SetRenderDrawColor(
             renderer,
@@ -3391,35 +3404,150 @@ void renderGameUI(
         // ---------------------------------------------
         // NEEDS
         // ---------------------------------------------
+
+        const int wareRowX = panelX;
+        const int wareRowWidth = contentWidth;
+        const int wareRowHeight = 24;
+
+        const int needsTitleY =
+            contentY + 18;
+
+        const int flourRowY =
+            needsTitleY + 19;
+
         if (schoolResources.needsText) {
-            int w = 0;
-            int h = 0;
+            int textW = 0;
+            int textH = 0;
 
             SDL_QueryTexture(
                 schoolResources.needsText,
                 nullptr,
                 nullptr,
-                &w,
-                &h
+                &textW,
+                &textH
             );
 
-            SDL_Rect destination = {
+            SDL_Rect dst = {
                 panelX +
-                    (contentWidth - w) / 2,
-                contentY,
-                w,
-                h
+                    (contentWidth - textW) / 2,
+                needsTitleY,
+                textW,
+                textH
             };
 
             SDL_RenderCopy(
                 renderer,
                 schoolResources.needsText,
                 nullptr,
-                &destination
+                &dst
             );
         }
 
-        // Originalni GUI 362 = Flour.
+        // ---------------------------------------------
+        // FLOUR TKMWARESROW
+        // ---------------------------------------------
+
+        SDL_Rect flourRow = {
+            wareRowX,
+            flourRowY,
+            wareRowWidth,
+            wareRowHeight
+        };
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_BLEND
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            45, 38, 30, 150
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &flourRow
+        );
+
+        // Zapusteny horni/levy okraj.
+        SDL_SetRenderDrawColor(
+            renderer,
+            25, 21, 17, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            flourRow.x,
+            flourRow.y,
+            flourRow.x + flourRow.w - 1,
+            flourRow.y
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            flourRow.x,
+            flourRow.y,
+            flourRow.x,
+            flourRow.y + flourRow.h - 1
+        );
+
+        // Svetly spodni/pravy okraj.
+        SDL_SetRenderDrawColor(
+            renderer,
+            176, 156, 120, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            flourRow.x,
+            flourRow.y + flourRow.h - 1,
+            flourRow.x + flourRow.w - 1,
+            flourRow.y + flourRow.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            flourRow.x + flourRow.w - 1,
+            flourRow.y,
+            flourRow.x + flourRow.w - 1,
+            flourRow.y + flourRow.h - 1
+        );
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_NONE
+        );
+
+        // Originalni game.fntx caption.
+        // BAKERY ORIGINAL FLOUR CAPTION
+        if (schoolResources.bakeryFlourText) {
+            int textW = 0;
+            int textH = 0;
+
+            SDL_QueryTexture(
+                schoolResources.bakeryFlourText,
+                nullptr,
+                nullptr,
+                &textW,
+                &textH
+            );
+
+            SDL_Rect dst = {
+                flourRow.x + 5,
+                flourRow.y +
+                    (flourRow.h - textH) / 2,
+                textW,
+                textH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.bakeryFlourText,
+                nullptr,
+                &dst
+            );
+        }
+
         SDL_Texture* flourIcon =
             schoolResources.storeWareIcons[
                 wareTypeToIndex(
@@ -3427,32 +3555,57 @@ void renderGameUI(
                 )
             ];
 
-        const int flourAmount =
-            selectedBakery->resourceIn[0] > 0
-                ? selectedBakery->resourceIn[0]
-                : 0;
+        int flourAmount =
+            selectedBakery->resourceIn[0];
+
+        if (flourAmount < 0)
+            flourAmount = 0;
+
+        if (
+            flourAmount >
+                HOUSE_INPUT_CAPACITY
+        ) {
+            flourAmount =
+                HOUSE_INPUT_CAPACITY;
+        }
 
         if (flourIcon) {
+            int iconW = 0;
+            int iconH = 0;
+
+            SDL_QueryTexture(
+                flourIcon,
+                nullptr,
+                nullptr,
+                &iconW,
+                &iconH
+            );
+
             for (
-                int flourIndex = 0;
-                flourIndex < flourAmount &&
-                    flourIndex <
-                        HOUSE_INPUT_CAPACITY;
-                ++flourIndex
+                int index = 0;
+                index < flourAmount;
+                ++index
             ) {
-                SDL_Rect destination = {
-                    panelX + 8 +
-                        flourIndex * 20,
-                    contentY + 22,
-                    18,
-                    17
+                SDL_Rect dst = {
+                    flourRow.x +
+                        flourRow.w -
+                        5 -
+                        iconW -
+                        index * 18,
+
+                    flourRow.y +
+                        (flourRow.h -
+                            iconH) / 2,
+
+                    iconW,
+                    iconH
                 };
 
                 SDL_RenderCopy(
                     renderer,
                     flourIcon,
                     nullptr,
-                    &destination
+                    &dst
                 );
             }
         }
@@ -3460,10 +3613,150 @@ void renderGameUI(
         // ---------------------------------------------
         // DELIVERS
         //
-        // Bread je skutecny resourceOut[0].
-        // Protoze Bakery production zatim neni aktivni,
-        // radek zustane prazdny, ale pouziva realny stav.
+        // Caption "Delivers (x2)" bude doplnen pouze
+        // z originalniho KaM FNTX.
         // ---------------------------------------------
+
+        const int deliversTitleY =
+            flourRow.y +
+            flourRow.h +
+            13;
+
+        const int breadRowY =
+            deliversTitleY + 19;
+
+
+        // BAKERY ORIGINAL DELIVERS X2 CAPTION
+        if (schoolResources.bakeryDeliversX2Text) {
+            int textW = 0;
+            int textH = 0;
+
+            SDL_QueryTexture(
+                schoolResources.bakeryDeliversX2Text,
+                nullptr,
+                nullptr,
+                &textW,
+                &textH
+            );
+
+            SDL_Rect dst = {
+                panelX +
+                    (contentWidth - textW) / 2,
+                deliversTitleY,
+                textW,
+                textH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.bakeryDeliversX2Text,
+                nullptr,
+                &dst
+            );
+        }
+
+        // ---------------------------------------------
+        // LOAVES TKMWARESROW
+        // ---------------------------------------------
+
+        SDL_Rect breadRow = {
+            wareRowX,
+            breadRowY,
+            wareRowWidth,
+            wareRowHeight
+        };
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_BLEND
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            45, 38, 30, 150
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &breadRow
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            25, 21, 17, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            breadRow.x,
+            breadRow.y,
+            breadRow.x + breadRow.w - 1,
+            breadRow.y
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            breadRow.x,
+            breadRow.y,
+            breadRow.x,
+            breadRow.y + breadRow.h - 1
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            176, 156, 120, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            breadRow.x,
+            breadRow.y + breadRow.h - 1,
+            breadRow.x + breadRow.w - 1,
+            breadRow.y + breadRow.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            breadRow.x + breadRow.w - 1,
+            breadRow.y,
+            breadRow.x + breadRow.w - 1,
+            breadRow.y + breadRow.h - 1
+        );
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_NONE
+        );
+
+        // Originalni game.fntx caption.
+        // BAKERY ORIGINAL LOAVES CAPTION
+        if (schoolResources.bakeryLoavesText) {
+            int textW = 0;
+            int textH = 0;
+
+            SDL_QueryTexture(
+                schoolResources.bakeryLoavesText,
+                nullptr,
+                nullptr,
+                &textW,
+                &textH
+            );
+
+            SDL_Rect dst = {
+                breadRow.x + 5,
+                breadRow.y +
+                    (breadRow.h - textH) / 2,
+                textW,
+                textH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.bakeryLoavesText,
+                nullptr,
+                &dst
+            );
+        }
 
         SDL_Texture* breadIcon =
             schoolResources.storeWareIcons[
@@ -3472,35 +3765,61 @@ void renderGameUI(
                 )
             ];
 
-        const int breadAmount =
-            selectedBakery->resourceOut[0] > 0
-                ? selectedBakery->resourceOut[0]
-                : 0;
+        int breadAmount =
+            selectedBakery->resourceOut[0];
+
+        if (breadAmount < 0)
+            breadAmount = 0;
+
+        if (
+            breadAmount >
+                HOUSE_INPUT_CAPACITY
+        ) {
+            breadAmount =
+                HOUSE_INPUT_CAPACITY;
+        }
 
         if (breadIcon) {
+            int iconW = 0;
+            int iconH = 0;
+
+            SDL_QueryTexture(
+                breadIcon,
+                nullptr,
+                nullptr,
+                &iconW,
+                &iconH
+            );
+
             for (
-                int breadIndex = 0;
-                breadIndex < breadAmount &&
-                    breadIndex <
-                        HOUSE_INPUT_CAPACITY;
-                ++breadIndex
+                int index = 0;
+                index < breadAmount;
+                ++index
             ) {
-                SDL_Rect destination = {
-                    panelX + 8 +
-                        breadIndex * 20,
-                    contentY + 72,
-                    18,
-                    16
+                SDL_Rect dst = {
+                    breadRow.x +
+                        breadRow.w -
+                        5 -
+                        iconW -
+                        index * 18,
+
+                    breadRow.y +
+                        (breadRow.h -
+                            iconH) / 2,
+
+                    iconW,
+                    iconH
                 };
 
                 SDL_RenderCopy(
                     renderer,
                     breadIcon,
                     nullptr,
-                    &destination
+                    &dst
                 );
             }
         }
+
     }
 
 
@@ -3726,34 +4045,8 @@ void renderGameUI(
             );
         }
 
-        if (schoolResources.houseWorker) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                schoolResources.houseWorker,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect dst = {
-                workerArea.x +
-                    (workerArea.w - w) / 2,
-                workerArea.y +
-                    (workerArea.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                schoolResources.houseWorker,
-                nullptr,
-                &dst
-            );
-        }
+        // House nema OwnerType worker ikonu.
+        // Generic Serf glyph se zde nevykresluje.
 
         // House health.
         SDL_SetRenderDrawColor(
@@ -4434,6 +4727,24 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/school/text/gold.bmp"
         );
 
+    resources.bakeryFlourText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/bakery/text/flour.bmp"
+        );
+
+    resources.bakeryLoavesText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/bakery/text/loaves.bmp"
+        );
+
+    resources.bakeryDeliversX2Text =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/bakery/text/delivers_x2.bmp"
+        );
+
     static const char* professionTextFiles[
         SCHOOL_PROFESSION_COUNT
     ] = {
@@ -4750,6 +5061,24 @@ void destroySchoolUIResources(
     if (resources->goldText) {
         SDL_DestroyTexture(
             resources->goldText
+        );
+    }
+
+    if (resources->bakeryFlourText) {
+        SDL_DestroyTexture(
+            resources->bakeryFlourText
+        );
+    }
+
+    if (resources->bakeryLoavesText) {
+        SDL_DestroyTexture(
+            resources->bakeryLoavesText
+        );
+    }
+
+    if (resources->bakeryDeliversX2Text) {
+        SDL_DestroyTexture(
+            resources->bakeryDeliversX2Text
         );
     }
 

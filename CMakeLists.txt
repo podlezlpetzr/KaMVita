@@ -267,6 +267,10 @@ vita_create_vpk(
         assets/units/serf/carry_flour_atlas.bmp
 
     FILE
+        assets/units/serf/carry_bread_atlas.bmp
+        assets/units/serf/carry_bread_atlas.bmp
+
+    FILE
         assets/ui/school/serf_icon.bmp
         assets/ui/school/serf_icon.bmp
 
@@ -305,6 +309,22 @@ vita_create_vpk(
     FILE
         assets/units/worker/complete/actions/eat_atlas.bmp
         assets/units/worker/complete/actions/eat_atlas.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/bread_supply_atlas.bmp
+        assets/buildings/bakery/runtime/bread_supply_atlas.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/smoke_atlas.bmp
+        assets/buildings/bakery/runtime/smoke_atlas.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/work2_atlas.bmp
+        assets/buildings/bakery/runtime/work2_atlas.bmp
+
+    FILE
+        assets/buildings/bakery/runtime/work3_atlas.bmp
+        assets/buildings/bakery/runtime/work3_atlas.bmp
 
     FILE
         assets/buildings/school/runtime/flagpole/flagpole.bmp
@@ -480,6 +500,18 @@ vita_create_vpk(
     FILE
         assets/ui/school/wares/gold.bmp
         assets/ui/school/wares/gold.bmp
+
+    FILE
+        assets/ui/bakery/text/flour.bmp
+        assets/ui/bakery/text/flour.bmp
+
+    FILE
+        assets/ui/bakery/text/loaves.bmp
+        assets/ui/bakery/text/loaves.bmp
+
+    FILE
+        assets/ui/bakery/text/delivers_x2.bmp
+        assets/ui/bakery/text/delivers_x2.bmp
 
     FILE
         assets/ui/school/text/needs.bmp

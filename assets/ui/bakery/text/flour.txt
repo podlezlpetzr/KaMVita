@@ -1,0 +1,14 @@
+text=Flour
+font=resources/kam_source/data/gfx/fonts/game.fntx
+width=38
+height=17
+base_height=13
+word_spacing=5
+char_spacing=1
+line_spacing=5
+atlas_count=75
+texture_width=256
+texture_height=512
+min_y=-2
+decompressed_size=40180112
+source=original KaM Remake game.fntx

@@ -343,6 +343,101 @@ bool buildingsOverlap(
 }
 
 
+// ============================================================
+// KAM HOUSE RENDER SCALE 40 TO 32
+//
+// Originalni houses.rx / houses.dat pracuji v prostoru
+// CELL_SIZE_PX = 40.
+//
+// KaMVita world pouziva TILE_SIZE = 32.
+//
+// Zdrojove bitmapy a source recty zustavaji originalni.
+// Skaluji se pouze destination rozmery a sprite-pixelove
+// pivot/move/anchor offsety.
+//
+// Zaokrouhleni je symetricke i pro zaporne pivoty.
+// ============================================================
+
+// ============================================================
+// HOUSE VISUAL X ANCHOR CALIBRATION
+//
+// Scale 40 -> 32 je spolecny a zustava beze zmeny.
+//
+// Vita visual verification:
+// Bakery = centered
+// Farm   = centered
+// Store  = too far left
+// School = too far left
+//
+// Proto korigujeme pouze vizualni House anchor.
+// Logical footprint ani doorway se zde nemeni.
+//
+// Prvni kalibracni hodnoty:
+// Store  +6 px
+// School +10 px
+// ============================================================
+
+static int getHouseVisualOffsetX(
+    BuildingType type,
+    int tileSize
+)
+{
+    // Hodnoty jsou definovane pro Vita TILE_SIZE 32.
+    // Prevod zachovava stejne chovani i pri jinem tileSize.
+    int offsetAt32 = 0;
+
+    switch (type) {
+        case BuildingType::Store:
+            offsetAt32 = 9;
+            break;
+
+        case BuildingType::School:
+            offsetAt32 = 13;
+            break;
+
+        case BuildingType::Bakery:
+        case BuildingType::Farm:
+            offsetAt32 = 0;
+            break;
+    }
+
+    if (offsetAt32 >= 0) {
+        return (
+            offsetAt32 * tileSize + 16
+        ) / 32;
+    }
+
+    return -(
+        (
+            -offsetAt32 * tileSize + 16
+        ) / 32
+    );
+}
+
+
+static int scaleKaMHousePixel(
+    int value,
+    int tileSize
+)
+{
+    constexpr int ORIGINAL_KAM_CELL_SIZE = 40;
+
+    if (value >= 0) {
+        return (
+            value * tileSize +
+            ORIGINAL_KAM_CELL_SIZE / 2
+        ) / ORIGINAL_KAM_CELL_SIZE;
+    }
+
+    return -(
+        (
+            -value * tileSize +
+            ORIGINAL_KAM_CELL_SIZE / 2
+        ) / ORIGINAL_KAM_CELL_SIZE
+    );
+}
+
+
 static int getHousePlanCatalogIndex(
     BuildingType type
 )
@@ -754,14 +849,51 @@ void renderBuildings(
 
 
         // Kamenna vrstva je kotva pro celou budovu.
+        //
+        // Source rect zustava v originalnich KaM pixelech.
+        // Destination rect pouziva prevod 40 -> tileSize.
+        const int scaledStoneWidth =
+            scaleKaMHousePixel(
+                stoneFrameWidth,
+                tileSize
+            );
+
+        const int scaledStoneHeight =
+            scaleKaMHousePixel(
+                stoneFrameHeight,
+                tileSize
+            );
+
+        const int scaledWoodWidth =
+            scaleKaMHousePixel(
+                woodFrameWidth,
+                tileSize
+            );
+
+        const int scaledWoodHeight =
+            scaleKaMHousePixel(
+                woodFrameHeight,
+                tileSize
+            );
+
+        const int houseVisualOffsetX =
+            getHouseVisualOffsetX(
+                building.type,
+                tileSize
+            );
+
         int stoneDestinationX =
             footprintX +
-            (footprintWidth - stoneFrameWidth) / 2;
+            (
+                footprintWidth -
+                scaledStoneWidth
+            ) / 2 +
+            houseVisualOffsetX;
 
         int stoneDestinationY =
             footprintY +
             footprintHeight -
-            stoneFrameHeight;
+            scaledStoneHeight;
 
 
         // Originalni KaM School pouziva virtualni
@@ -778,11 +910,17 @@ void renderBuildings(
         // originalnich pivotu z houses.rx.
         int woodDestinationX =
             stoneDestinationX +
-            (woodPivotX - stonePivotX);
+            scaleKaMHousePixel(
+                woodPivotX - stonePivotX,
+                tileSize
+            );
 
         int woodDestinationY =
             stoneDestinationY +
-            (woodPivotY - stonePivotY);
+            scaleKaMHousePixel(
+                woodPivotY - stonePivotY,
+                tileSize
+            );
 
         if (woodAtlas && renderedWoodStep > 0) {
             int frameColumn =
@@ -801,8 +939,8 @@ void renderBuildings(
             SDL_Rect destination = {
                 woodDestinationX,
                 woodDestinationY,
-                woodFrameWidth,
-                woodFrameHeight
+                scaledWoodWidth,
+                scaledWoodHeight
             };
 
             SDL_RenderCopy(
@@ -831,8 +969,8 @@ void renderBuildings(
             SDL_Rect destination = {
                 stoneDestinationX,
                 stoneDestinationY,
-                stoneFrameWidth,
-                stoneFrameHeight
+                scaledStoneWidth,
+                scaledStoneHeight
             };
 
             SDL_RenderCopy(
@@ -842,6 +980,292 @@ void renderBuildings(
                 &destination
             );
         }
+
+        static constexpr int BAKERY_BREAD_SUPPLY_CELL_WIDTH = 32;
+        static constexpr int BAKERY_BREAD_SUPPLY_CELL_HEIGHT = 20;
+        static constexpr int BAKERY_BREAD_SUPPLY_ANCHOR_X = -30;
+        static constexpr int BAKERY_BREAD_SUPPLY_ANCHOR_Y = 5;
+
+        // =================================================
+        // BAKERY ORIGINAL BREAD SUPPLYOUT
+        //
+        // Remake AddHouseSupply:
+        // SupplyOut[1, Min(resourceOut[0],5)].
+        //
+        // Bakery SupplyOut[1]:
+        // 1 -> RX 105
+        // 2 -> RX 106
+        // 3 -> RX 107
+        // 4 -> RX 108
+        // 5 -> RX 109
+        // =================================================
+        if (
+            building.type == BuildingType::Bakery &&
+            isBuildingComplete(building) &&
+            building.resourceOut[0] > 0 &&
+            resources.bakeryBreadSupplyAtlas
+        ) {
+            const int breadCellWidth =
+                BAKERY_BREAD_SUPPLY_CELL_WIDTH;
+
+            const int breadCellHeight =
+                BAKERY_BREAD_SUPPLY_CELL_HEIGHT;
+
+            int breadCount =
+                building.resourceOut[0];
+
+            if (breadCount > 5)
+                breadCount = 5;
+
+            const int breadFrame =
+                breadCount - 1;
+
+            SDL_Rect breadSource = {
+                breadFrame * breadCellWidth,
+                0,
+                breadCellWidth,
+                breadCellHeight
+            };
+
+            SDL_Rect breadDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        BAKERY_BREAD_SUPPLY_ANCHOR_X -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        BAKERY_BREAD_SUPPLY_ANCHOR_Y -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    breadCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    breadCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.bakeryBreadSupplyAtlas,
+                &breadSource,
+                &breadDestination
+            );
+        }
+
+
+        // =================================================
+        // BAKERY ORIGINAL WORK2 WORK3 OVERLAY
+        //
+        // Originalni houses.dat workplan:
+        //   7x Work2(24) + Work3(30)
+        //   378 kroku celkem.
+        //
+        // Tick v jednom paru:
+        //   0..23  = Work2 frame 0..23
+        //   24..53 = Work3 frame 0..29
+        //
+        // House overlay se zarovnava stejnym vzorcem
+        // jako School:
+        //
+        // stoneDestination +
+        // (overlay anchor + House Move - stone pivot)
+        //
+        // Work2 i Work3 maji spolecny pivotovy prostor:
+        //   cell   = 18x27
+        //   anchor = (-10,-13)
+        //   move   = (18,5)
+        //
+        // Zadna temporary nebo nahradni animace.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Bakery &&
+            isBuildingComplete(building) &&
+            building.bakeryProductionActive &&
+            building.bakeryProductionTick >= 0 &&
+            building.bakeryProductionTick < 378
+        ) {
+            const int workCellWidth = 18;
+            const int workCellHeight = 27;
+
+            const int work2FrameCount = 24;
+            const int work3FrameCount = 30;
+            const int workPairLength =
+                work2FrameCount +
+                work3FrameCount;
+
+            const int workAnchorX = -10;
+            const int workAnchorY = -13;
+            const int workMoveX = 18;
+            const int workMoveY = 5;
+
+            const int pairTick =
+                building.bakeryProductionTick %
+                    workPairLength;
+
+            SDL_Texture* workTexture = nullptr;
+            int workFrame = 0;
+
+            if (pairTick < work2FrameCount) {
+                workTexture =
+                    resources.bakeryWork2Atlas;
+
+                workFrame = pairTick;
+            } else {
+                workTexture =
+                    resources.bakeryWork3Atlas;
+
+                workFrame =
+                    pairTick -
+                    work2FrameCount;
+            }
+
+            if (workTexture) {
+                SDL_Rect workSource = {
+                    workFrame * workCellWidth,
+                    0,
+                    workCellWidth,
+                    workCellHeight
+                };
+
+                const int workX =
+                    stoneDestinationX +
+                    scaleKaMHousePixel(
+                        workAnchorX +
+                            workMoveX -
+                            stonePivotX,
+                        tileSize
+                    );
+
+                const int workY =
+                    stoneDestinationY +
+                    scaleKaMHousePixel(
+                        workAnchorY +
+                            workMoveY -
+                            stonePivotY,
+                        tileSize
+                    );
+
+                SDL_Rect workDestination = {
+                    workX,
+                    workY,
+
+                    scaleKaMHousePixel(
+                        workCellWidth,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        workCellHeight,
+                        tileSize
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    workTexture,
+                    &workSource,
+                    &workDestination
+                );
+            }
+        }
+
+
+        // =================================================
+        // BAKERY ORIGINAL SMOKE OVERLAY
+        //
+        // Remake:
+        // - adds ha_Smoke when production begins
+        // - keeps it during all Work2/Work3 phases
+        // - removes it when the House returns to Idle
+        //
+        // Original Bakery ha_Smoke:
+        // RX     = 889,890,891,892
+        // count  = 4
+        // cell   = 34x54
+        // anchor = (19,-151)
+        // move   = (18,5)
+        // =================================================
+
+        if (
+            building.type == BuildingType::Bakery &&
+            isBuildingComplete(building) &&
+            building.bakeryProductionActive &&
+            resources.bakerySmokeAtlas
+        ) {
+            const int smokeCellWidth =
+                34;
+
+            const int smokeCellHeight =
+                54;
+
+            const int smokeAnchorX =
+                19;
+
+            const int smokeAnchorY =
+                -151;
+
+            const int smokeMoveX =
+                18;
+
+            const int smokeMoveY =
+                5;
+
+            const int smokeFrame =
+                building.bakeryProductionTick % 4;
+
+            SDL_Rect smokeSource = {
+                smokeFrame * smokeCellWidth,
+                0,
+                smokeCellWidth,
+                smokeCellHeight
+            };
+
+            SDL_Rect smokeDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        smokeAnchorX +
+                            smokeMoveX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        smokeAnchorY +
+                            smokeMoveY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    smokeCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    smokeCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.bakerySmokeAtlas,
+                &smokeSource,
+                &smokeDestination
+            );
+        }
+
 
         // SCHOOL ORIGINAL FLAG OVERLAY
         //
@@ -871,25 +1295,27 @@ void renderBuildings(
 
                 int poleX =
                     stoneDestinationX +
-                    (
+                    scaleKaMHousePixel(
                         polePivotX +
-                        poleMoveX -
-                        stonePivotX
+                            poleMoveX -
+                            stonePivotX,
+                        tileSize
                     );
 
                 int poleY =
                     stoneDestinationY +
-                    (
+                    scaleKaMHousePixel(
                         polePivotY +
-                        poleMoveY -
-                        stonePivotY
+                            poleMoveY -
+                            stonePivotY,
+                        tileSize
                     );
 
                 SDL_Rect poleDestination = {
                     poleX,
                     poleY,
-                    9,
-                    35
+                    scaleKaMHousePixel(9, tileSize),
+                    scaleKaMHousePixel(35, tileSize)
                 };
 
                 SDL_RenderCopy(
@@ -923,25 +1349,35 @@ void renderBuildings(
 
                 int flagX =
                     stoneDestinationX +
-                    (
+                    scaleKaMHousePixel(
                         flagPivotX +
-                        flagMoveX -
-                        stonePivotX
+                            flagMoveX -
+                            stonePivotX,
+                        tileSize
                     );
 
                 int flagY =
                     stoneDestinationY +
-                    (
+                    scaleKaMHousePixel(
                         flagPivotY +
-                        flagMoveY -
-                        stonePivotY
+                            flagMoveY -
+                            stonePivotY,
+                        tileSize
                     );
 
                 SDL_Rect flagDestination = {
                     flagX,
                     flagY,
-                    flagWidth,
-                    flagHeight
+
+                    scaleKaMHousePixel(
+                        flagWidth,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        flagHeight,
+                        tileSize
+                    )
                 };
 
                 SDL_RenderCopy(
@@ -1052,25 +1488,35 @@ void renderBuildings(
 
                 int workX =
                     stoneDestinationX +
-                    (
+                    scaleKaMHousePixel(
                         workPivotX[workFrame] +
-                        workMoveX -
-                        stonePivotX
+                            workMoveX -
+                            stonePivotX,
+                        tileSize
                     );
 
                 int workY =
                     stoneDestinationY +
-                    (
+                    scaleKaMHousePixel(
                         workPivotY[workFrame] +
-                        workMoveY -
-                        stonePivotY
+                            workMoveY -
+                            stonePivotY,
+                        tileSize
                     );
 
                 SDL_Rect workDestination = {
                     workX,
                     workY,
-                    frameWidth,
-                    frameHeight
+
+                    scaleKaMHousePixel(
+                        frameWidth,
+                        tileSize
+                    ),
+
+                    scaleKaMHousePixel(
+                        frameHeight,
+                        tileSize
+                    )
                 };
 
                 SDL_RenderCopy(
@@ -1082,78 +1528,6 @@ void renderBuildings(
             }
         }
 
-        // DEBUG SCHOOL ENTRANCE OVERLAY
-        // Cerveny kriz = stred vstupni dlazdice.
-        // Zluty bod = doorway pixelovy posun.
-        if (
-            building.type == BuildingType::School &&
-            isBuildingComplete(building)
-        ) {
-            BuildingEntrance entrance =
-                getBuildingEntrance(
-                    building.type
-                );
-
-            int entranceCenterX =
-                footprintX +
-                entrance.tileOffsetX *
-                    tileSize +
-                tileSize / 2 -
-                18;
-
-            int entranceCenterY =
-                footprintY +
-                entrance.tileOffsetY *
-                    tileSize +
-                tileSize / 2;
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                255, 0, 0, 255
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                entranceCenterX - 10,
-                entranceCenterY,
-                entranceCenterX + 10,
-                entranceCenterY
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                entranceCenterX,
-                entranceCenterY - 10,
-                entranceCenterX,
-                entranceCenterY + 10
-            );
-
-            int doorwayVisualX =
-                entranceCenterX +
-                entrance.pixelOffsetX -
-                tileSize / 2;
-
-            int doorwayVisualY =
-                entranceCenterY +
-                entrance.pixelOffsetY;
-
-            SDL_Rect doorwayPoint = {
-                doorwayVisualX - 3,
-                doorwayVisualY - 3,
-                7,
-                7
-            };
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                255, 230, 0, 255
-            );
-
-            SDL_RenderFillRect(
-                renderer,
-                &doorwayPoint
-            );
-        }
 
     }
 }
@@ -1420,18 +1794,37 @@ void renderBuildingPreview(
         int footprintHeight =
             buildingHeight * tileSize;
 
+        const int scaledSpriteWidth =
+            scaleKaMHousePixel(
+                spriteWidth,
+                tileSize
+            );
+
+        const int scaledSpriteHeight =
+            scaleKaMHousePixel(
+                spriteHeight,
+                tileSize
+            );
+
         SDL_Rect destination = {
             placementTileX * tileSize -
                 (int)cameraX +
-                (footprintWidth - spriteWidth) / 2,
+                (
+                    footprintWidth -
+                    scaledSpriteWidth
+                ) / 2 +
+                getHouseVisualOffsetX(
+                    selectedType,
+                    tileSize
+                ),
 
             placementTileY * tileSize -
                 (int)cameraY +
                 footprintHeight -
-                spriteHeight,
+                scaledSpriteHeight,
 
-            spriteWidth,
-            spriteHeight
+            scaledSpriteWidth,
+            scaledSpriteHeight
         };
 
         SDL_SetTextureBlendMode(
@@ -1563,6 +1956,30 @@ BuildingResources loadBuildingResources(
         "app0:assets/buildings/construction/bakery/stone_atlas.bmp"
     );
 
+    resources.bakeryWork2Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/work2_atlas.bmp"
+        );
+
+    resources.bakeryWork3Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/work3_atlas.bmp"
+        );
+
+    resources.bakerySmokeAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/smoke_atlas.bmp"
+        );
+
+    resources.bakeryBreadSupplyAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/bakery/runtime/bread_supply_atlas.bmp"
+        );
+
     resources.farmWoodAtlas = loadColorKeyTexture(
         renderer,
         "app0:assets/buildings/construction/farm/wood_atlas.bmp"
@@ -1638,6 +2055,22 @@ void destroyBuildingResources(
     SDL_DestroyTexture(resources->bakeryWoodAtlas);
     SDL_DestroyTexture(resources->bakeryStoneAtlas);
 
+    SDL_DestroyTexture(
+        resources->bakeryWork2Atlas
+    );
+
+    SDL_DestroyTexture(
+        resources->bakeryWork3Atlas
+    );
+
+    SDL_DestroyTexture(
+        resources->bakerySmokeAtlas
+    );
+
+    SDL_DestroyTexture(
+        resources->bakeryBreadSupplyAtlas
+    );
+
     SDL_DestroyTexture(resources->farmWoodAtlas);
     SDL_DestroyTexture(resources->farmStoneAtlas);
 
@@ -1676,6 +2109,10 @@ void destroyBuildingResources(
 
     resources->bakeryWoodAtlas = nullptr;
     resources->bakeryStoneAtlas = nullptr;
+    resources->bakeryWork2Atlas = nullptr;
+    resources->bakeryWork3Atlas = nullptr;
+    resources->bakerySmokeAtlas = nullptr;
+    resources->bakeryBreadSupplyAtlas = nullptr;
 
     resources->farmWoodAtlas = nullptr;
     resources->farmStoneAtlas = nullptr;
