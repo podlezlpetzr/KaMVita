@@ -37,6 +37,90 @@ void initGameUI(
     ui->storeWareSelection = 0;
 }
 
+static void renderBuildButtonFlat(
+    SDL_Renderer* renderer,
+    const SDL_Rect& button,
+    bool selected
+)
+{
+    if (!renderer)
+        return;
+
+    SDL_SetRenderDrawBlendMode(
+        renderer,
+        SDL_BLENDMODE_BLEND
+    );
+
+    SDL_SetRenderDrawColor(
+        renderer,
+        selected ? 103 : 49,
+        selected ? 84 : 42,
+        selected ? 48 : 32,
+        selected ? 205 : 125
+    );
+
+    SDL_RenderFillRect(
+        renderer,
+        &button
+    );
+
+    SDL_SetRenderDrawBlendMode(
+        renderer,
+        SDL_BLENDMODE_NONE
+    );
+
+    // Horni a levy okraj ButtonFlat.
+    SDL_SetRenderDrawColor(
+        renderer,
+        35,
+        30,
+        25,
+        255
+    );
+
+    SDL_RenderDrawLine(
+        renderer,
+        button.x,
+        button.y,
+        button.x + button.w - 1,
+        button.y
+    );
+
+    SDL_RenderDrawLine(
+        renderer,
+        button.x,
+        button.y,
+        button.x,
+        button.y + button.h - 1
+    );
+
+    // Spodni a pravy okraj.
+    SDL_SetRenderDrawColor(
+        renderer,
+        selected ? 230 : 171,
+        selected ? 194 : 154,
+        selected ? 100 : 121,
+        255
+    );
+
+    SDL_RenderDrawLine(
+        renderer,
+        button.x,
+        button.y + button.h - 1,
+        button.x + button.w - 1,
+        button.y + button.h - 1
+    );
+
+    SDL_RenderDrawLine(
+        renderer,
+        button.x + button.w - 1,
+        button.y,
+        button.x + button.w - 1,
+        button.y + button.h - 1
+    );
+}
+
+
 static void renderHorizontallyCenteredTexture(
     SDL_Renderer* renderer,
     SDL_Texture* texture,
@@ -2974,77 +3058,10 @@ void renderGameUI(
                 ui.buildToolSelection ==
                     toolIndex;
 
-            SDL_SetRenderDrawBlendMode(
+            renderBuildButtonFlat(
                 renderer,
-                SDL_BLENDMODE_BLEND
-            );
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                selected ? 103 : 49,
-                selected ? 84 : 42,
-                selected ? 48 : 32,
-                selected ? 205 : 125
-            );
-
-            SDL_RenderFillRect(
-                renderer,
-                &button
-            );
-
-            SDL_SetRenderDrawBlendMode(
-                renderer,
-                SDL_BLENDMODE_NONE
-            );
-
-            // Horni a levy okraj ButtonFlat.
-            SDL_SetRenderDrawColor(
-                renderer,
-                35,
-                30,
-                25,
-                255
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x,
-                button.y,
-                button.x + button.w - 1,
-                button.y
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x,
-                button.y,
-                button.x,
-                button.y + button.h - 1
-            );
-
-            // Spodni a pravy okraj.
-            SDL_SetRenderDrawColor(
-                renderer,
-                selected ? 230 : 171,
-                selected ? 194 : 154,
-                selected ? 100 : 121,
-                255
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x,
-                button.y + button.h - 1,
-                button.x + button.w - 1,
-                button.y + button.h - 1
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x + button.w - 1,
-                button.y,
-                button.x + button.w - 1,
-                button.y + button.h - 1
+                button,
+                selected
             );
 
             SDL_Texture* icon =
@@ -3142,72 +3159,10 @@ void renderGameUI(
                     break;
             }
 
-            SDL_SetRenderDrawBlendMode(
+            renderBuildButtonFlat(
                 renderer,
-                SDL_BLENDMODE_BLEND
-            );
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                selected ? 103 : 49,
-                selected ? 84 : 42,
-                selected ? 48 : 32,
-                selected ? 205 : 125
-            );
-
-            SDL_RenderFillRect(
-                renderer,
-                &button
-            );
-
-            SDL_SetRenderDrawBlendMode(
-                renderer,
-                SDL_BLENDMODE_NONE
-            );
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                35, 30, 25, 255
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x,
-                button.y,
-                button.x + button.w - 1,
-                button.y
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x,
-                button.y,
-                button.x,
-                button.y + button.h - 1
-            );
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                selected ? 230 : 171,
-                selected ? 194 : 154,
-                selected ? 100 : 121,
-                255
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x,
-                button.y + button.h - 1,
-                button.x + button.w - 1,
-                button.y + button.h - 1
-            );
-
-            SDL_RenderDrawLine(
-                renderer,
-                button.x + button.w - 1,
-                button.y,
-                button.x + button.w - 1,
-                button.y + button.h - 1
+                button,
+                selected
             );
 
             // Vsech 27 katalogovych pozic zobrazuje
