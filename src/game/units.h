@@ -62,7 +62,17 @@ enum class UnitWorkAction {
     FarmerSow,
 
     // Farmer se po praci vraci do sve Farm.
-    FarmerReturnFarm
+    FarmerReturnFarm,
+
+    // Farmer smeruje ke zralemu FieldRipe.
+    //
+    // Nova hodnota je pridana na konec enumu,
+    // aby zustaly zachovane existujici Save v11 hodnoty.
+    FarmerToHarvest,
+
+    // Originalni Farmer ua_Work:
+    // 16 framu x 6 pracovnich cyklu.
+    FarmerHarvest
 };
 
 enum class RoadState : unsigned char {
@@ -126,7 +136,17 @@ enum class LandPlanState : unsigned char {
     //
     // Stav je pridan na konec enumu, aby zustaly
     // zachovane vsechny existujici hodnoty Save v11.
-    FieldGreen
+    FieldGreen,
+
+    // Originalni CutCorn vysledek:
+    //
+    // FieldAge = 0
+    // Terrain  = 63
+    // Obj      = 255
+    //
+    // Pole zustava jako corn field a pozdeji muze byt
+    // Farmerem znovu zaseto.
+    FieldCut
 };
 
 // KaM Remake condition maximum: 45 * 60.

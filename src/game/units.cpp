@@ -605,6 +605,91 @@ void renderUnits(
         }
 
         // =================================================
+        // ORIGINAL KaM FARMER CORN HARVEST
+        //
+        // FarmerHarvest = original ua_Work.
+        //
+        // unit.dat:
+        // cell   81x56
+        // anchor -37,-38
+        // frames 16
+        //
+        // Original WorkPlan:
+        // WalkStyle(... ua_Work, 6, ...).
+        // =================================================
+
+        if (
+            units[i].type == UnitType::Farmer &&
+            units[i].state == UnitState::Working &&
+            units[i].workAction ==
+                UnitWorkAction::FarmerHarvest
+        ) {
+            constexpr int FARMER_WORK_WIDTH = 81;
+            constexpr int FARMER_WORK_HEIGHT = 56;
+            constexpr int FARMER_WORK_FRAMES = 16;
+
+            constexpr int FARMER_WORK_ANCHOR_X =
+                -37;
+
+            constexpr int FARMER_WORK_ANCHOR_Y =
+                -38;
+
+            if (resources.farmerWorkAtlas) {
+                int actionFrame =
+                    units[i].animationFrame %
+                    FARMER_WORK_FRAMES;
+
+                if (actionFrame < 0) {
+                    actionFrame +=
+                        FARMER_WORK_FRAMES;
+                }
+
+                SDL_Rect actionSource = {
+                    actionFrame *
+                        FARMER_WORK_WIDTH,
+
+                    direction *
+                        FARMER_WORK_HEIGHT,
+
+                    FARMER_WORK_WIDTH,
+                    FARMER_WORK_HEIGHT
+                };
+
+                SDL_Rect actionDestination = {
+                    (int)units[i].worldX -
+                        (int)cameraX +
+                        scaleKaMUnitPixel(
+                            FARMER_WORK_ANCHOR_X
+                        ),
+
+                    (int)units[i].worldY -
+                        (int)cameraY +
+                        scaleKaMUnitPixel(
+                            FARMER_WORK_ANCHOR_Y
+                        ),
+
+                    scaleKaMUnitPixel(
+                        FARMER_WORK_WIDTH
+                    ),
+
+                    scaleKaMUnitPixel(
+                        FARMER_WORK_HEIGHT
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.farmerWorkAtlas,
+                    &actionSource,
+                    &actionDestination
+                );
+
+                continue;
+            }
+        }
+
+
+        // =================================================
         // ORIGINAL KaM EAT DIE RUNTIME
         //
         // ua_Eat:
@@ -835,10 +920,14 @@ void renderUnits(
             walkAnchorX = -15;
             walkAnchorY = -39;
         } else if (isFarmer) {
-            // Originalni Farmer ua_Walk:
-            // cell 40x46
-            // anchor -19,-38
-            // 8 smeru x 8 framu.
+            // Originalni Remake vrstveni:
+            //
+            // ua_WalkTool neni nahrada Farmer tela.
+            //
+            // Nejdrive se vykresli standardni ua_Walk
+            // a pote samostatna ua_WalkTool vrstva.
+            //
+            // Zakladni Farmer proto vzdy pouziva ua_Walk.
             walkAtlas =
                 resources.farmerWalkAtlas;
 
@@ -926,6 +1015,97 @@ void renderUnits(
             &source,
             &destination
         );
+
+        // =================================================
+        // ORIGINAL KaM FARMER WALK TOOL LAYER
+        //
+        // Remake KM_Units.pas:
+        //
+        // ua_WalkArm .. ua_WalkBooty2:
+        //   AddUnit(... ua_Walk ..., true);
+        //   AddUnit(... Act ..., false);
+        //
+        // Farmer harvest outbound action:
+        //   ua_WalkTool.
+        //
+        // Therefore the scythe is rendered ABOVE standard
+        // Farmer ua_Walk rather than replacing the Farmer.
+        // =================================================
+
+        const bool farmerWalksWithHarvestTool =
+            isFarmer &&
+            (
+                units[i].workAction ==
+                    UnitWorkAction::FarmerToHarvest ||
+                units[i].workAction ==
+                    UnitWorkAction::FarmerHarvest
+            ) &&
+            (
+                units[i].state ==
+                    UnitState::Walking ||
+                units[i].state ==
+                    UnitState::ApproachingBuilding ||
+                units[i].state ==
+                    UnitState::EnteringBuilding ||
+                units[i].state ==
+                    UnitState::LeavingBuilding
+            );
+
+        if (
+            farmerWalksWithHarvestTool &&
+            resources.farmerWalkToolAtlas
+        ) {
+            constexpr int FARMER_TOOL_WIDTH = 42;
+            constexpr int FARMER_TOOL_HEIGHT = 36;
+            constexpr int FARMER_TOOL_ANCHOR_X = -21;
+            constexpr int FARMER_TOOL_ANCHOR_Y = -39;
+
+            int toolFrame =
+                units[i].animationFrame % 8;
+
+            if (toolFrame < 0)
+                toolFrame += 8;
+
+            SDL_Rect toolSource = {
+                toolFrame *
+                    FARMER_TOOL_WIDTH,
+                direction *
+                    FARMER_TOOL_HEIGHT,
+                FARMER_TOOL_WIDTH,
+                FARMER_TOOL_HEIGHT
+            };
+
+            SDL_Rect toolDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX +
+                    scaleKaMUnitPixel(
+                        FARMER_TOOL_ANCHOR_X
+                    ) +
+                    doorwaySlideX,
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    scaleKaMUnitPixel(
+                        FARMER_TOOL_ANCHOR_Y
+                    ) +
+                    doorwaySlideY,
+
+                scaleKaMUnitPixel(
+                    FARMER_TOOL_WIDTH
+                ),
+
+                scaleKaMUnitPixel(
+                    FARMER_TOOL_HEIGHT
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.farmerWalkToolAtlas,
+                &toolSource,
+                &toolDestination
+            );
+        }
 
         // =================================================
         // ORIGINAL KaM SERF GOLD CARRY LAYER
@@ -4158,6 +4338,206 @@ void updateUnits(
             }
 
             // -------------------------------------------------
+            // FARMER FIND RIPE CORN FIELD
+            //
+            // Original FindCornField(... taAny ...) can select
+            // CORN_AGE_MAX for cutting.
+            //
+            // Harvest is checked before empty FieldComplete,
+            // so a Farmer inside the Farm prefers ripe corn.
+            // -------------------------------------------------
+
+            if (
+                unit.state == UnitState::Idle &&
+                unit.workAction ==
+                    UnitWorkAction::None &&
+                landPlans
+            ) {
+                const Building& farm =
+                    buildings[
+                        unit.targetBuilding
+                    ];
+
+                const BuildingEntrance entrance =
+                    getBuildingEntrance(
+                        farm.type
+                    );
+
+                const int homeX =
+                    farm.tileX +
+                    entrance.tileOffsetX;
+
+                const int homeY =
+                    farm.tileY +
+                    entrance.tileOffsetY;
+
+                constexpr int FARMER_HARVEST_RANGE =
+                    10;
+
+                int harvestX = -1;
+                int harvestY = -1;
+                int harvestDistanceSquared = 0;
+
+                for (
+                    int fieldY = 0;
+                    fieldY < mapHeight;
+                    ++fieldY
+                ) {
+                    for (
+                        int fieldX = 0;
+                        fieldX < mapWidth;
+                        ++fieldX
+                    ) {
+                        if (
+                            landPlans[
+                                fieldY *
+                                    mapWidth +
+                                fieldX
+                            ] !=
+                                LandPlanState::
+                                    FieldRipe
+                        ) {
+                            continue;
+                        }
+
+                        const int dx =
+                            fieldX - homeX;
+
+                        const int dy =
+                            fieldY - homeY;
+
+                        if (
+                            dx <
+                                -FARMER_HARVEST_RANGE ||
+                            dx >
+                                FARMER_HARVEST_RANGE ||
+                            dy <
+                                -FARMER_HARVEST_RANGE ||
+                            dy >
+                                FARMER_HARVEST_RANGE
+                        ) {
+                            continue;
+                        }
+
+                        bool reserved = false;
+
+                        for (
+                            int otherIndex = 0;
+                            otherIndex < unitCount;
+                            ++otherIndex
+                        ) {
+                            if (otherIndex == i)
+                                continue;
+
+                            const Unit& other =
+                                units[otherIndex];
+
+                            if (
+                                other.active &&
+                                other.type ==
+                                    UnitType::Farmer &&
+                                other.targetRoadX ==
+                                    fieldX &&
+                                other.targetRoadY ==
+                                    fieldY &&
+                                (
+                                    other.workAction ==
+                                        UnitWorkAction::
+                                            FarmerToHarvest ||
+                                    other.workAction ==
+                                        UnitWorkAction::
+                                            FarmerHarvest
+                                )
+                            ) {
+                                reserved = true;
+                                break;
+                            }
+                        }
+
+                        if (reserved)
+                            continue;
+
+                        const int distanceSquared =
+                            dx * dx + dy * dy;
+
+                        if (
+                            harvestX < 0 ||
+                            distanceSquared <
+                                harvestDistanceSquared
+                        ) {
+                            harvestX = fieldX;
+                            harvestY = fieldY;
+
+                            harvestDistanceSquared =
+                                distanceSquared;
+                        }
+                    }
+                }
+
+                if (
+                    harvestX >= 0 &&
+                    harvestY >= 0
+                ) {
+                    unit.targetRoadX = harvestX;
+                    unit.targetRoadY = harvestY;
+
+                    unit.workAction =
+                        UnitWorkAction::
+                            FarmerToHarvest;
+
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            farm,
+                            tileSize
+                        );
+
+                    unit.doorwayStartX =
+                        doorway.doorX;
+
+                    unit.doorwayStartY =
+                        doorway.doorY;
+
+                    unit.doorwayTargetX =
+                        doorway.streetX;
+
+                    unit.doorwayTargetY =
+                        doorway.streetY;
+
+                    unit.worldX =
+                        doorway.doorX;
+
+                    unit.worldY =
+                        doorway.doorY;
+
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayProgress = 0.0f;
+
+                    unit.direction = 4;
+                    unit.visible = false;
+
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+
+                    unit.state =
+                        UnitState::LeavingBuilding;
+
+                    continue;
+                }
+            }
+
+
+            // -------------------------------------------------
             // FARMER FIND EMPTY CORN FIELD
             //
             // Original KaM Farmer MiningRange = 10.
@@ -4347,6 +4727,107 @@ void updateUnits(
                     continue;
                 }
             }
+
+            continue;
+        }
+
+
+        // =================================================
+        // FARMER START WALK TO RIPE FIELD
+        //
+        // Farmer carries the original scythe through
+        // FarmerToHarvest / ua_WalkTool.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Idle &&
+            unit.visible &&
+            unit.workAction ==
+                UnitWorkAction::FarmerToHarvest &&
+            landPlans &&
+            unit.targetRoadX >= 0 &&
+            unit.targetRoadX < mapWidth &&
+            unit.targetRoadY >= 0 &&
+            unit.targetRoadY < mapHeight
+        ) {
+            LandPlanState& field =
+                landPlans[
+                    unit.targetRoadY *
+                        mapWidth +
+                    unit.targetRoadX
+                ];
+
+            if (
+                field !=
+                    LandPlanState::FieldRipe
+            ) {
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            const float fieldWorldX =
+                (
+                    unit.targetRoadX +
+                    0.5f
+                ) * tileSize;
+
+            const float fieldWorldY =
+                (
+                    unit.targetRoadY +
+                    0.5f
+                ) * tileSize;
+
+            if (
+                setUnitMoveTarget(
+                    &unit,
+                    fieldWorldX,
+                    fieldWorldY,
+                    buildings,
+                    buildingCount,
+                    mapWidth,
+                    mapHeight,
+                    tileSize
+                )
+            ) {
+                // Keep FarmerHarvest during walking.
+                //
+                // The render selector treats both
+                // FarmerToHarvest and FarmerHarvest as
+                // original ua_WalkTool.
+                unit.workAction =
+                    UnitWorkAction::
+                        FarmerHarvest;
+
+                if (
+                    unit.state ==
+                        UnitState::Idle
+                ) {
+                    unit.state =
+                        UnitState::Working;
+
+                    unit.workTimer = 0.0f;
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+                }
+
+                continue;
+            }
+
+            unit.workAction =
+                UnitWorkAction::None;
+
+            unit.targetRoadX = -1;
+            unit.targetRoadY = -1;
 
             continue;
         }
@@ -4806,6 +5287,133 @@ void updateUnits(
                 unit.doorwayOffsetY = 0;
                 unit.doorwayProgress = 0.0f;
 
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            }
+
+            continue;
+        }
+
+
+        // =================================================
+        // FARMER HARVEST RIPE CORN
+        //
+        // Original WorkPlan:
+        //
+        // ua_Work.Count = 16
+        // WorkCyc       = 6
+        // total         = 96 animation steps
+        //
+        // CutCorn result:
+        // FieldAge = 0
+        // Terrain  = 63
+        // Obj      = 255
+        //
+        // KaMVita representation:
+        // FieldRipe -> FieldCut.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Working &&
+            unit.workAction ==
+                UnitWorkAction::FarmerHarvest
+        ) {
+            const bool validField =
+                landPlans &&
+                unit.targetRoadX >= 0 &&
+                unit.targetRoadX < mapWidth &&
+                unit.targetRoadY >= 0 &&
+                unit.targetRoadY < mapHeight;
+
+            if (!validField) {
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            LandPlanState& field =
+                landPlans[
+                    unit.targetRoadY *
+                        mapWidth +
+                    unit.targetRoadX
+                ];
+
+            if (
+                field !=
+                    LandPlanState::FieldRipe
+            ) {
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            unit.workTimer += deltaSeconds;
+            unit.animationTimer += deltaSeconds;
+
+            constexpr int FARMER_HARVEST_FRAMES =
+                16;
+
+            constexpr int FARMER_HARVEST_CYCLES =
+                6;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame =
+                    (
+                        unit.animationFrame + 1
+                    ) %
+                    FARMER_HARVEST_FRAMES;
+            }
+
+            const float harvestDuration =
+                FARMER_HARVEST_CYCLES *
+                FARMER_HARVEST_FRAMES *
+                animationFrameDuration;
+
+            if (
+                unit.workTimer >=
+                    harvestDuration
+            ) {
+                field =
+                    LandPlanState::FieldCut;
+
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                // First isolated harvest checkpoint:
+                // Farmer stays outside without Corn output.
                 unit.workAction =
                     UnitWorkAction::None;
 

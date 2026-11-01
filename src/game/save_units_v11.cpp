@@ -174,7 +174,7 @@ static bool decodeUnit(
             static_cast<int>(UnitWorkAction::None) ||
         in.workAction >
             static_cast<int>(
-                UnitWorkAction::FarmerReturnFarm
+                UnitWorkAction::FarmerHarvest
             )
     )
         return false;

@@ -4631,6 +4631,8 @@ int main(int argc, char* argv[])
                     landPlan ==
                         LandPlanState::FieldRipe ||
                     landPlan ==
+                        LandPlanState::FieldCut ||
+                    landPlan ==
                         LandPlanState::WineInit ||
                     landPlan ==
                         LandPlanState::WineComplete
@@ -4666,6 +4668,13 @@ int main(int argc, char* argv[])
                     ) {
                         completedTexture =
                             terrain.cornGround;
+                    } else if (
+                        landPlan ==
+                            LandPlanState::FieldCut
+                    ) {
+                        // Originalni CutCorn Terrain 63.
+                        completedTexture =
+                            terrain.cornCut;
                     } else {
                         completedTexture =
                             terrain.wineGround;
@@ -4748,7 +4757,9 @@ int main(int argc, char* argv[])
                     type ==
                         LandPlanState::FieldGreen ||
                     type ==
-                        LandPlanState::FieldRipe;
+                        LandPlanState::FieldRipe ||
+                    type ==
+                        LandPlanState::FieldCut;
 
                 const bool isWine =
                     type ==
@@ -4776,7 +4787,9 @@ int main(int argc, char* argv[])
                             neighbor ==
                                 LandPlanState::FieldGreen ||
                             neighbor ==
-                                LandPlanState::FieldRipe;
+                                LandPlanState::FieldRipe ||
+                            neighbor ==
+                                LandPlanState::FieldCut;
                     }
 
                     if (isWine) {
