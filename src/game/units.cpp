@@ -4440,6 +4440,257 @@ void updateUnits(
         }
 
 
+        // =================================================
+        // FARMER CONTINUE SOWING
+        //
+        // Po zaseti zustava Farmer venku.
+        // Pokud existuje dalsi FieldComplete, pouzijeme
+        // stejny vyber a cestu jako pri prvnim vychodu
+        // z Farmy bez mezilehleho navratu domu.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Idle &&
+            unit.visible &&
+            unit.workAction ==
+                UnitWorkAction::None &&
+            unit.targetBuilding >= 0 &&
+            landPlans
+        ) {
+            const Building& farm =
+                buildings[
+                    unit.targetBuilding
+                ];
+
+            const BuildingEntrance entrance =
+                getBuildingEntrance(
+                    farm.type
+                );
+
+            const int homeX =
+                farm.tileX +
+                entrance.tileOffsetX;
+
+            const int homeY =
+                farm.tileY +
+                entrance.tileOffsetY;
+
+            constexpr int FARMER_RANGE = 10;
+
+            int bestX = -1;
+            int bestY = -1;
+            int bestDistanceSquared = 0;
+
+            for (
+                int fieldY = 0;
+                fieldY < mapHeight;
+                ++fieldY
+            ) {
+                for (
+                    int fieldX = 0;
+                    fieldX < mapWidth;
+                    ++fieldX
+                ) {
+                    if (
+                        landPlans[
+                            fieldY * mapWidth +
+                            fieldX
+                        ] !=
+                            LandPlanState::
+                                FieldComplete
+                    ) {
+                        continue;
+                    }
+
+                    const int dx =
+                        fieldX - homeX;
+
+                    const int dy =
+                        fieldY - homeY;
+
+                    if (
+                        dx < -FARMER_RANGE ||
+                        dx > FARMER_RANGE ||
+                        dy < -FARMER_RANGE ||
+                        dy > FARMER_RANGE
+                    ) {
+                        continue;
+                    }
+
+                    bool reserved = false;
+
+                    for (
+                        int otherIndex = 0;
+                        otherIndex < unitCount;
+                        ++otherIndex
+                    ) {
+                        if (otherIndex == i)
+                            continue;
+
+                        const Unit& other =
+                            units[otherIndex];
+
+                        if (
+                            other.active &&
+                            other.type ==
+                                UnitType::Farmer &&
+                            other.targetRoadX ==
+                                fieldX &&
+                            other.targetRoadY ==
+                                fieldY &&
+                            (
+                                other.workAction ==
+                                    UnitWorkAction::
+                                        FarmerToField ||
+                                other.workAction ==
+                                    UnitWorkAction::
+                                        FarmerSow
+                            )
+                        ) {
+                            reserved = true;
+                            break;
+                        }
+                    }
+
+                    if (reserved)
+                        continue;
+
+                    const int distanceSquared =
+                        dx * dx + dy * dy;
+
+                    if (
+                        bestX < 0 ||
+                        distanceSquared <
+                            bestDistanceSquared
+                    ) {
+                        bestX = fieldX;
+                        bestY = fieldY;
+                        bestDistanceSquared =
+                            distanceSquared;
+                    }
+                }
+            }
+
+            if (bestX >= 0) {
+                unit.targetRoadX = bestX;
+                unit.targetRoadY = bestY;
+
+                unit.workAction =
+                    UnitWorkAction::FarmerToField;
+
+                continue;
+            }
+
+            unit.workAction =
+                UnitWorkAction::FarmerReturnFarm;
+        }
+
+
+        // =================================================
+        // FARMER RETURN TO FARM
+        //
+        // Farmer po zaseti jde zpet na approach tile
+        // sve rezervovane domovske Farmy.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Idle &&
+            unit.visible &&
+            unit.workAction ==
+                UnitWorkAction::FarmerReturnFarm
+        ) {
+            const bool validFarm =
+                buildings &&
+                unit.targetBuilding >= 0 &&
+                unit.targetBuilding <
+                    buildingCount &&
+                buildings[
+                    unit.targetBuilding
+                ].active &&
+                buildings[
+                    unit.targetBuilding
+                ].type ==
+                    BuildingType::Farm &&
+                isBuildingComplete(
+                    buildings[
+                        unit.targetBuilding
+                    ]
+                );
+
+            if (!validFarm) {
+                unit.targetBuilding = -1;
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                continue;
+            }
+
+            const Building& farm =
+                buildings[
+                    unit.targetBuilding
+                ];
+
+            const HouseDoorwayGeometry doorway =
+                getHouseDoorwayGeometry(
+                    farm,
+                    tileSize
+                );
+
+            if (
+                setUnitMoveTarget(
+                    &unit,
+                    doorway.streetX,
+                    doorway.streetY,
+                    buildings,
+                    buildingCount,
+                    mapWidth,
+                    mapHeight,
+                    tileSize
+                )
+            ) {
+                if (
+                    unit.state ==
+                        UnitState::Idle
+                ) {
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayTargetX =
+                        doorway.doorX;
+
+                    unit.doorwayTargetY =
+                        doorway.doorY;
+
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
+
+                    unit.state =
+                        UnitState::ApproachingBuilding;
+                }
+
+                continue;
+            }
+
+            // Farm reservation zustava zachovana.
+            // Cestu zkusime znovu dalsi update.
+            continue;
+        }
+
+
         // -------------------------------------------------
         // House terrain preparation.
         //
@@ -4649,7 +4900,19 @@ void updateUnits(
                     FARMER_SOW_FRAMES;
             }
 
+            // Originalni KaM Remake Farmer sow:
+            //
+            // WalkStyle(... ua_Work1, 10, ...)
+            //
+            // TimeToWork =
+            // WorkCyc * UnitAnim.Count
+            //
+            // ua_Work1 ma 10 framu a WorkCyc = 10,
+            // tedy celkem 100 animacnich kroku.
+            constexpr int FARMER_SOW_CYCLES = 10;
+
             const float sowDuration =
+                FARMER_SOW_CYCLES *
                 FARMER_SOW_FRAMES *
                 animationFrameDuration;
 
@@ -4665,14 +4928,149 @@ void updateUnits(
                 unit.targetRoadX = -1;
                 unit.targetRoadY = -1;
 
-                // Farmer remains outside after sowing in
-                // this isolated checkpoint.
+                // Originalni Farmer workflow pokracuje
+                // rovnou na dalsi dostupne pole.
+                //
+                // Nejdrive se pokusime najit dalsi
+                // FieldComplete v dosahu domovske Farmy.
+                // Pokud zadne nezbyva, Farmer se vrati domu.
                 unit.workAction =
                     UnitWorkAction::None;
 
                 unit.workTimer = 0.0f;
                 unit.animationFrame = 0;
                 unit.animationTimer = 0.0f;
+
+                const bool validHomeFarm =
+                    buildings &&
+                    unit.targetBuilding >= 0 &&
+                    unit.targetBuilding <
+                        buildingCount &&
+                    buildings[
+                        unit.targetBuilding
+                    ].active &&
+                    buildings[
+                        unit.targetBuilding
+                    ].type ==
+                        BuildingType::Farm &&
+                    isBuildingComplete(
+                        buildings[
+                            unit.targetBuilding
+                        ]
+                    );
+
+                bool anotherFieldExists = false;
+
+                if (
+                    validHomeFarm &&
+                    landPlans
+                ) {
+                    const Building& homeFarm =
+                        buildings[
+                            unit.targetBuilding
+                        ];
+
+                    const BuildingEntrance entrance =
+                        getBuildingEntrance(
+                            homeFarm.type
+                        );
+
+                    const int homeX =
+                        homeFarm.tileX +
+                        entrance.tileOffsetX;
+
+                    const int homeY =
+                        homeFarm.tileY +
+                        entrance.tileOffsetY;
+
+                    constexpr int FARMER_RANGE = 10;
+
+                    for (
+                        int fieldY = 0;
+                        fieldY < mapHeight &&
+                        !anotherFieldExists;
+                        ++fieldY
+                    ) {
+                        for (
+                            int fieldX = 0;
+                            fieldX < mapWidth;
+                            ++fieldX
+                        ) {
+                            if (
+                                landPlans[
+                                    fieldY *
+                                        mapWidth +
+                                    fieldX
+                                ] !=
+                                    LandPlanState::
+                                        FieldComplete
+                            ) {
+                                continue;
+                            }
+
+                            const int dx =
+                                fieldX - homeX;
+
+                            const int dy =
+                                fieldY - homeY;
+
+                            if (
+                                dx < -FARMER_RANGE ||
+                                dx > FARMER_RANGE ||
+                                dy < -FARMER_RANGE ||
+                                dy > FARMER_RANGE
+                            ) {
+                                continue;
+                            }
+
+                            bool reserved = false;
+
+                            for (
+                                int otherIndex = 0;
+                                otherIndex < unitCount;
+                                ++otherIndex
+                            ) {
+                                if (otherIndex == i)
+                                    continue;
+
+                                const Unit& other =
+                                    units[otherIndex];
+
+                                if (
+                                    other.active &&
+                                    other.type ==
+                                        UnitType::Farmer &&
+                                    other.targetRoadX ==
+                                        fieldX &&
+                                    other.targetRoadY ==
+                                        fieldY &&
+                                    (
+                                        other.workAction ==
+                                            UnitWorkAction::
+                                                FarmerToField ||
+                                        other.workAction ==
+                                            UnitWorkAction::
+                                                FarmerSow
+                                    )
+                                ) {
+                                    reserved = true;
+                                    break;
+                                }
+                            }
+
+                            if (!reserved) {
+                                anotherFieldExists = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!anotherFieldExists) {
+                    unit.workAction =
+                        UnitWorkAction::
+                            FarmerReturnFarm;
+                }
             }
 
             continue;
@@ -5050,8 +5448,13 @@ void updateUnits(
                 if (
                     unit.type == UnitType::Farmer &&
                     unit.targetBuilding >= 0 &&
-                    unit.workAction ==
-                        UnitWorkAction::None
+                    (
+                        unit.workAction ==
+                            UnitWorkAction::None ||
+                        unit.workAction ==
+                            UnitWorkAction::
+                                FarmerReturnFarm
+                    )
                 ) {
                     const bool validFarm =
                         buildings &&
