@@ -73,6 +73,67 @@ static void renderCenteredTexture(
 }
 
 
+static void renderSimpleHouseHealthBar(
+    SDL_Renderer* renderer,
+    const Building& building,
+    const SDL_Rect& healthBar,
+    bool drawZeroWidthFill
+)
+{
+    if (!renderer)
+        return;
+
+    SDL_SetRenderDrawColor(
+        renderer,
+        43, 35, 28, 255
+    );
+
+    SDL_RenderFillRect(
+        renderer,
+        &healthBar
+    );
+
+    int healthWidth = 0;
+
+    if (building.maxHealth > 0) {
+        healthWidth =
+            (
+                (healthBar.w - 2) *
+                building.health
+            ) /
+            building.maxHealth;
+    }
+
+    if (healthWidth < 0)
+        healthWidth = 0;
+
+    if (healthWidth > healthBar.w - 2)
+        healthWidth = healthBar.w - 2;
+
+    if (
+        healthWidth > 0 ||
+        drawZeroWidthFill
+    ) {
+        SDL_Rect healthFill = {
+            healthBar.x + 1,
+            healthBar.y + 1,
+            healthWidth,
+            healthBar.h - 2
+        };
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            86, 154, 67, 255
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &healthFill
+        );
+    }
+}
+
+
 static void renderHouseHeaderButtons(
     SDL_Renderer* renderer,
     const SchoolUIResources& resources,
@@ -3391,51 +3452,12 @@ void renderGameUI(
 
 
         // House health.
-        SDL_SetRenderDrawColor(
+        renderSimpleHouseHealthBar(
             renderer,
-            43, 35, 28, 255
+            *selectedBakery,
+            healthBar,
+            false
         );
-
-        SDL_RenderFillRect(
-            renderer,
-            &healthBar
-        );
-
-        int healthWidth = 0;
-
-        if (selectedBakery->maxHealth > 0) {
-            healthWidth =
-                (
-                    (healthBar.w - 2) *
-                    selectedBakery->health
-                ) /
-                selectedBakery->maxHealth;
-        }
-
-        if (healthWidth < 0)
-            healthWidth = 0;
-
-        if (healthWidth > healthBar.w - 2)
-            healthWidth = healthBar.w - 2;
-
-        if (healthWidth > 0) {
-            SDL_Rect healthFill = {
-                healthBar.x + 1,
-                healthBar.y + 1,
-                healthWidth,
-                healthBar.h - 2
-            };
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                86, 154, 67, 255
-            );
-
-            SDL_RenderFillRect(
-                renderer,
-                &healthFill
-            );
-        }
 
         // ---------------------------------------------
         // NEEDS
@@ -3979,46 +4001,11 @@ void renderGameUI(
         // Generic Serf glyph se zde nevykresluje.
 
         // House health.
-        SDL_SetRenderDrawColor(
+        renderSimpleHouseHealthBar(
             renderer,
-            43, 35, 28, 255
-        );
-        SDL_RenderFillRect(
-            renderer,
-            &healthBar
-        );
-
-        int healthWidth = 0;
-
-        if (selectedStore->maxHealth > 0) {
-            healthWidth =
-                (
-                    (healthBar.w - 2) *
-                    selectedStore->health
-                ) /
-                selectedStore->maxHealth;
-        }
-
-        if (healthWidth < 0)
-            healthWidth = 0;
-
-        if (healthWidth > healthBar.w - 2)
-            healthWidth = healthBar.w - 2;
-
-        SDL_Rect healthFill = {
-            healthBar.x + 1,
-            healthBar.y + 1,
-            healthWidth,
-            healthBar.h - 2
-        };
-
-        SDL_SetRenderDrawColor(
-            renderer,
-            86, 154, 67, 255
-        );
-        SDL_RenderFillRect(
-            renderer,
-            &healthFill
+            *selectedStore,
+            healthBar,
+            true
         );
 
         // -------------------------------------------------
