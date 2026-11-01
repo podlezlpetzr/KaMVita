@@ -147,6 +147,48 @@ UnitResources loadUnitResources(
             "app0:assets/units/baker/complete/actions/die_atlas.bmp"
         );
 
+    resources.farmerWalkAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/walk_atlas.bmp"
+        );
+
+    resources.farmerWorkAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/work_atlas.bmp"
+        );
+
+    resources.farmerWork1Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/work1_atlas.bmp"
+        );
+
+    resources.farmerWalkToolAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/walktool_atlas.bmp"
+        );
+
+    resources.farmerWalkBootyAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/walkbooty_atlas.bmp"
+        );
+
+    resources.farmerEatAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/eat_atlas.bmp"
+        );
+
+    resources.farmerDieAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/farmer/complete/actions/die_atlas.bmp"
+        );
+
     resources.thoughtEatAtlas =
         loadColorKeyTexture(
             renderer,
@@ -197,6 +239,14 @@ void destroyUnitResources(
     SDL_DestroyTexture(resources->bakerEatAtlas);
     SDL_DestroyTexture(resources->bakerDieAtlas);
 
+    SDL_DestroyTexture(resources->farmerWalkAtlas);
+    SDL_DestroyTexture(resources->farmerWorkAtlas);
+    SDL_DestroyTexture(resources->farmerWork1Atlas);
+    SDL_DestroyTexture(resources->farmerWalkToolAtlas);
+    SDL_DestroyTexture(resources->farmerWalkBootyAtlas);
+    SDL_DestroyTexture(resources->farmerEatAtlas);
+    SDL_DestroyTexture(resources->farmerDieAtlas);
+
     SDL_DestroyTexture(resources->thoughtEatAtlas);
     SDL_DestroyTexture(resources->thoughtDeathAtlas);
     SDL_DestroyTexture(resources->thoughtQuestAtlas);
@@ -222,6 +272,14 @@ void destroyUnitResources(
     resources->bakerWorkAtlas = nullptr;
     resources->bakerEatAtlas = nullptr;
     resources->bakerDieAtlas = nullptr;
+
+    resources->farmerWalkAtlas = nullptr;
+    resources->farmerWorkAtlas = nullptr;
+    resources->farmerWork1Atlas = nullptr;
+    resources->farmerWalkToolAtlas = nullptr;
+    resources->farmerWalkBootyAtlas = nullptr;
+    resources->farmerEatAtlas = nullptr;
+    resources->farmerDieAtlas = nullptr;
 
     resources->thoughtEatAtlas = nullptr;
     resources->thoughtDeathAtlas = nullptr;
@@ -540,6 +598,17 @@ void renderUnits(
                     actionCellHeight = 57;
                     actionAnchorX = 14;
                     actionAnchorY = -27;
+                } else if (
+                    units[i].type ==
+                        UnitType::Farmer
+                ) {
+                    actionAtlas =
+                        resources.farmerEatAtlas;
+
+                    actionCellWidth = 34;
+                    actionCellHeight = 50;
+                    actionAnchorX = 13;
+                    actionAnchorY = -26;
                 }
             } else {
                 static const int
@@ -574,6 +643,12 @@ void renderUnits(
                 ) {
                     actionAtlas =
                         resources.bakerDieAtlas;
+                } else if (
+                    units[i].type ==
+                        UnitType::Farmer
+                ) {
+                    actionAtlas =
+                        resources.farmerDieAtlas;
                 }
             }
 
@@ -655,6 +730,9 @@ void renderUnits(
         const bool isBaker =
             units[i].type == UnitType::Baker;
 
+        const bool isFarmer =
+            units[i].type == UnitType::Farmer;
+
         SDL_Texture* walkAtlas = nullptr;
 
         int walkCellWidth = 0;
@@ -685,6 +763,19 @@ void renderUnits(
 
             walkAnchorX = -15;
             walkAnchorY = -39;
+        } else if (isFarmer) {
+            // Originalni Farmer ua_Walk:
+            // cell 40x46
+            // anchor -19,-38
+            // 8 smeru x 8 framu.
+            walkAtlas =
+                resources.farmerWalkAtlas;
+
+            walkCellWidth = 40;
+            walkCellHeight = 46;
+
+            walkAnchorX = -19;
+            walkAnchorY = -38;
         } else {
             walkAtlas =
                 resources.workerWalkAtlas;
@@ -716,7 +807,7 @@ void renderUnits(
             if (frame < 0)
                 frame += 8;
         } else if (!isSerf) {
-            // Worker i Baker pouzivaji originalni
+            // Worker, Baker i Farmer pouzivaji originalni
             // Remake UnitStillFrames.
             frame = stillFrames[direction];
         }

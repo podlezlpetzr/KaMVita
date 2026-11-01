@@ -8,7 +8,10 @@ enum class UnitType {
     Serf = 1,
 
     // Originalni KaM ut_Baker, unit.dat index 6.
-    Baker = 2
+    Baker = 2,
+
+    // Originalni KaM ut_Farmer, unit.dat index 4.
+    Farmer = 3
 };
 
 enum class UnitState {
@@ -259,6 +262,28 @@ struct UnitResources {
     SDL_Texture* bakerWorkAtlas;
     SDL_Texture* bakerEatAtlas;
     SDL_Texture* bakerDieAtlas;
+
+    // ========================================================
+    // ORIGINAL KaM FARMER UNIT
+    //
+    // unit.dat index 4.
+    //
+    // Walk:       8 smeru x 8 framu.
+    // Work:       8 smeru x 16 framu.
+    // Work1:      8 smeru x 10 framu.
+    // WalkTool:   8 smeru x 8 framu.
+    // WalkBooty:  8 smeru x 8 framu.
+    // Eat:        8 smeru x 30 framu.
+    // Die:        promenlivy pocet framu podle smeru.
+    // ========================================================
+
+    SDL_Texture* farmerWalkAtlas;
+    SDL_Texture* farmerWorkAtlas;
+    SDL_Texture* farmerWork1Atlas;
+    SDL_Texture* farmerWalkToolAtlas;
+    SDL_Texture* farmerWalkBootyAtlas;
+    SDL_Texture* farmerEatAtlas;
+    SDL_Texture* farmerDieAtlas;
 
     // Originalni KaM thought bubbles z units.rx.
     SDL_Texture* thoughtEatAtlas;

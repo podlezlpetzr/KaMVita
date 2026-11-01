@@ -328,6 +328,34 @@ vita_create_vpk(
         assets/units/baker/complete/actions/die_atlas.bmp
 
     FILE
+        assets/units/farmer/complete/actions/walk_atlas.bmp
+        assets/units/farmer/complete/actions/walk_atlas.bmp
+
+    FILE
+        assets/units/farmer/complete/actions/work_atlas.bmp
+        assets/units/farmer/complete/actions/work_atlas.bmp
+
+    FILE
+        assets/units/farmer/complete/actions/work1_atlas.bmp
+        assets/units/farmer/complete/actions/work1_atlas.bmp
+
+    FILE
+        assets/units/farmer/complete/actions/walktool_atlas.bmp
+        assets/units/farmer/complete/actions/walktool_atlas.bmp
+
+    FILE
+        assets/units/farmer/complete/actions/walkbooty_atlas.bmp
+        assets/units/farmer/complete/actions/walkbooty_atlas.bmp
+
+    FILE
+        assets/units/farmer/complete/actions/eat_atlas.bmp
+        assets/units/farmer/complete/actions/eat_atlas.bmp
+
+    FILE
+        assets/units/farmer/complete/actions/die_atlas.bmp
+        assets/units/farmer/complete/actions/die_atlas.bmp
+
+    FILE
         assets/units/worker/complete/actions/eat_atlas.bmp
         assets/units/worker/complete/actions/eat_atlas.bmp
     FILE

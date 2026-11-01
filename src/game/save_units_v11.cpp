@@ -143,7 +143,7 @@ static bool decodeUnit(
 
     if (
         in.type < static_cast<int>(UnitType::Worker) ||
-        in.type > static_cast<int>(UnitType::Baker)
+        in.type > static_cast<int>(UnitType::Farmer)
     )
         return false;
 

@@ -5235,6 +5235,10 @@ int main(int argc, char* argv[])
                         ) ||
                     profession ==
                         static_cast<int>(
+                            GameUISchoolSelection::Farmer
+                        ) ||
+                    profession ==
+                        static_cast<int>(
                             GameUISchoolSelection::Baker
                         );
 
@@ -5286,6 +5290,14 @@ int main(int argc, char* argv[])
                 ) {
                     trainedUnit.type =
                         UnitType::Serf;
+                } else if (
+                    profession ==
+                    static_cast<int>(
+                        GameUISchoolSelection::Farmer
+                    )
+                ) {
+                    trainedUnit.type =
+                        UnitType::Farmer;
                 } else if (
                     profession ==
                     static_cast<int>(
