@@ -1346,7 +1346,6 @@ int main(int argc, char* argv[])
     // a Building::schoolIdleStep.
     float schoolStepTimers[MAX_BUILDINGS] = {};
 
-        // V11_MAIN_LOAD_DEBUG
         const bool gameLoaded =
             loadGame(
                 buildings,
@@ -1355,23 +1354,6 @@ int main(int argc, char* argv[])
                 units,
                 &unitCount
             );
-
-        FILE* loadDebug =
-            fopen(
-                "ux0:data/kamvita/load_result.txt",
-                "wb"
-            );
-
-        if (loadDebug) {
-            fprintf(
-                loadDebug,
-                "loadGame=%d buildingCount=%d unitCount=%d\n",
-                gameLoaded ? 1 : 0,
-                buildingCount,
-                unitCount
-            );
-            fclose(loadDebug);
-        }
 
     // Development start:
     // pokud neni save, zacneme s hotovym

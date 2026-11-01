@@ -318,7 +318,6 @@ bool writeUnitsV11(
     int unitCount
 )
 {
-    // V11_WRITE_DEBUG
     if (
         !file ||
         !units ||
@@ -328,22 +327,6 @@ bool writeUnitsV11(
         return false;
 
     const std::int32_t count = unitCount;
-
-    FILE* writeDebug = fopen(
-        "ux0:data/kamvita/save_v11_write_debug.txt",
-        "wb"
-    );
-
-    if (writeDebug) {
-        fprintf(
-            writeDebug,
-            "WRITE_BEGIN unitCount=%d recordSize=%u maxUnits=%d\n",
-            unitCount,
-            (unsigned)sizeof(UnitSaveV11),
-            MAX_UNITS
-        );
-        fflush(writeDebug);
-    }
 
     if (
         fwrite(
@@ -356,9 +339,7 @@ bool writeUnitsV11(
         return false;
 
     for (int i = 0; i < MAX_UNITS; ++i) {
-    // V11_WRITE_DEBUG
         UnitSaveV11 saved = {};
-    // V11_WRITE_DEBUG
 
         if (i < unitCount)
             saved = encodeUnit(units[i]);
@@ -374,17 +355,6 @@ bool writeUnitsV11(
             return false;
     }
 
-    if (writeDebug) {
-        const long finalOffset = ftell(file);
-        fprintf(
-            writeDebug,
-            "WRITE_OK unitCount=%d finalOffset=%ld\n",
-            unitCount,
-            finalOffset
-        );
-        fclose(writeDebug);
-    }
-
     return true;
 }
 
@@ -395,38 +365,6 @@ bool readUnitsV11(
     int buildingCount
 )
 {
-    // V11_LOAD_DEBUG
-    FILE* debug =
-        fopen(
-            "ux0:data/kamvita/save_v11_debug.txt",
-            "wb"
-        );
-
-    if (debug) {
-        fprintf(
-            debug,
-            "READ_BEGIN buildingCount=%d\n",
-            buildingCount
-        );
-        const long readStartOffset = ftell(file);
-        long saveFileSize = -1;
-
-        if (readStartOffset >= 0) {
-            if (fseek(file, 0, SEEK_END) == 0) {
-                saveFileSize = ftell(file);
-                fseek(file, readStartOffset, SEEK_SET);
-            }
-        }
-
-        fprintf(
-            debug,
-            "READ_OFFSET=%ld FILE_SIZE=%ld EXPECTED_UNIT_OFFSET=8988\n",
-            readStartOffset,
-            saveFileSize
-        );
-        fflush(debug);
-    }
-
     if (
         !file ||
         !units ||
@@ -445,51 +383,13 @@ bool readUnitsV11(
             file
         ) != 1
     ) {
-        if (debug) {
-            fprintf(debug, "FAIL=count_read\n");
-            fclose(debug);
-        }
         return false;
-    }
-
-    if (debug) {
-        fprintf(
-            debug,
-            "COUNT=%d\n",
-            static_cast<int>(count)
-        );
-        const long readStartOffset = ftell(file);
-        long saveFileSize = -1;
-
-        if (readStartOffset >= 0) {
-            if (fseek(file, 0, SEEK_END) == 0) {
-                saveFileSize = ftell(file);
-                fseek(file, readStartOffset, SEEK_SET);
-            }
-        }
-
-        fprintf(
-            debug,
-            "READ_OFFSET=%ld FILE_SIZE=%ld EXPECTED_UNIT_OFFSET=8988\n",
-            readStartOffset,
-            saveFileSize
-        );
-        fflush(debug);
     }
 
     if (
         count < 0 ||
         count > MAX_UNITS
     ) {
-        if (debug) {
-            fprintf(
-                debug,
-                "FAIL=count_range count=%d max=%d\n",
-                static_cast<int>(count),
-                MAX_UNITS
-            );
-            fclose(debug);
-        }
         return false;
     }
 
@@ -504,14 +404,6 @@ bool readUnitsV11(
                 file
             ) != 1
         ) {
-            if (debug) {
-                fprintf(
-                    debug,
-                    "FAIL=record_read index=%d\n",
-                    i
-                );
-                fclose(debug);
-            }
             return false;
         }
 
@@ -523,26 +415,6 @@ bool readUnitsV11(
                     buildingCount
                 )
             ) {
-                if (debug) {
-                    fprintf(
-                        debug,
-                        "FAIL=decode index=%d "
-                        "type=%d state=%d condition=%d "
-                        "pathLength=%d pathIndex=%d "
-                        "targetBuilding=%d sourceBuilding=%d "
-                        "destinationBuilding=%d\n",
-                        i,
-                        static_cast<int>(saved.type),
-                        static_cast<int>(saved.state),
-                        static_cast<int>(saved.condition),
-                        static_cast<int>(saved.pathLength),
-                        static_cast<int>(saved.pathIndex),
-                        static_cast<int>(saved.targetBuilding),
-                        static_cast<int>(saved.sourceBuilding),
-                        static_cast<int>(saved.destinationBuilding)
-                    );
-                    fclose(debug);
-                }
                 return false;
             }
         } else {
@@ -551,16 +423,6 @@ bool readUnitsV11(
     }
 
     *unitCount = count;
-
-    if (debug) {
-        fprintf(
-            debug,
-            "READ_OK unitCount=%d\n",
-            *unitCount
-        );
-        fclose(debug);
-    }
-
 
     return true;
 }
