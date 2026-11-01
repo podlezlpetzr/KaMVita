@@ -37,6 +37,44 @@ void initGameUI(
     ui->storeWareSelection = 0;
 }
 
+static void renderHorizontallyCenteredTexture(
+    SDL_Renderer* renderer,
+    SDL_Texture* texture,
+    int areaX,
+    int areaWidth,
+    int y
+)
+{
+    if (!renderer || !texture)
+        return;
+
+    int width = 0;
+    int height = 0;
+
+    SDL_QueryTexture(
+        texture,
+        nullptr,
+        nullptr,
+        &width,
+        &height
+    );
+
+    SDL_Rect destination = {
+        areaX + (areaWidth - width) / 2,
+        y,
+        width,
+        height
+    };
+
+    SDL_RenderCopy(
+        renderer,
+        texture,
+        nullptr,
+        &destination
+    );
+}
+
+
 static void renderCenteredTexture(
     SDL_Renderer* renderer,
     SDL_Texture* texture,
@@ -665,33 +703,13 @@ void renderGameUI(
 
         // Originalni fnt_Outline nazev budovy.
         // Vita: absolutni Y=224, centrovano v 180px School obsahu.
-        if (schoolResources.schoolHouseText) {
-            int titleWidth = 0;
-            int titleHeight = 0;
-
-            SDL_QueryTexture(
-                schoolResources.schoolHouseText,
-                nullptr,
-                nullptr,
-                &titleWidth,
-                &titleHeight
-            );
-
-            SDL_Rect titleDestination = {
-                panelX +
-                    (contentWidth - titleWidth) / 2,
-                229,
-                titleWidth,
-                titleHeight
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                schoolResources.schoolHouseText,
-                nullptr,
-                &titleDestination
-            );
-        }
+        renderHorizontallyCenteredTexture(
+            renderer,
+            schoolResources.schoolHouseText,
+            panelX,
+            contentWidth,
+            229
+        );
 
         // =================================================
         // ORIGINAL KaM HOUSE HEADER
@@ -3292,33 +3310,13 @@ void renderGameUI(
                 )
             ];
 
-        if (bakeryTitle) {
-            int titleW = 0;
-            int titleH = 0;
-
-            SDL_QueryTexture(
-                bakeryTitle,
-                nullptr,
-                nullptr,
-                &titleW,
-                &titleH
-            );
-
-            SDL_Rect titleDst = {
-                panelX +
-                    (contentWidth - titleW) / 2,
-                229,
-                titleW,
-                titleH
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                bakeryTitle,
-                nullptr,
-                &titleDst
-            );
-        }
+        renderHorizontallyCenteredTexture(
+            renderer,
+            bakeryTitle,
+            panelX,
+            contentWidth,
+            229
+        );
 
         SDL_Rect deliveryButton = {
             panelX,
@@ -3884,33 +3882,13 @@ void renderGameUI(
         SDL_Texture* storeTitle =
             schoolResources.buildNameText[1];
 
-        if (storeTitle) {
-            int titleW = 0;
-            int titleH = 0;
-
-            SDL_QueryTexture(
-                storeTitle,
-                nullptr,
-                nullptr,
-                &titleW,
-                &titleH
-            );
-
-            SDL_Rect titleDst = {
-                storePanelX +
-                    (180 - titleW) / 2,
-                229,
-                titleW,
-                titleH
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                storeTitle,
-                nullptr,
-                &titleDst
-            );
-        }
+        renderHorizontallyCenteredTexture(
+            renderer,
+            storeTitle,
+            storePanelX,
+            180,
+            229
+        );
 
         // -------------------------------------------------
         // House header
