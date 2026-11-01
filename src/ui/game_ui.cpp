@@ -37,6 +37,114 @@ void initGameUI(
     ui->storeWareSelection = 0;
 }
 
+static void renderHouseHeaderButtons(
+    SDL_Renderer* renderer,
+    const SchoolUIResources& resources,
+    const Building& building,
+    const SDL_Rect& deliveryButton,
+    const SDL_Rect& repairButton
+)
+{
+    if (!renderer)
+        return;
+
+    SDL_Rect headerButtons[2] = {
+        deliveryButton,
+        repairButton
+    };
+
+    for (
+        int buttonIndex = 0;
+        buttonIndex < 2;
+        ++buttonIndex
+    ) {
+        if (resources.buttonStone) {
+            SDL_Rect source = {
+                12 + buttonIndex * 34,
+                40,
+                30,
+                30
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.buttonStone,
+                &source,
+                &headerButtons[buttonIndex]
+            );
+        }
+    }
+
+    SDL_Texture* deliveryGlyph =
+        building.wareDeliveryEnabled
+            ? resources.deliveryOn
+            : resources.deliveryOff;
+
+    if (deliveryGlyph) {
+        int w = 0;
+        int h = 0;
+
+        SDL_QueryTexture(
+            deliveryGlyph,
+            nullptr,
+            nullptr,
+            &w,
+            &h
+        );
+
+        SDL_Rect destination = {
+            deliveryButton.x +
+                (deliveryButton.w - w) / 2,
+            deliveryButton.y +
+                (deliveryButton.h - h) / 2,
+            w,
+            h
+        };
+
+        SDL_RenderCopy(
+            renderer,
+            deliveryGlyph,
+            nullptr,
+            &destination
+        );
+    }
+
+    SDL_Texture* repairGlyph =
+        building.repairEnabled
+            ? resources.repairOn
+            : resources.repairOff;
+
+    if (repairGlyph) {
+        int w = 0;
+        int h = 0;
+
+        SDL_QueryTexture(
+            repairGlyph,
+            nullptr,
+            nullptr,
+            &w,
+            &h
+        );
+
+        SDL_Rect destination = {
+            repairButton.x +
+                (repairButton.w - w) / 2,
+            repairButton.y +
+                (repairButton.h - h) / 2,
+            w,
+            h
+        };
+
+        SDL_RenderCopy(
+            renderer,
+            repairGlyph,
+            nullptr,
+            &destination
+        );
+    }
+}
+
+
 void renderGameUI(
     SDL_Renderer* renderer,
     const BuildingResources& resources,
@@ -3150,98 +3258,13 @@ void renderGameUI(
             15
         };
 
-        SDL_Rect headerButtons[2] = {
+        renderHouseHeaderButtons(
+            renderer,
+            schoolResources,
+            *selectedBakery,
             deliveryButton,
             repairButton
-        };
-
-        for (int buttonIndex = 0;
-             buttonIndex < 2;
-             ++buttonIndex) {
-            if (schoolResources.buttonStone) {
-                SDL_Rect source = {
-                    12 + buttonIndex * 34,
-                    40,
-                    30,
-                    30
-                };
-
-                SDL_RenderCopy(
-                    renderer,
-                    schoolResources.buttonStone,
-                    &source,
-                    &headerButtons[buttonIndex]
-                );
-            }
-        }
-
-        SDL_Texture* deliveryGlyph =
-            selectedBakery->wareDeliveryEnabled
-                ? schoolResources.deliveryOn
-                : schoolResources.deliveryOff;
-
-        if (deliveryGlyph) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                deliveryGlyph,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect destination = {
-                deliveryButton.x +
-                    (deliveryButton.w - w) / 2,
-                deliveryButton.y +
-                    (deliveryButton.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                deliveryGlyph,
-                nullptr,
-                &destination
-            );
-        }
-
-        SDL_Texture* repairGlyph =
-            selectedBakery->repairEnabled
-                ? schoolResources.repairOn
-                : schoolResources.repairOff;
-
-        if (repairGlyph) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                repairGlyph,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect destination = {
-                repairButton.x +
-                    (repairButton.w - w) / 2,
-                repairButton.y +
-                    (repairButton.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                repairGlyph,
-                nullptr,
-                &destination
-            );
-        }
+        );
 
         SDL_Texture* bakeryHouseIcon =
             getHouseIcon(
@@ -3919,96 +3942,13 @@ void renderGameUI(
             15
         };
 
-        SDL_Rect headerButtons[2] = {
+        renderHouseHeaderButtons(
+            renderer,
+            schoolResources,
+            *selectedStore,
             deliveryButton,
             repairButton
-        };
-
-        for (int i = 0; i < 2; ++i) {
-            if (schoolResources.buttonStone) {
-                SDL_Rect src = {
-                    12 + i * 34,
-                    40,
-                    30,
-                    30
-                };
-
-                SDL_RenderCopy(
-                    renderer,
-                    schoolResources.buttonStone,
-                    &src,
-                    &headerButtons[i]
-                );
-            }
-        }
-
-        SDL_Texture* deliveryGlyph =
-            selectedStore->wareDeliveryEnabled
-                ? schoolResources.deliveryOn
-                : schoolResources.deliveryOff;
-
-        if (deliveryGlyph) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                deliveryGlyph,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect dst = {
-                deliveryButton.x +
-                    (deliveryButton.w - w) / 2,
-                deliveryButton.y +
-                    (deliveryButton.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                deliveryGlyph,
-                nullptr,
-                &dst
-            );
-        }
-
-        SDL_Texture* repairGlyph =
-            selectedStore->repairEnabled
-                ? schoolResources.repairOn
-                : schoolResources.repairOff;
-
-        if (repairGlyph) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                repairGlyph,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect dst = {
-                repairButton.x +
-                    (repairButton.w - w) / 2,
-                repairButton.y +
-                    (repairButton.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                repairGlyph,
-                nullptr,
-                &dst
-            );
-        }
+        );
 
         SDL_Texture* storeHouseIcon =
             getHouseIcon(
