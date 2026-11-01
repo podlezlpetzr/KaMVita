@@ -107,7 +107,26 @@ enum class LandPlanState : unsigned char {
     //
     // Stav je pridan az na konec enumu, aby zustaly
     // zachovane existujici hodnoty Save v11.
-    FieldSown
+    FieldSown,
+
+    // Originalni KaM Terrain 59:
+    // mladé sazenice.
+    FieldYoung,
+
+    // Originalni KaM Terrain 60:
+    // rostouci zelena kukurice.
+    FieldGrowing,
+
+    // Originalni KaM Terrain 60 + full-grown Obj 59.
+    // Pole je pripravene pro budouci sklizen.
+    FieldRipe,
+
+    // Originalni KaM Terrain 60 + Obj 58:
+    // mensi zelena kukurice.
+    //
+    // Stav je pridan na konec enumu, aby zustaly
+    // zachovane vsechny existujici hodnoty Save v11.
+    FieldGreen
 };
 
 // KaM Remake condition maximum: 45 * 60.

@@ -383,8 +383,6 @@ vita_create_vpk(
         assets/units/worker/complete/actions/work2_atlas.bmp
         assets/units/worker/complete/actions/work2_atlas.bmp
 
-
-
     FILE
         assets/buildings/bakery/runtime/bread_supply_atlas.bmp
         assets/buildings/bakery/runtime/bread_supply_atlas.bmp
@@ -670,119 +668,81 @@ vita_create_vpk(
         assets/ui/school/text/professions/recruit.bmp
         assets/ui/school/text/professions/recruit.bmp
 
-
     FILE
         assets/ui/school/queue/question.bmp
         assets/ui/school/queue/question.bmp
-
 
     FILE
         assets/ui/house/header/delivery_on.bmp
         assets/ui/house/header/delivery_on.bmp
 
-
     FILE
         assets/ui/house/header/delivery_off.bmp
         assets/ui/house/header/delivery_off.bmp
-
 
     FILE
         assets/ui/house/header/repair_on.bmp
         assets/ui/house/header/repair_on.bmp
 
-
     FILE
         assets/ui/house/header/repair_off.bmp
         assets/ui/house/header/repair_off.bmp
-
 
     FILE
         assets/ui/house/header/worker.bmp
         assets/ui/house/header/worker.bmp
 
-
     FILE
         assets/ui/house/text/school_house.bmp
         assets/ui/house/text/school_house.bmp
-
 
     FILE
         assets/ui/statistics/counts.bmp
         assets/ui/statistics/counts.bmp
 
-
     FILE
         assets/ui/statistics/wip_counts.bmp
         assets/ui/statistics/wip_counts.bmp
-
 
     FILE
         assets/ui/ratios/wares/steel.bmp
         assets/ui/ratios/wares/steel.bmp
 
-
     FILE
         assets/ui/ratios/wares/coal.bmp
         assets/ui/ratios/wares/coal.bmp
-
 
     FILE
         assets/ui/ratios/wares/wood.bmp
         assets/ui/ratios/wares/wood.bmp
 
-
     FILE
         assets/ui/ratios/wares/corn.bmp
         assets/ui/ratios/wares/corn.bmp
-
 
     FILE
         assets/ui/ratios/trackbar_thumb.bmp
         assets/ui/ratios/trackbar_thumb.bmp
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     FILE
         assets/ui/build/original/road.bmp
         assets/ui/build/original/road.bmp
-
 
     FILE
         assets/ui/build/original/store.bmp
         assets/ui/build/original/store.bmp
 
-
     FILE
         assets/ui/build/original/bakery.bmp
         assets/ui/build/original/bakery.bmp
-
 
     FILE
         assets/ui/build/original/farm.bmp
         assets/ui/build/original/farm.bmp
 
-
     FILE
         assets/ui/build/original/school.bmp
         assets/ui/build/original/school.bmp
-
 
     FILE
         assets/ui/houses/icons/armor_smithy.bmp
@@ -1135,6 +1095,18 @@ vita_create_vpk(
     FILE
         assets/terrain/fields/runtime/corn_ground.bmp
         assets/terrain/fields/runtime/corn_ground.bmp
+        assets/terrain/fields/runtime/corn_obj58_sprite61.bmp
+        assets/terrain/fields/runtime/corn_obj58_sprite61.bmp
+        assets/terrain/fields/runtime/corn_obj58_sprite62.bmp
+        assets/terrain/fields/runtime/corn_obj58_sprite62.bmp
+        assets/terrain/fields/runtime/corn_obj58_sprite63.bmp
+        assets/terrain/fields/runtime/corn_obj58_sprite63.bmp
+        assets/terrain/fields/runtime/corn_obj59_sprite64.bmp
+        assets/terrain/fields/runtime/corn_obj59_sprite64.bmp
+        assets/terrain/fields/runtime/corn_obj59_sprite65.bmp
+        assets/terrain/fields/runtime/corn_obj59_sprite65.bmp
+        assets/terrain/fields/runtime/corn_obj59_sprite66.bmp
+        assets/terrain/fields/runtime/corn_obj59_sprite66.bmp
 
     FILE
         assets/terrain/fields/runtime/corn_cut.bmp

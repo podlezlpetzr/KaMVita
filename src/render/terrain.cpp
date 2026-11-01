@@ -260,6 +260,42 @@ TerrainResources loadTerrainResources(SDL_Renderer* renderer)
             "app0:assets/terrain/fields/runtime/corn_ground.bmp"
         );
 
+    terrain.cornObj58Sprites[0] =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_obj58_sprite61.bmp"
+        );
+
+    terrain.cornObj58Sprites[1] =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_obj58_sprite62.bmp"
+        );
+
+    terrain.cornObj58Sprites[2] =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_obj58_sprite63.bmp"
+        );
+
+    terrain.cornObj59Sprites[0] =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_obj59_sprite64.bmp"
+        );
+
+    terrain.cornObj59Sprites[1] =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_obj59_sprite65.bmp"
+        );
+
+    terrain.cornObj59Sprites[2] =
+        loadTexture(
+            renderer,
+            "app0:assets/terrain/fields/runtime/corn_obj59_sprite66.bmp"
+        );
+
     terrain.cornCut =
         loadTexture(
             renderer,
@@ -352,6 +388,40 @@ void destroyTerrainResources(TerrainResources* terrain)
     if (terrain->cornGround)
         SDL_DestroyTexture(terrain->cornGround);
 
+    for (
+        int cornSpriteIndex = 0;
+        cornSpriteIndex < 3;
+        ++cornSpriteIndex
+    ) {
+        if (
+            terrain->
+                cornObj58Sprites[
+                    cornSpriteIndex
+                ]
+        ) {
+            SDL_DestroyTexture(
+                terrain->
+                    cornObj58Sprites[
+                        cornSpriteIndex
+                    ]
+            );
+        }
+
+        if (
+            terrain->
+                cornObj59Sprites[
+                    cornSpriteIndex
+                ]
+        ) {
+            SDL_DestroyTexture(
+                terrain->
+                    cornObj59Sprites[
+                        cornSpriteIndex
+                    ]
+            );
+        }
+    }
+
     if (terrain->cornCut)
         SDL_DestroyTexture(terrain->cornCut);
 
@@ -396,6 +466,21 @@ void destroyTerrainResources(TerrainResources* terrain)
     terrain->cornSown = nullptr;
     terrain->cornYoung = nullptr;
     terrain->cornGround = nullptr;
+    for (
+        int cornSpriteIndex = 0;
+        cornSpriteIndex < 3;
+        ++cornSpriteIndex
+    ) {
+        terrain->
+            cornObj58Sprites[
+                cornSpriteIndex
+            ] = nullptr;
+
+        terrain->
+            cornObj59Sprites[
+                cornSpriteIndex
+            ] = nullptr;
+    }
     terrain->cornCut = nullptr;
     terrain->wineGround = nullptr;
 

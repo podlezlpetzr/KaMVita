@@ -1191,6 +1191,19 @@ int main(int argc, char* argv[])
         MAP_WIDTH
     ] = {};
 
+    // Per-tile runtime age of planted corn in seconds.
+    //
+    // Remake thresholds:
+    // 1400, 2200, 4400, 6400 game ticks.
+    //
+    // Remake time conversion:
+    // 10 game ticks = 1 second.
+    float cornGrowthTimers[
+        MAP_HEIGHT
+    ][
+        MAP_WIDTH
+    ] = {};
+
     Unit units[MAX_UNITS] = {};
     int unitCount = 0;
 
@@ -4610,6 +4623,14 @@ int main(int argc, char* argv[])
                     landPlan ==
                         LandPlanState::FieldSown ||
                     landPlan ==
+                        LandPlanState::FieldYoung ||
+                    landPlan ==
+                        LandPlanState::FieldGrowing ||
+                    landPlan ==
+                        LandPlanState::FieldGreen ||
+                    landPlan ==
+                        LandPlanState::FieldRipe ||
+                    landPlan ==
                         LandPlanState::WineInit ||
                     landPlan ==
                         LandPlanState::WineComplete
@@ -4629,6 +4650,22 @@ int main(int argc, char* argv[])
                     ) {
                         completedTexture =
                             terrain.cornSown;
+                    } else if (
+                        landPlan ==
+                            LandPlanState::FieldYoung
+                    ) {
+                        completedTexture =
+                            terrain.cornYoung;
+                    } else if (
+                        landPlan ==
+                            LandPlanState::FieldGrowing ||
+                        landPlan ==
+                            LandPlanState::FieldGreen ||
+                        landPlan ==
+                            LandPlanState::FieldRipe
+                    ) {
+                        completedTexture =
+                            terrain.cornGround;
                     } else {
                         completedTexture =
                             terrain.wineGround;
@@ -4648,6 +4685,8 @@ int main(int argc, char* argv[])
                             nullptr,
                             &fieldPlanRect
                         );
+
+
                     }
 
                     // Hotovy teren uz nema barevny
@@ -4701,7 +4740,15 @@ int main(int argc, char* argv[])
                     type ==
                         LandPlanState::FieldComplete ||
                     type ==
-                        LandPlanState::FieldSown;
+                        LandPlanState::FieldSown ||
+                    type ==
+                        LandPlanState::FieldYoung ||
+                    type ==
+                        LandPlanState::FieldGrowing ||
+                    type ==
+                        LandPlanState::FieldGreen ||
+                    type ==
+                        LandPlanState::FieldRipe;
 
                 const bool isWine =
                     type ==
@@ -4721,7 +4768,15 @@ int main(int argc, char* argv[])
                             neighbor ==
                                 LandPlanState::FieldComplete ||
                             neighbor ==
-                                LandPlanState::FieldSown;
+                                LandPlanState::FieldSown ||
+                            neighbor ==
+                                LandPlanState::FieldYoung ||
+                            neighbor ==
+                                LandPlanState::FieldGrowing ||
+                            neighbor ==
+                                LandPlanState::FieldGreen ||
+                            neighbor ==
+                                LandPlanState::FieldRipe;
                     }
 
                     if (isWine) {
@@ -4898,6 +4953,261 @@ int main(int argc, char* argv[])
                         nullptr,
                         &destination
                     );
+                }
+            }
+        }
+
+
+        // =================================================
+        // ORIGINAL KaM ANIMATED CORN OBJECTS
+        //
+        // Foreground pass after Field/Wine fences.
+        // Render order:
+        // terrain -> fences -> Obj58 / Obj59.
+        // =================================================
+
+        for (
+            int cornFieldY = 0;
+            cornFieldY < MAP_HEIGHT;
+            ++cornFieldY
+        ) {
+            for (
+                int cornFieldX = 0;
+                cornFieldX < MAP_WIDTH;
+                ++cornFieldX
+            ) {
+                const LandPlanState cornLandPlan =
+                    landPlans[
+                        cornFieldY
+                    ][
+                        cornFieldX
+                    ];
+
+                SDL_Rect cornFieldRect = {
+                    cornFieldX * TILE_SIZE -
+                        (int)cameraX,
+
+                    cornFieldY * TILE_SIZE -
+                        (int)cameraY,
+
+                    TILE_SIZE,
+                    TILE_SIZE
+                };
+
+                if (
+                    cornLandPlan ==
+                        LandPlanState::FieldGreen ||
+                    cornLandPlan ==
+                        LandPlanState::FieldRipe
+                ) {
+                    static constexpr int
+                        CORN_ANIMATION_STEPS = 12;
+
+                    static constexpr int
+                        CORN_ANIMATION_STEP_MS = 100;
+
+                    static constexpr int
+                        CORN_STEP_TO_FRAME[
+                            CORN_ANIMATION_STEPS
+                        ] = {
+                            0, 0, 0,
+                            1, 1, 1,
+                            0, 0, 0,
+                            2, 2, 2
+                        };
+
+                    const int cornAnimationStep =
+                        (
+                            currentFrameTicks /
+                            CORN_ANIMATION_STEP_MS
+                        ) %
+                        CORN_ANIMATION_STEPS;
+
+                    const int nextCornAnimationStep =
+                        (
+                            cornAnimationStep + 1
+                        ) %
+                        CORN_ANIMATION_STEPS;
+
+                    const int primaryFrame =
+                        CORN_STEP_TO_FRAME[
+                            cornAnimationStep
+                        ];
+
+                    const int secondaryFrame =
+                        CORN_STEP_TO_FRAME[
+                            nextCornAnimationStep
+                        ];
+
+                    SDL_Texture** cornSprites =
+                        cornLandPlan ==
+                            LandPlanState::FieldGreen
+                                ? terrain.
+                                    cornObj58Sprites
+                                : terrain.
+                                    cornObj59Sprites;
+
+                    static constexpr int
+                        OBJ58_WIDTHS[3] = {
+                            20, 21, 20
+                        };
+
+                    static constexpr int
+                        OBJ58_HEIGHTS[3] = {
+                            24, 24, 24
+                        };
+
+                    static constexpr int
+                        OBJ58_PIVOT_X[3] = {
+                            -9, -10, -9
+                        };
+
+                    static constexpr int
+                        OBJ58_PIVOT_Y[3] = {
+                            -16, -16, -16
+                        };
+
+                    static constexpr int
+                        OBJ59_WIDTHS[3] = {
+                            20, 22, 20
+                        };
+
+                    static constexpr int
+                        OBJ59_HEIGHTS[3] = {
+                            29, 29, 29
+                        };
+
+                    static constexpr int
+                        OBJ59_PIVOT_X[3] = {
+                            -9, -10, -9
+                        };
+
+                    static constexpr int
+                        OBJ59_PIVOT_Y[3] = {
+                            -22, -22, -22
+                        };
+
+                    const int* widths =
+                        cornLandPlan ==
+                            LandPlanState::FieldGreen
+                                ? OBJ58_WIDTHS
+                                : OBJ59_WIDTHS;
+
+                    const int* heights =
+                        cornLandPlan ==
+                            LandPlanState::FieldGreen
+                                ? OBJ58_HEIGHTS
+                                : OBJ59_HEIGHTS;
+
+                    const int* pivotX =
+                        cornLandPlan ==
+                            LandPlanState::FieldGreen
+                                ? OBJ58_PIVOT_X
+                                : OBJ59_PIVOT_X;
+
+                    const int* pivotY =
+                        cornLandPlan ==
+                            LandPlanState::FieldGreen
+                                ? OBJ58_PIVOT_Y
+                                : OBJ59_PIVOT_Y;
+
+                    const int frameIndices[4] = {
+                        primaryFrame,
+                        secondaryFrame,
+                        secondaryFrame,
+                        primaryFrame
+                    };
+
+                    // Local quarter-tile ground anchors,
+                    // equivalent to RenderMapElement4.
+                    const int anchorX[4] = {
+                        8, 24, 8, 24
+                    };
+
+                    const int anchorY[4] = {
+                        8, 8, 24, 24
+                    };
+
+                    for (
+                        int cornPart = 0;
+                        cornPart < 4;
+                        ++cornPart
+                    ) {
+                        const int frameIndex =
+                            frameIndices[
+                                cornPart
+                            ];
+
+                        SDL_Texture* cornSprite =
+                            cornSprites[
+                                frameIndex
+                            ];
+
+                        if (!cornSprite)
+                            continue;
+
+                        const int scaledWidth =
+                            (
+                                widths[
+                                    frameIndex
+                                ] *
+                                TILE_SIZE +
+                                20
+                            ) /
+                            40;
+
+                        const int scaledHeight =
+                            (
+                                heights[
+                                    frameIndex
+                                ] *
+                                TILE_SIZE +
+                                20
+                            ) /
+                            40;
+
+                        const int scaledPivotX =
+                            (
+                                pivotX[
+                                    frameIndex
+                                ] *
+                                TILE_SIZE
+                            ) /
+                            40;
+
+                        const int scaledPivotY =
+                            (
+                                pivotY[
+                                    frameIndex
+                                ] *
+                                TILE_SIZE
+                            ) /
+                            40;
+
+                        SDL_Rect cornSpriteRect = {
+                            cornFieldRect.x +
+                                anchorX[
+                                    cornPart
+                                ] +
+                                scaledPivotX,
+
+                            cornFieldRect.y +
+                                anchorY[
+                                    cornPart
+                                ] +
+                                scaledPivotY,
+
+                            scaledWidth,
+                            scaledHeight
+                        };
+
+                        SDL_RenderCopy(
+                            renderer,
+                            cornSprite,
+                            nullptr,
+                            &cornSpriteRect
+                        );
+                    }
                 }
             }
         }
@@ -5763,6 +6073,154 @@ int main(int argc, char* argv[])
                 ] = 0.0f;
             }
         }
+
+        // =================================================
+        // ORIGINAL KaM CORN GROWTH
+        //
+        // Remake thresholds:
+        //
+        // CORN_AGE_1    = 1400 ticks = 140 seconds
+        // CORN_AGE_2    = 2200 ticks = 220 seconds
+        // CORN_AGE_3    = 4400 ticks = 440 seconds
+        // CORN_AGE_FULL = 6400 ticks = 640 seconds
+        //
+        // Vita checkpoint uses 10x speed for practical
+        // visual verification. Set to 1.0f for authentic
+        // real-time growth after the test checkpoint.
+        // =================================================
+
+        constexpr float CORN_GROWTH_TEST_SPEED =
+            10.0f;
+
+        constexpr float CORN_YOUNG_SECONDS =
+            140.0f /
+            CORN_GROWTH_TEST_SPEED;
+
+        constexpr float CORN_GROWING_SECONDS =
+            220.0f /
+            CORN_GROWTH_TEST_SPEED;
+
+        constexpr float CORN_GREEN_SECONDS =
+            440.0f /
+            CORN_GROWTH_TEST_SPEED;
+
+        constexpr float CORN_RIPE_SECONDS =
+            640.0f /
+            CORN_GROWTH_TEST_SPEED;
+
+        for (
+            int fieldY = 0;
+            fieldY < MAP_HEIGHT;
+            ++fieldY
+        ) {
+            for (
+                int fieldX = 0;
+                fieldX < MAP_WIDTH;
+                ++fieldX
+            ) {
+                LandPlanState& field =
+                    landPlans[
+                        fieldY
+                    ][
+                        fieldX
+                    ];
+
+                float& growthTimer =
+                    cornGrowthTimers[
+                        fieldY
+                    ][
+                        fieldX
+                    ];
+
+                // =================================================
+                // MONOTONIC CORN GROWTH
+                //
+                // A field can only advance:
+                //
+                // FieldSown
+                // -> FieldYoung
+                // -> FieldGrowing
+                // -> FieldGreen
+                // -> FieldRipe
+                //
+                // FieldRipe is terminal until future harvest.
+                // =================================================
+
+                if (
+                    field ==
+                        LandPlanState::FieldRipe
+                ) {
+                    growthTimer = 0.0f;
+                    continue;
+                }
+
+                const bool growingCorn =
+                    field ==
+                        LandPlanState::FieldSown ||
+                    field ==
+                        LandPlanState::FieldYoung ||
+                    field ==
+                        LandPlanState::FieldGrowing ||
+                    field ==
+                        LandPlanState::FieldGreen;
+
+                if (!growingCorn) {
+                    growthTimer = 0.0f;
+                    continue;
+                }
+
+                growthTimer += deltaSeconds;
+
+                if (
+                    field ==
+                        LandPlanState::FieldSown &&
+                    growthTimer >=
+                        CORN_YOUNG_SECONDS
+                ) {
+                    field =
+                        LandPlanState::FieldYoung;
+                }
+
+                if (
+                    field ==
+                        LandPlanState::FieldYoung &&
+                    growthTimer >=
+                        CORN_GROWING_SECONDS
+                ) {
+                    field =
+                        LandPlanState::FieldGrowing;
+                }
+
+                if (
+                    field ==
+                        LandPlanState::FieldGrowing &&
+                    growthTimer >=
+                        CORN_GREEN_SECONDS
+                ) {
+                    // Originalni KaM:
+                    // Terrain 60 + Obj 58.
+                    field =
+                        LandPlanState::FieldGreen;
+                }
+
+                if (
+                    field ==
+                        LandPlanState::FieldGreen &&
+                    growthTimer >=
+                        CORN_RIPE_SECONDS
+                ) {
+                    // Originalni KaM:
+                    // Terrain 60 + Obj 59.
+                    //
+                    // Terminal until Farmer harvest exists.
+                    field =
+                        LandPlanState::FieldRipe;
+
+                    growthTimer = 0.0f;
+                }
+            }
+        }
+
 
         // Aktualizuj pozice jednotek pred vykreslenim.
         updateUnits(

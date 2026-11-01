@@ -30,6 +30,16 @@ struct TerrainResources {
     SDL_Texture* cornSown;
     SDL_Texture* cornYoung;
     SDL_Texture* cornGround;
+
+    // Originalni rxTrees corn overlays:
+    //
+    // Obj 58 = mensi zelena kukurice.
+    // Obj 59 = plne vzrostla kukurice.
+    // Originalni rxTrees sprites pouzivane
+    // 12krokovou animaci corn Obj58 a Obj59.
+    SDL_Texture* cornObj58Sprites[3];
+    SDL_Texture* cornObj59Sprites[3];
+
     SDL_Texture* cornCut;
 
     // SetField(ft_Wine) pouziva Terrain 55
