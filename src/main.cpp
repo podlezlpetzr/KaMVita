@@ -2,6 +2,7 @@
 #include "render/kam_plan_renderer.h"
 #include "game/buildings.h"
 #include "game/units.h"
+#include "game/save_units_v11.h"
 #include "ui/game_ui.h"
 #include "ui/game_ui_unit.h"
 #include "ui/game_ui_ratios.h"
@@ -17,6 +18,7 @@
 #include <psp2/io/stat.h>
 #include <cstdio>
 #include <cstdint>
+#include <cmath>
 #include <cstring>
 
 
@@ -185,6 +187,9 @@ static_assert(
     "Save v10 ocekava Building o velikosti 280 bajtu"
 );
 
+
+// Save v11 unit serialization is implemented in
+// src/game/save_units_v11.cpp.
 
 static int getDefaultBuildingMaxHealth(
     BuildingType type
@@ -428,7 +433,9 @@ static Building migrateBuildingSaveV8(
 static bool saveGame(
     const Building* buildings,
     int buildingCount,
-    const WareDistribution& wareDistribution
+    const WareDistribution& wareDistribution,
+    const Unit* units,
+    int unitCount
 )
 {
     sceIoMkdir(
@@ -444,16 +451,25 @@ static bool saveGame(
     if (!file)
         return false;
 
+    if (
+        !units ||
+        unitCount < 0 ||
+        unitCount > MAX_UNITS
+    ) {
+        fclose(file);
+        return false;
+    }
+
     SaveHeader header = {};
 
     header.magic = 0x4B414D56;
 
-    // Save v10:
-    // - kompletni save v9 House inventory
-    // - Bakery production active state
-    // - Bakery production tick 0..378
-    // - za blokem budov 16 bajtu WareDistribution
-    header.version = 10;
+    // Save v11:
+    // - kompletni save v10 Buildings
+    // - WareDistribution
+    // - unitCount
+    // - pevnych MAX_UNITS zaznamu UnitSaveV11
+    header.version = 11;
     header.buildingCount = buildingCount;
 
     if (
@@ -497,16 +513,38 @@ static bool saveGame(
         return false;
     }
 
+    // =====================================================
+    // SAVE V11 UNIT WRITE
+    //
+    // Stable Unit serialization lives in save_units_v11.cpp.
+    // =====================================================
+
+    if (
+        !writeUnitsV11(
+            file,
+            units,
+            unitCount
+        )
+    ) {
+        fclose(file);
+        return false;
+    }
+
     fclose(file);
+
     return true;
 }
 
 static bool loadGame(
     Building* buildings,
     int* buildingCount,
-    WareDistribution* wareDistribution
+    WareDistribution* wareDistribution,
+    Unit* units,
+    int* unitCount
 )
 {
+
+
     // Remake defaults plati pro novou hru,
     // chybejici save a starsi save v4-v6.
     initializeWareDistribution(
@@ -545,7 +583,8 @@ static bool loadGame(
             header.version != 7 &&
             header.version != 8 &&
             header.version != 9 &&
-            header.version != 10
+            header.version != 10 &&
+            header.version != 11
         ) ||
         header.buildingCount < 0 ||
         header.buildingCount > MAX_BUILDINGS
@@ -619,7 +658,10 @@ static bool loadGame(
         return false;
     }
 
-    if (header.version == 10) {
+    if (
+        header.version == 10 ||
+        header.version == 11
+    ) {
         if (
             fread(
                 loadedBuildings,
@@ -766,7 +808,8 @@ static bool loadGame(
         header.version == 7 ||
         header.version == 8 ||
         header.version == 9 ||
-        header.version == 10
+        header.version == 10 ||
+        header.version == 11
     ) {
         WareDistribution loadedDistribution = {};
 
@@ -813,7 +856,6 @@ static bool loadGame(
         }
     }
 
-    fclose(file);
 
     // Save v4 mel School frontu pred zavedenim
     // aktivniho queue systemu.
@@ -996,6 +1038,29 @@ static bool loadGame(
     }
 
     *buildingCount = header.buildingCount;
+
+    // =====================================================
+    // SAVE V11 UNIT READ
+    //
+    // v4-v10 nemaji Unit blok a zachovaji bootstrap units.
+    // v11 obnovi unitCount a runtime jednotek z pevneho
+    // UnitSaveV11 formatu v samostatnem save modulu.
+    // =====================================================
+
+    if (
+        header.version == 11 &&
+        !readUnitsV11(
+            file,
+            units,
+            unitCount,
+            header.buildingCount
+        )
+    ) {
+        fclose(file);
+        return false;
+    }
+    fclose(file);
+
     return true;
 }
 
@@ -1281,12 +1346,32 @@ int main(int argc, char* argv[])
     // a Building::schoolIdleStep.
     float schoolStepTimers[MAX_BUILDINGS] = {};
 
-    bool gameLoaded =
-        loadGame(
-            buildings,
-            &buildingCount,
-            &wareDistribution
-        );
+        // V11_MAIN_LOAD_DEBUG
+        const bool gameLoaded =
+            loadGame(
+                buildings,
+                &buildingCount,
+                &wareDistribution,
+                units,
+                &unitCount
+            );
+
+        FILE* loadDebug =
+            fopen(
+                "ux0:data/kamvita/load_result.txt",
+                "wb"
+            );
+
+        if (loadDebug) {
+            fprintf(
+                loadDebug,
+                "loadGame=%d buildingCount=%d unitCount=%d\n",
+                gameLoaded ? 1 : 0,
+                buildingCount,
+                unitCount
+            );
+            fclose(loadDebug);
+        }
 
     // Development start:
     // pokud neni save, zacneme s hotovym
@@ -3162,7 +3247,9 @@ int main(int argc, char* argv[])
             saveGame(
                 buildings,
                 buildingCount,
-                wareDistribution
+                wareDistribution,
+                units,
+                unitCount
             );
         }
         int analogX = (int)pad.lx - 128;
@@ -5734,6 +5821,7 @@ int main(int argc, char* argv[])
                 const WorldRenderEntry& b
             ) {
                 if (a.sortY < b.sortY)
+
                     return true;
 
                 if (a.sortY > b.sortY)

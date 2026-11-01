@@ -32,6 +32,7 @@ add_executable(${PROJECT_NAME}
     src/game/buildings.cpp
     src/game/house_plan_catalog.cpp
     src/game/units.cpp
+    src/game/save_units_v11.cpp
     src/game/ware_distribution.cpp
     src/ui/game_ui.cpp
     src/ui/game_ui_unit.cpp
@@ -71,6 +72,21 @@ target_link_libraries(${PROJECT_NAME}
     SceIofilemgr_stub
 
     m
+)
+
+# ============================================================
+# KAMVITA MAIN SIZE OPTIMIZATION
+#
+# main.cpp obsahuje save migrace a runtime orchestration.
+# -Os snizuje velikost Vita ELF kodu bez zmeny gameplay.
+#
+# Toto je cilena optimalizace pouze pro main.cpp.
+# ============================================================
+
+set_source_files_properties(
+    src/main.cpp
+    PROPERTIES
+        COMPILE_OPTIONS "-Os"
 )
 
 vita_create_self(
@@ -360,11 +376,9 @@ vita_create_vpk(
     FILE
         assets/buildings/bakery/runtime/flagpole.bmp
         assets/buildings/bakery/runtime/flagpole.bmp
-
     FILE
         assets/buildings/bakery/runtime/flag1_atlas.bmp
         assets/buildings/bakery/runtime/flag1_atlas.bmp
-
     FILE
         assets/buildings/bakery/runtime/idle_atlas.bmp
         assets/buildings/bakery/runtime/idle_atlas.bmp
