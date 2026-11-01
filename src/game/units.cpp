@@ -2869,6 +2869,182 @@ void updateUnits(
 
 
         // =================================================
+        // FARMER AUTOMATIC FARM OCCUPATION
+        //
+        // Idle Farmer
+        // -> finds one free completed Farm
+        // -> walks to PointBelowEntrance
+        // -> enters through shared House doorway
+        // -> remains assigned to that Farm.
+        //
+        // targetBuilding is both the reservation while
+        // travelling and the identity of the Farmer home.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Idle &&
+            unit.targetBuilding < 0 &&
+            buildings &&
+            buildingCount > 0
+        ) {
+            for (
+                int farmIndex = 0;
+                farmIndex < buildingCount;
+                ++farmIndex
+            ) {
+                const Building& farm =
+                    buildings[farmIndex];
+
+                if (
+                    !farm.active ||
+                    farm.type != BuildingType::Farm ||
+                    !isBuildingComplete(farm)
+                ) {
+                    continue;
+                }
+
+                bool farmReserved = false;
+
+                for (
+                    int otherIndex = 0;
+                    otherIndex < unitCount;
+                    ++otherIndex
+                ) {
+                    if (otherIndex == i)
+                        continue;
+
+                    const Unit& other =
+                        units[otherIndex];
+
+                    if (
+                        other.active &&
+                        other.type ==
+                            UnitType::Farmer &&
+                        other.targetBuilding ==
+                            farmIndex
+                    ) {
+                        farmReserved = true;
+                        break;
+                    }
+                }
+
+                if (farmReserved)
+                    continue;
+
+                const BuildingEntrance entrance =
+                    getBuildingEntrance(
+                        farm.type
+                    );
+
+                const int entranceTileX =
+                    farm.tileX +
+                    entrance.tileOffsetX;
+
+                const int entranceTileY =
+                    farm.tileY +
+                    entrance.tileOffsetY;
+
+                const int approachTileX =
+                    entranceTileX;
+
+                const int approachTileY =
+                    entranceTileY + 1;
+
+                if (
+                    approachTileX < 0 ||
+                    approachTileX >= mapWidth ||
+                    approachTileY < 0 ||
+                    approachTileY >= mapHeight
+                ) {
+                    continue;
+                }
+
+                const float approachWorldX =
+                    (
+                        approachTileX +
+                        0.5f
+                    ) * tileSize;
+
+                const float approachWorldY =
+                    (
+                        approachTileY +
+                        0.5f
+                    ) * tileSize;
+
+                if (
+                    !setUnitMoveTarget(
+                        &unit,
+                        approachWorldX,
+                        approachWorldY,
+                        buildings,
+                        buildingCount,
+                        mapWidth,
+                        mapHeight,
+                        tileSize
+                    )
+                ) {
+                    continue;
+                }
+
+                unit.targetBuilding =
+                    farmIndex;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                // Farmer may already stand on the approach
+                // tile. In that case start doorway alignment
+                // immediately, just like Baker.
+                if (
+                    unit.state ==
+                        UnitState::Idle
+                ) {
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            farm,
+                            tileSize
+                        );
+
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayTargetX =
+                        doorway.doorX;
+
+                    unit.doorwayTargetY =
+                        doorway.doorY;
+
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
+
+                    unit.state =
+                        UnitState::ApproachingBuilding;
+                }
+
+                break;
+            }
+
+            if (unit.targetBuilding >= 0)
+                continue;
+        }
+
+
+        // =================================================
         // SERF LOGISTICS STATE PROGRESSION
         //
         // Dva dulezite pripady:
@@ -3482,6 +3658,73 @@ void updateUnits(
                 continue;
             }
 
+            // ---------------------------------------------
+            // FARMER OCCUPIES FARM
+            //
+            // The first Farm lifecycle checkpoint keeps
+            // Farmer inside the completed Farm.
+            // Field work is deliberately not started yet.
+            // ---------------------------------------------
+
+            if (
+                unit.type == UnitType::Farmer
+            ) {
+                const bool validFarm =
+                    buildings &&
+                    unit.targetBuilding >= 0 &&
+                    unit.targetBuilding <
+                        buildingCount &&
+                    buildings[
+                        unit.targetBuilding
+                    ].active &&
+                    buildings[
+                        unit.targetBuilding
+                    ].type ==
+                        BuildingType::Farm &&
+                    isBuildingComplete(
+                        buildings[
+                            unit.targetBuilding
+                        ]
+                    );
+
+                if (validFarm) {
+                    unit.worldX = doorX;
+                    unit.worldY = doorY;
+
+                    unit.targetWorldX = doorX;
+                    unit.targetWorldY = doorY;
+
+                    unit.pathLength = 0;
+                    unit.pathIndex = 0;
+
+                    unit.doorwayProgress = 0.0f;
+
+                    unit.visible = false;
+                    unit.state = UnitState::Idle;
+
+                    unit.workAction =
+                        UnitWorkAction::None;
+
+                    unit.workTimer = 0.0f;
+
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+
+                    continue;
+                }
+
+                unit.targetBuilding = -1;
+                unit.visible = true;
+                unit.state = UnitState::Idle;
+
+                unit.doorwayProgress = 0.0f;
+
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
             bool transferSucceeded = false;
 
             // ---------------------------------------------
@@ -3781,6 +4024,60 @@ void updateUnits(
                 unit.targetBuilding = -1;
                 unit.visible = true;
                 unit.state = UnitState::Idle;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            }
+
+            continue;
+        }
+
+
+        // =================================================
+        // FARMER INSIDE FARM
+        //
+        // Farmer remains assigned to the Farm while the
+        // building is active and complete.
+        //
+        // Field selection, sowing, harvesting and Corn
+        // output are a separate next checkpoint.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            (
+                unit.state == UnitState::Idle ||
+                unit.state == UnitState::Working
+            ) &&
+            !unit.visible &&
+            unit.targetBuilding >= 0
+        ) {
+            const bool validFarm =
+                buildings &&
+                unit.targetBuilding >= 0 &&
+                unit.targetBuilding <
+                    buildingCount &&
+                buildings[
+                    unit.targetBuilding
+                ].active &&
+                buildings[
+                    unit.targetBuilding
+                ].type ==
+                    BuildingType::Farm &&
+                isBuildingComplete(
+                    buildings[
+                        unit.targetBuilding
+                    ]
+                );
+
+            if (!validFarm) {
+                unit.targetBuilding = -1;
+                unit.visible = true;
+                unit.state = UnitState::Idle;
+
+                unit.workAction =
+                    UnitWorkAction::None;
 
                 unit.workTimer = 0.0f;
                 unit.animationFrame = 0;
@@ -4260,6 +4557,83 @@ void updateUnits(
 
                     // Nejdříve kratke horizontalni
                     // zarovnani na osu dveri.
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayProgress = 0.0f;
+                    unit.visible = true;
+
+                    unit.state =
+                        UnitState::ApproachingBuilding;
+
+                    continue;
+                }
+
+
+                // =========================================
+                // FARMER ENTER ASSIGNED FARM
+                //
+                // Farmer finished ordinary pathfinding on
+                // the connected entrance-road tile.
+                //
+                // From here the shared House doorway
+                // geometry uses Farm EntranceOffsetPx.
+                // =========================================
+
+                if (
+                    unit.type == UnitType::Farmer &&
+                    unit.targetBuilding >= 0
+                ) {
+                    const bool validFarm =
+                        buildings &&
+                        unit.targetBuilding <
+                            buildingCount &&
+                        buildings[
+                            unit.targetBuilding
+                        ].active &&
+                        buildings[
+                            unit.targetBuilding
+                        ].type ==
+                            BuildingType::Farm &&
+                        isBuildingComplete(
+                            buildings[
+                                unit.targetBuilding
+                            ]
+                        );
+
+                    if (!validFarm) {
+                        unit.targetBuilding = -1;
+                        unit.state = UnitState::Idle;
+                        unit.visible = true;
+                        continue;
+                    }
+
+                    const Building& farm =
+                        buildings[
+                            unit.targetBuilding
+                        ];
+
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            farm,
+                            tileSize
+                        );
+
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayTargetX =
+                        doorway.doorX;
+
+                    unit.doorwayTargetY =
+                        doorway.doorY;
+
                     unit.targetWorldX =
                         doorway.streetX;
 

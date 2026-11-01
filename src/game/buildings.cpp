@@ -2771,11 +2771,18 @@ BuildingEntrance getBuildingEntrance(
             };
 
         case BuildingType::Farm:
+            // Originalni houses.dat:
+            // EntranceOffset = (-1, 0)
+            // EntranceOffsetPx = (9, 4)
+            //
+            // Aktivni KaMVita footprint entrance zustava
+            // na local (1,2). Pixelovy offset odpovida
+            // skutecnemu Farm vstupu v originalnim sprite.
             return {
                 1,
                 2,
-                0,
-                0
+                9,
+                4
             };
 
         default:
