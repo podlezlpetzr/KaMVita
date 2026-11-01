@@ -4608,15 +4608,31 @@ int main(int argc, char* argv[])
                     landPlan ==
                         LandPlanState::FieldComplete ||
                     landPlan ==
+                        LandPlanState::FieldSown ||
+                    landPlan ==
                         LandPlanState::WineInit ||
                     landPlan ==
                         LandPlanState::WineComplete
                 ) {
                     SDL_Texture* completedTexture =
+                        nullptr;
+
+                    if (
                         landPlan ==
                             LandPlanState::FieldComplete
-                                ? terrain.cornEmpty
-                                : terrain.wineGround;
+                    ) {
+                        completedTexture =
+                            terrain.cornEmpty;
+                    } else if (
+                        landPlan ==
+                            LandPlanState::FieldSown
+                    ) {
+                        completedTexture =
+                            terrain.cornSown;
+                    } else {
+                        completedTexture =
+                            terrain.wineGround;
+                    }
 
                     if (completedTexture) {
                         // Originalni KaM terrain:
@@ -4683,7 +4699,9 @@ int main(int argc, char* argv[])
 
                 const bool isCorn =
                     type ==
-                        LandPlanState::FieldComplete;
+                        LandPlanState::FieldComplete ||
+                    type ==
+                        LandPlanState::FieldSown;
 
                 const bool isWine =
                     type ==
@@ -4701,7 +4719,9 @@ int main(int argc, char* argv[])
                     if (isCorn) {
                         return
                             neighbor ==
-                                LandPlanState::FieldComplete;
+                                LandPlanState::FieldComplete ||
+                            neighbor ==
+                                LandPlanState::FieldSown;
                     }
 
                     if (isWine) {

@@ -534,6 +534,77 @@ void renderUnits(
         }
 
         // =================================================
+        // ORIGINAL KaM FARMER FIELD WORK
+        //
+        // FarmerSow = original ua_Work1.
+        // cell 80x50, anchor -40,-43.
+        // 8 directions x 10 frames.
+        // =================================================
+
+        if (
+            units[i].type == UnitType::Farmer &&
+            units[i].state == UnitState::Working &&
+            units[i].workAction ==
+                UnitWorkAction::FarmerSow
+        ) {
+            constexpr int FARMER_CELL_WIDTH = 80;
+            constexpr int FARMER_CELL_HEIGHT = 50;
+            constexpr int FARMER_FRAME_COUNT = 10;
+            constexpr int FARMER_ANCHOR_X = -40;
+            constexpr int FARMER_ANCHOR_Y = -43;
+
+            if (resources.farmerWork1Atlas) {
+                int actionFrame =
+                    units[i].animationFrame %
+                    FARMER_FRAME_COUNT;
+
+                if (actionFrame < 0)
+                    actionFrame +=
+                        FARMER_FRAME_COUNT;
+
+                SDL_Rect actionSource = {
+                    actionFrame *
+                        FARMER_CELL_WIDTH,
+                    direction *
+                        FARMER_CELL_HEIGHT,
+                    FARMER_CELL_WIDTH,
+                    FARMER_CELL_HEIGHT
+                };
+
+                SDL_Rect actionDestination = {
+                    (int)units[i].worldX -
+                        (int)cameraX +
+                        scaleKaMUnitPixel(
+                            FARMER_ANCHOR_X
+                        ),
+
+                    (int)units[i].worldY -
+                        (int)cameraY +
+                        scaleKaMUnitPixel(
+                            FARMER_ANCHOR_Y
+                        ),
+
+                    scaleKaMUnitPixel(
+                        FARMER_CELL_WIDTH
+                    ),
+
+                    scaleKaMUnitPixel(
+                        FARMER_CELL_HEIGHT
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.farmerWork1Atlas,
+                    &actionSource,
+                    &actionDestination
+                );
+
+                continue;
+            }
+        }
+
+        // =================================================
         // ORIGINAL KaM EAT DIE RUNTIME
         //
         // ua_Eat:
@@ -4082,7 +4153,288 @@ void updateUnits(
                 unit.workTimer = 0.0f;
                 unit.animationFrame = 0;
                 unit.animationTimer = 0.0f;
+
+                continue;
             }
+
+            // -------------------------------------------------
+            // FARMER FIND EMPTY CORN FIELD
+            //
+            // Original KaM Farmer MiningRange = 10.
+            // FieldComplete corresponds to FieldAge 0.
+            // -------------------------------------------------
+
+            if (
+                unit.state == UnitState::Idle &&
+                unit.workAction ==
+                    UnitWorkAction::None &&
+                landPlans
+            ) {
+                const Building& farm =
+                    buildings[
+                        unit.targetBuilding
+                    ];
+
+                const BuildingEntrance entrance =
+                    getBuildingEntrance(
+                        farm.type
+                    );
+
+                const int homeX =
+                    farm.tileX +
+                    entrance.tileOffsetX;
+
+                const int homeY =
+                    farm.tileY +
+                    entrance.tileOffsetY;
+
+                constexpr int FARMER_RANGE = 10;
+
+                int bestX = -1;
+                int bestY = -1;
+                int bestDistanceSquared = 0;
+
+                for (
+                    int fieldY = 0;
+                    fieldY < mapHeight;
+                    ++fieldY
+                ) {
+                    for (
+                        int fieldX = 0;
+                        fieldX < mapWidth;
+                        ++fieldX
+                    ) {
+                        if (
+                            landPlans[
+                                fieldY *
+                                    mapWidth +
+                                fieldX
+                            ] !=
+                                LandPlanState::
+                                    FieldComplete
+                        ) {
+                            continue;
+                        }
+
+                        bool fieldReserved = false;
+
+                        for (
+                            int otherIndex = 0;
+                            otherIndex < unitCount;
+                            ++otherIndex
+                        ) {
+                            if (otherIndex == i)
+                                continue;
+
+                            const Unit& other =
+                                units[otherIndex];
+
+                            if (
+                                other.active &&
+                                other.type ==
+                                    UnitType::Farmer &&
+                                other.targetRoadX ==
+                                    fieldX &&
+                                other.targetRoadY ==
+                                    fieldY &&
+                                (
+                                    other.workAction ==
+                                        UnitWorkAction::
+                                            FarmerToField ||
+                                    other.workAction ==
+                                        UnitWorkAction::
+                                            FarmerSow
+                                )
+                            ) {
+                                fieldReserved = true;
+                                break;
+                            }
+                        }
+
+                        if (fieldReserved)
+                            continue;
+
+                        const int dx =
+                            fieldX - homeX;
+
+                        const int dy =
+                            fieldY - homeY;
+
+                        if (
+                            dx < -FARMER_RANGE ||
+                            dx > FARMER_RANGE ||
+                            dy < -FARMER_RANGE ||
+                            dy > FARMER_RANGE
+                        ) {
+                            continue;
+                        }
+
+                        const int distanceSquared =
+                            dx * dx + dy * dy;
+
+                        if (
+                            bestX < 0 ||
+                            distanceSquared <
+                                bestDistanceSquared
+                        ) {
+                            bestX = fieldX;
+                            bestY = fieldY;
+
+                            bestDistanceSquared =
+                                distanceSquared;
+                        }
+                    }
+                }
+
+                if (
+                    bestX >= 0 &&
+                    bestY >= 0
+                ) {
+                    unit.targetRoadX = bestX;
+                    unit.targetRoadY = bestY;
+
+                    unit.workAction =
+                        UnitWorkAction::
+                            FarmerToField;
+
+                    const HouseDoorwayGeometry doorway =
+                        getHouseDoorwayGeometry(
+                            farm,
+                            tileSize
+                        );
+
+                    unit.doorwayStartX =
+                        doorway.doorX;
+
+                    unit.doorwayStartY =
+                        doorway.doorY;
+
+                    unit.doorwayTargetX =
+                        doorway.streetX;
+
+                    unit.doorwayTargetY =
+                        doorway.streetY;
+
+                    unit.worldX =
+                        doorway.doorX;
+
+                    unit.worldY =
+                        doorway.doorY;
+
+                    unit.targetWorldX =
+                        doorway.streetX;
+
+                    unit.targetWorldY =
+                        doorway.streetY;
+
+                    unit.doorwayOffsetX =
+                        doorway.offsetX;
+
+                    unit.doorwayOffsetY =
+                        doorway.offsetY;
+
+                    unit.doorwayProgress = 0.0f;
+
+                    unit.direction = 4;
+                    unit.visible = false;
+
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+
+                    unit.state =
+                        UnitState::LeavingBuilding;
+
+                    continue;
+                }
+            }
+
+            continue;
+        }
+
+
+        // =================================================
+        // FARMER START WALK TO FIELD
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Idle &&
+            unit.visible &&
+            unit.workAction ==
+                UnitWorkAction::FarmerToField &&
+            landPlans &&
+            unit.targetRoadX >= 0 &&
+            unit.targetRoadX < mapWidth &&
+            unit.targetRoadY >= 0 &&
+            unit.targetRoadY < mapHeight
+        ) {
+            LandPlanState& field =
+                landPlans[
+                    unit.targetRoadY *
+                        mapWidth +
+                    unit.targetRoadX
+                ];
+
+            if (
+                field !=
+                    LandPlanState::FieldComplete
+            ) {
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                continue;
+            }
+
+            const float fieldWorldX =
+                (
+                    unit.targetRoadX +
+                    0.5f
+                ) * tileSize;
+
+            const float fieldWorldY =
+                (
+                    unit.targetRoadY +
+                    0.5f
+                ) * tileSize;
+
+            if (
+                setUnitMoveTarget(
+                    &unit,
+                    fieldWorldX,
+                    fieldWorldY,
+                    buildings,
+                    buildingCount,
+                    mapWidth,
+                    mapHeight,
+                    tileSize
+                )
+            ) {
+                unit.workAction =
+                    UnitWorkAction::FarmerSow;
+
+                if (
+                    unit.state ==
+                        UnitState::Idle
+                ) {
+                    unit.state =
+                        UnitState::Working;
+
+                    unit.workTimer = 0.0f;
+                    unit.animationFrame = 0;
+                    unit.animationTimer = 0.0f;
+                }
+
+                continue;
+            }
+
+            unit.workAction =
+                UnitWorkAction::None;
+
+            unit.targetRoadX = -1;
+            unit.targetRoadY = -1;
 
             continue;
         }
@@ -4203,6 +4555,118 @@ void updateUnits(
                 unit.doorwayOffsetY = 0;
                 unit.doorwayProgress = 0.0f;
 
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+            }
+
+            continue;
+        }
+
+
+        // =================================================
+        // FARMER SOW FIELD
+        //
+        // Original ua_Work1 uses 10 frames.
+        // FieldComplete -> FieldSown.
+        // Terrain 62    -> Terrain 61.
+        // =================================================
+
+        if (
+            unit.type == UnitType::Farmer &&
+            unit.state == UnitState::Working &&
+            unit.workAction ==
+                UnitWorkAction::FarmerSow
+        ) {
+            const bool validField =
+                landPlans &&
+                unit.targetRoadX >= 0 &&
+                unit.targetRoadX < mapWidth &&
+                unit.targetRoadY >= 0 &&
+                unit.targetRoadY < mapHeight;
+
+            if (!validField) {
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            LandPlanState& field =
+                landPlans[
+                    unit.targetRoadY *
+                        mapWidth +
+                    unit.targetRoadX
+                ];
+
+            if (
+                field !=
+                    LandPlanState::FieldComplete
+            ) {
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                unit.workAction =
+                    UnitWorkAction::None;
+
+                unit.workTimer = 0.0f;
+                unit.animationFrame = 0;
+                unit.animationTimer = 0.0f;
+
+                continue;
+            }
+
+            unit.workTimer += deltaSeconds;
+            unit.animationTimer += deltaSeconds;
+
+            constexpr int FARMER_SOW_FRAMES = 10;
+
+            while (
+                unit.animationTimer >=
+                    animationFrameDuration
+            ) {
+                unit.animationTimer -=
+                    animationFrameDuration;
+
+                unit.animationFrame =
+                    (
+                        unit.animationFrame + 1
+                    ) %
+                    FARMER_SOW_FRAMES;
+            }
+
+            const float sowDuration =
+                FARMER_SOW_FRAMES *
+                animationFrameDuration;
+
+            if (
+                unit.workTimer >=
+                    sowDuration
+            ) {
+                field =
+                    LandPlanState::FieldSown;
+
+                unit.state = UnitState::Idle;
+
+                unit.targetRoadX = -1;
+                unit.targetRoadY = -1;
+
+                // Farmer remains outside after sowing in
+                // this isolated checkpoint.
                 unit.workAction =
                     UnitWorkAction::None;
 
@@ -4585,7 +5049,9 @@ void updateUnits(
 
                 if (
                     unit.type == UnitType::Farmer &&
-                    unit.targetBuilding >= 0
+                    unit.targetBuilding >= 0 &&
+                    unit.workAction ==
+                        UnitWorkAction::None
                 ) {
                     const bool validFarm =
                         buildings &&

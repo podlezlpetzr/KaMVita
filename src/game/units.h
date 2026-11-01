@@ -53,7 +53,16 @@ enum class UnitWorkAction {
     //
     // Pozdeji bude tato faze povolena az po
     // doruceni 1 Wood.
-    BuildWineWood
+    BuildWineWood,
+
+    // Farmer jde z Farm na prazdne hotove pole.
+    FarmerToField,
+
+    // Originalni Farmer ua_Work1 seti.
+    FarmerSow,
+
+    // Farmer se po praci vraci do sve Farm.
+    FarmerReturnFarm
 };
 
 enum class RoadState : unsigned char {
@@ -91,7 +100,14 @@ enum class LandPlanState : unsigned char {
     WineInit,
 
     // Wine po druhe Worker Work2 fazi.
-    WineComplete
+    WineComplete,
+
+    // Originalni KaM zasiate kukuricne pole:
+    // Terrain 61 / cornSown.
+    //
+    // Stav je pridan az na konec enumu, aby zustaly
+    // zachovane existujici hodnoty Save v11.
+    FieldSown
 };
 
 // KaM Remake condition maximum: 45 * 60.
