@@ -1039,7 +1039,7 @@ void renderUnits(
             };
 
             constexpr int
-                THOUGHT_TEST_OFFSET_Y_40 = -62;
+                THOUGHT_OFFSET_Y_40 = -62;
 
             SDL_Rect thoughtDestination = {
                 (int)units[i].worldX -
@@ -1051,7 +1051,7 @@ void renderUnits(
                 (int)units[i].worldY -
                     (int)cameraY +
                     scaleKaMUnitPixel(
-                        THOUGHT_TEST_OFFSET_Y_40
+                        THOUGHT_OFFSET_Y_40
                     ),
 
                 scaleKaMUnitPixel(
@@ -2880,9 +2880,6 @@ void updateUnits(
 
                 const int doorwayOffsetX =
                     doorway.offsetX;
-
-                const int doorwayOffsetY =
-                    doorway.offsetY;
 
                 // =========================================
                 // BREAD PICKUP USES STANDARD PRE-DOOR TURN
