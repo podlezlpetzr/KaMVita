@@ -37,6 +37,42 @@ void initGameUI(
     ui->storeWareSelection = 0;
 }
 
+static void renderCenteredTexture(
+    SDL_Renderer* renderer,
+    SDL_Texture* texture,
+    const SDL_Rect& area
+)
+{
+    if (!renderer || !texture)
+        return;
+
+    int width = 0;
+    int height = 0;
+
+    SDL_QueryTexture(
+        texture,
+        nullptr,
+        nullptr,
+        &width,
+        &height
+    );
+
+    SDL_Rect destination = {
+        area.x + (area.w - width) / 2,
+        area.y + (area.h - height) / 2,
+        width,
+        height
+    };
+
+    SDL_RenderCopy(
+        renderer,
+        texture,
+        nullptr,
+        &destination
+    );
+}
+
+
 static void renderHouseHeaderButtons(
     SDL_Renderer* renderer,
     const SchoolUIResources& resources,
@@ -3272,34 +3308,11 @@ void renderGameUI(
                 HouseIconType::Bakery
             );
 
-        if (bakeryHouseIcon) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                bakeryHouseIcon,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect destination = {
-                houseLogoArea.x +
-                    (houseLogoArea.w - w) / 2,
-                houseLogoArea.y +
-                    (houseLogoArea.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                bakeryHouseIcon,
-                nullptr,
-                &destination
-            );
-        }
+        renderCenteredTexture(
+            renderer,
+            bakeryHouseIcon,
+            houseLogoArea
+        );
 
         // Originalni Baker GUI ikona.
         SDL_Texture* bakerIcon =
@@ -3956,34 +3969,11 @@ void renderGameUI(
                 HouseIconType::Store
             );
 
-        if (storeHouseIcon) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                storeHouseIcon,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect dst = {
-                houseLogoArea.x +
-                    (houseLogoArea.w - w) / 2,
-                houseLogoArea.y +
-                    (houseLogoArea.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                storeHouseIcon,
-                nullptr,
-                &dst
-            );
-        }
+        renderCenteredTexture(
+            renderer,
+            storeHouseIcon,
+            houseLogoArea
+        );
 
         // House nema OwnerType worker ikonu.
         // Generic Serf glyph se zde nevykresluje.
