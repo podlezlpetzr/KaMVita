@@ -1,0 +1,17 @@
+unit=Farmer
+unit_index=4
+source=original unit.dat + units.rx
+actions=walk,work,die,work1,eat,walktool,walkbooty
+idle=walk_with_UnitStillFrames
+empty_actions=spec,work2,workend,walkarm,walktool2,walkbooty2,unknown
+walk_directions=8
+walk_frames=8
+work_directions=8
+work_frames=1
+die_directions=8
+die_frames_by_direction=16,16,14,14,15,15,18,18
+eat_directions=8
+eat_frames=30
+unit_render_scale=32/40
+synthetic_frames=none
+temporary_assets=none
