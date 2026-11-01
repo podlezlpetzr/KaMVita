@@ -3383,34 +3383,11 @@ void renderGameUI(
                 )
             ].icon;
 
-        if (bakerIcon) {
-            int w = 0;
-            int h = 0;
-
-            SDL_QueryTexture(
-                bakerIcon,
-                nullptr,
-                nullptr,
-                &w,
-                &h
-            );
-
-            SDL_Rect destination = {
-                workerArea.x +
-                    (workerArea.w - w) / 2,
-                workerArea.y +
-                    (workerArea.h - h) / 2,
-                w,
-                h
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                bakerIcon,
-                nullptr,
-                &destination
-            );
-        }
+        renderCenteredTexture(
+            renderer,
+            bakerIcon,
+            workerArea
+        );
 
         // -------------------------------------------------
         // ORIGINAL BAKER PROFESSION TEXT
