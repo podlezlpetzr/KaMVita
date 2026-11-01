@@ -195,6 +195,45 @@ static void renderCenteredTexture(
 }
 
 
+static void renderBuildButtonIcon(
+    SDL_Renderer* renderer,
+    SDL_Texture* icon,
+    const SDL_Rect& button,
+    bool implemented
+)
+{
+    if (!renderer || !icon)
+        return;
+
+    const Uint8 brightness =
+        implemented
+            ? 255
+            : 115;
+
+    SDL_SetTextureColorMod(
+        icon,
+        brightness,
+        brightness,
+        brightness
+    );
+
+    renderCenteredTexture(
+        renderer,
+        icon,
+        button
+    );
+
+    // Sdilena textura muze byt pouzita i jinde,
+    // proto vzdy obnovime plny jas.
+    SDL_SetTextureColorMod(
+        icon,
+        255,
+        255,
+        255
+    );
+}
+
+
 static void renderSimpleHouseHealthBar(
     SDL_Renderer* renderer,
     const Building& building,
@@ -3067,54 +3106,11 @@ void renderGameUI(
             SDL_Texture* icon =
                 buildToolIcons[toolIndex];
 
-            if (!icon)
-                continue;
-
-            // Road, Field, Wine a Remove jsou funkcni.
-            const Uint8 brightness =
-                implemented
-                    ? 255
-                    : 115;
-
-            SDL_SetTextureColorMod(
-                icon,
-                brightness,
-                brightness,
-                brightness
-            );
-
-            int width = 0;
-            int height = 0;
-
-            SDL_QueryTexture(
-                icon,
-                nullptr,
-                nullptr,
-                &width,
-                &height
-            );
-
-            SDL_Rect destination = {
-                button.x +
-                    (button.w - width) / 2,
-                button.y +
-                    (button.h - height) / 2,
-                width,
-                height
-            };
-
-            SDL_RenderCopy(
+            renderBuildButtonIcon(
                 renderer,
                 icon,
-                nullptr,
-                &destination
-            );
-
-            SDL_SetTextureColorMod(
-                icon,
-                255,
-                255,
-                255
+                button,
+                implemented
             );
         }
 
@@ -3176,59 +3172,11 @@ void renderGameUI(
                     houseType
                 );
 
-            if (!icon)
-                continue;
-
-            if (!implemented) {
-                SDL_SetTextureColorMod(
-                    icon,
-                    115,
-                    115,
-                    115
-                );
-            } else {
-                SDL_SetTextureColorMod(
-                    icon,
-                    255,
-                    255,
-                    255
-                );
-            }
-
-            int width = 0;
-            int height = 0;
-
-            SDL_QueryTexture(
-                icon,
-                nullptr,
-                nullptr,
-                &width,
-                &height
-            );
-
-            SDL_Rect destination = {
-                button.x +
-                    (button.w - width) / 2,
-                button.y +
-                    (button.h - height) / 2,
-                width,
-                height
-            };
-
-            SDL_RenderCopy(
+            renderBuildButtonIcon(
                 renderer,
                 icon,
-                nullptr,
-                &destination
-            );
-
-            // Sdilene House textury pouzivaji take Ratios
-            // a Statistics, proto vzdy obnovime plnou barvu.
-            SDL_SetTextureColorMod(
-                icon,
-                255,
-                255,
-                255
+                button,
+                implemented
             );
         }
     }
