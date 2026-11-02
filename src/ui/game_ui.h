@@ -5,6 +5,7 @@
 #include "../game/buildings.h"
 #include "../game/units.h"
 #include "../game/ware_distribution.h"
+#include "../game/save_slots.h"
 #include "house_icons.h"
 
 static constexpr int GAME_UI_PANEL_WIDTH = 220;
@@ -14,6 +15,11 @@ enum class GameUISection {
     Ratios,
     Statistics,
     Options,
+
+    // Remake-style Options subpages.
+    OptionsLoad,
+    OptionsSave,
+
     School,
     Store,
     Bakery,
@@ -99,6 +105,21 @@ struct GameUIState {
     // optionsFocus true znamena focus menu polozek.
     int optionsSelection;
     bool optionsFocus;
+
+    // Remake-style Save / Load subpages.
+    //
+    // saveLoadSelection selects a real SaveFileList row.
+    // saveLoadTop is the first visible row.
+    // saveLoadFocus:
+    //   0 = save list
+    //   1 = save-name field on Save page
+    //   2 = bottom Save / Load confirmation button
+    int saveLoadSelection;
+    int saveLoadTop;
+    int saveLoadFocus;
+
+    // Current editable Save name.
+    char saveName[SAVE_NAME_LENGTH];
 
     // Originalni Ratios 440 navigace.
     int ratiosTab;

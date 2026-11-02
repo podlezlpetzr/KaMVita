@@ -24,6 +24,17 @@ void initGameUI(
     ui->optionsSelection = 0;
     ui->optionsFocus = false;
 
+    ui->saveLoadSelection = -1;
+    ui->saveLoadTop = 0;
+    ui->saveLoadFocus = 0;
+
+    std::snprintf(
+        ui->saveName,
+        SAVE_NAME_LENGTH,
+        "%s",
+        "New Save"
+    );
+
     ui->ratiosTab = 0;
     ui->ratiosRow = 0;
     ui->ratiosFocusTabs = true;

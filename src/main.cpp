@@ -7,6 +7,7 @@
 #include "ui/game_ui.h"
 #include "ui/game_ui_unit.h"
 #include "ui/game_ui_ratios.h"
+#include "ui/kam_runtime_font.h"
 #include "ui/house_icons.h"
 #include "game/ware_distribution.h"
 #include <algorithm>
@@ -1512,6 +1513,26 @@ int main(int argc, char* argv[])
     initSaveFileList(&optionsSaveFiles);
     refreshSaveFileList(&optionsSaveFiles);
 
+    RuntimeMetalFont runtimeMetalFont = {};
+
+    // Save-name text input state.
+    //
+    // SDL text input uses the platform text-input backend.
+    // On Vita this is the system-supported text entry path.
+    bool saveNameEditing = false;
+    bool saveNameInputReceived = false;
+
+    if (
+        !loadRuntimeMetalFont(
+            renderer,
+            &runtimeMetalFont
+        )
+    ) {
+        std::printf(
+            "Runtime Metal font failed to load\n"
+        );
+    }
+
 
     sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
     sceTouchSetSamplingState(
@@ -2826,169 +2847,404 @@ int main(int argc, char* argv[])
             ) {
                 switch (gameUI.optionsSelection) {
                     case 0:
-                    {
-                        // LOAD GAME
-                        //
-                        // Refresh first so the action always
-                        // reflects real .sav files currently
-                        // present in the Saves directory.
+                        // LOAD GAME opens the real save list.
                         refreshSaveFileList(
                             &optionsSaveFiles
                         );
 
-                        const SaveFileEntry* selectedSave =
+                        gameUI.section =
+                            GameUISection::OptionsLoad;
+
+                        gameUI.saveLoadFocus = 0;
+                        gameUI.saveLoadTop = 0;
+                        gameUI.saveLoadSelection =
+                            optionsSaveFiles.selectedIndex;
+
+                        crossPressed = false;
+                        break;
+
+                    case 1:
+                    {
+                        // SAVE GAME opens the Remake-style
+                        // save list and editable name field.
+                        refreshSaveFileList(
+                            &optionsSaveFiles
+                        );
+
+                        gameUI.section =
+                            GameUISection::OptionsSave;
+
+                        gameUI.saveLoadFocus = 1;
+                        gameUI.saveLoadTop = 0;
+                        gameUI.saveLoadSelection =
+                            optionsSaveFiles.selectedIndex;
+
+                        const SaveFileEntry* selected =
                             getSelectedSaveFile(
                                 &optionsSaveFiles
                             );
 
-                        if (selectedSave) {
-                            const bool loaded =
-                                loadGame(
-                                    selectedSave->path,
-                                    buildings,
-                                    &buildingCount,
-                                    &wareDistribution,
-                                    units,
-                                    &unitCount,
-                                    &roads[0][0],
-                                    &landPlans[0][0],
-                                    &cornGrowthTimers[0][0]
-                                );
+                        std::snprintf(
+                            gameUI.saveName,
+                            SAVE_NAME_LENGTH,
+                            "%s",
+                            selected
+                                ? selected->name
+                                : "New Save"
+                        );
 
-                            if (loaded) {
-                                // Runtime-only accumulators are
-                                // rebuilt from the loaded
-                                // authoritative state.
-                                for (
-                                    int index = 0;
-                                    index < MAX_BUILDINGS;
-                                    ++index
-                                ) {
-                                    bakeryProductionTimers[
-                                        index
-                                    ] = 0.0f;
-
-                                    schoolStepTimers[
-                                        index
-                                    ] = 0.0f;
-                                }
-
-                                selectedTileX = -1;
-                                selectedTileY = -1;
-
-                                closeUnitUI(&unitUI);
-
-                                gameUI.selectedSchoolBuilding =
-                                    -1;
-
-                                gameUI.selectedStoreBuilding =
-                                    -1;
-
-                                gameUI.selectedBakeryBuilding =
-                                    -1;
-
-                                gameUI.selectedFarmBuilding =
-                                    -1;
-
-                                // Stay on Options after loading.
-                                gameUI.section =
-                                    GameUISection::Options;
-
-                                gameUI.optionsFocus = true;
-                            }
-                        }
-
-                        break;
-                    }
-
-                    case 1:
-                    {
-                        // SAVE GAME
-                        //
-                        // Until the on-screen naming page is
-                        // added, Save Game owns one explicit
-                        // named entry. START no longer saves.
-                        char namedSavePath[
-                            SAVE_PATH_LENGTH
-                        ] = {};
-
-                        if (
-                            buildNamedSavePath(
-                                "Manual Save",
-                                namedSavePath,
-                                SAVE_PATH_LENGTH
-                            )
-                        ) {
-                            const bool saved =
-                                saveGame(
-                                    namedSavePath,
-                                    buildings,
-                                    buildingCount,
-                                    wareDistribution,
-                                    units,
-                                    unitCount,
-                                    &roads[0][0],
-                                    &landPlans[0][0],
-                                    &cornGrowthTimers[0][0]
-                                );
-
-                            if (saved) {
-                                refreshSaveFileList(
-                                    &optionsSaveFiles
-                                );
-
-                                // Keep Manual Save selected
-                                // even if directory ordering
-                                // later changes.
-                                for (
-                                    int index = 0;
-                                    index <
-                                        optionsSaveFiles.count;
-                                    ++index
-                                ) {
-                                    if (
-                                        std::strcmp(
-                                            optionsSaveFiles
-                                                .entries[index]
-                                                .path,
-                                            namedSavePath
-                                        ) == 0
-                                    ) {
-                                        selectSaveFile(
-                                            &optionsSaveFiles,
-                                            index
-                                        );
-
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
+                        crossPressed = false;
                         break;
                     }
 
                     case 2:
-                        // SETTINGS
-                        //
-                        // Input is intentionally consumed.
-                        // The dedicated Settings page will be
-                        // connected in the next UI cut.
+                        // SETTINGS remains a separate cut.
+                        crossPressed = false;
                         break;
 
                     case 3:
                         // QUIT MISSION
                         running = false;
+                        crossPressed = false;
                         break;
 
                     default:
+                        crossPressed = false;
                         break;
                 }
+            }
+        }
 
-                // Options owns this Cross/touch activation.
-                // It must not fall through to map selection,
-                // Build placement or another GUI.
+
+        // =================================================
+        // REMAKE-STYLE SAVE / LOAD SUBPAGES
+        // =================================================
+
+        if (
+            gameUI.section ==
+                GameUISection::OptionsLoad ||
+            gameUI.section ==
+                GameUISection::OptionsSave
+        ) {
+            const bool savePage =
+                gameUI.section ==
+                    GameUISection::OptionsSave;
+
+            constexpr int visibleRows = 8;
+
+            // Circle first closes active Save-name editing.
+            // Outside editing it returns to the Options menu.
+            if (
+                circlePressed &&
+                saveNameEditing
+            ) {
+                SDL_StopTextInput();
+
+                saveNameEditing = false;
+                saveNameInputReceived = false;
+
+                gameUI.saveLoadFocus = 1;
+
+                circlePressed = false;
                 crossPressed = false;
+            } else if (circlePressed) {
+                gameUI.section =
+                    GameUISection::Options;
+
+                gameUI.optionsFocus = true;
+                gameUI.toolbarFocus = false;
+
+                circlePressed = false;
+                crossPressed = false;
+            } else {
+                // IME owns navigation while text editing
+                // is active.
+                if (saveNameEditing) {
+                    upPressed = false;
+                    downPressed = false;
+                    leftPressed = false;
+                    rightPressed = false;
+                    crossPressed = false;
+                }
+
+                // Horizontal navigation changes focus area.
+                if (
+                    !saveNameEditing &&
+                    (leftPressed || upPressed)
+                ) {
+                    if (savePage) {
+                        gameUI.saveLoadFocus--;
+
+                        if (gameUI.saveLoadFocus < 0)
+                            gameUI.saveLoadFocus = 2;
+                    } else {
+                        gameUI.saveLoadFocus =
+                            gameUI.saveLoadFocus == 0
+                                ? 2
+                                : 0;
+                    }
+
+                    leftPressed = false;
+                }
+
+                if (
+                    !saveNameEditing &&
+                    (rightPressed || downPressed)
+                ) {
+                    if (savePage) {
+                        gameUI.saveLoadFocus++;
+
+                        if (gameUI.saveLoadFocus > 2)
+                            gameUI.saveLoadFocus = 0;
+                    } else {
+                        gameUI.saveLoadFocus =
+                            gameUI.saveLoadFocus == 0
+                                ? 2
+                                : 0;
+                    }
+
+                    rightPressed = false;
+                }
+
+                // When list owns focus, Up/Down select real
+                // SaveFileList rows instead of changing area.
+                if (
+                    gameUI.saveLoadFocus == 0 &&
+                    optionsSaveFiles.count > 0
+                ) {
+                    if (upPressed) {
+                        gameUI.saveLoadSelection--;
+
+                        if (
+                            gameUI.saveLoadSelection < 0
+                        ) {
+                            gameUI.saveLoadSelection =
+                                optionsSaveFiles.count - 1;
+                        }
+
+                        upPressed = false;
+                    }
+
+                    if (downPressed) {
+                        gameUI.saveLoadSelection++;
+
+                        if (
+                            gameUI.saveLoadSelection >=
+                                optionsSaveFiles.count
+                        ) {
+                            gameUI.saveLoadSelection = 0;
+                        }
+
+                        downPressed = false;
+                    }
+
+                    selectSaveFile(
+                        &optionsSaveFiles,
+                        gameUI.saveLoadSelection
+                    );
+
+                    if (
+                        gameUI.saveLoadSelection <
+                            gameUI.saveLoadTop
+                    ) {
+                        gameUI.saveLoadTop =
+                            gameUI.saveLoadSelection;
+                    }
+
+                    if (
+                        gameUI.saveLoadSelection >=
+                            gameUI.saveLoadTop +
+                                visibleRows
+                    ) {
+                        gameUI.saveLoadTop =
+                            gameUI.saveLoadSelection -
+                                visibleRows + 1;
+                    }
+
+                    // Selecting a Save row copies its name
+                    // into the Save page name field.
+                    if (savePage) {
+                        const SaveFileEntry* selected =
+                            getSelectedSaveFile(
+                                &optionsSaveFiles
+                            );
+
+                        if (selected) {
+                            std::snprintf(
+                                gameUI.saveName,
+                                SAVE_NAME_LENGTH,
+                                "%s",
+                                selected->name
+                            );
+                        }
+                    }
+                }
+
+                if (
+                    crossPressed &&
+                    !saveNameEditing
+                ) {
+                    // List row X selects and advances to the
+                    // next relevant control.
+                    if (gameUI.saveLoadFocus == 0) {
+                        if (savePage) {
+                            gameUI.saveLoadFocus = 1;
+                        } else {
+                            gameUI.saveLoadFocus = 2;
+                        }
+                    } else if (
+                        savePage &&
+                        gameUI.saveLoadFocus == 1
+                    ) {
+                        // Open the Vita/SDL text-input path.
+                        //
+                        // The first received text replaces the
+                        // previous save name. Further text
+                        // input is appended up to the normal
+                        // SaveFileList name limit.
+                        saveNameEditing = true;
+                        saveNameInputReceived = false;
+
+                        SDL_StartTextInput();
+                    } else if (
+                        gameUI.saveLoadFocus == 2
+                    ) {
+                        if (savePage) {
+                            char namedSavePath[
+                                SAVE_PATH_LENGTH
+                            ] = {};
+
+                            if (
+                                buildNamedSavePath(
+                                    gameUI.saveName,
+                                    namedSavePath,
+                                    SAVE_PATH_LENGTH
+                                )
+                            ) {
+                                const bool saved =
+                                    saveGame(
+                                        namedSavePath,
+                                        buildings,
+                                        buildingCount,
+                                        wareDistribution,
+                                        units,
+                                        unitCount,
+                                        &roads[0][0],
+                                        &landPlans[0][0],
+                                        &cornGrowthTimers[0][0]
+                                    );
+
+                                if (saved) {
+                                    refreshSaveFileList(
+                                        &optionsSaveFiles
+                                    );
+
+                                    for (
+                                        int index = 0;
+                                        index <
+                                            optionsSaveFiles.count;
+                                        ++index
+                                    ) {
+                                        if (
+                                            std::strcmp(
+                                                optionsSaveFiles
+                                                    .entries[index]
+                                                    .path,
+                                                namedSavePath
+                                            ) == 0
+                                        ) {
+                                            selectSaveFile(
+                                                &optionsSaveFiles,
+                                                index
+                                            );
+
+                                            gameUI
+                                                .saveLoadSelection =
+                                                index;
+
+                                            break;
+                                        }
+                                    }
+
+                                    gameUI.section =
+                                        GameUISection::Options;
+
+                                    gameUI.optionsFocus = true;
+                                }
+                            }
+                        } else {
+                            const SaveFileEntry* selected =
+                                getSelectedSaveFile(
+                                    &optionsSaveFiles
+                                );
+
+                            if (selected) {
+                                const bool loaded =
+                                    loadGame(
+                                        selected->path,
+                                        buildings,
+                                        &buildingCount,
+                                        &wareDistribution,
+                                        units,
+                                        &unitCount,
+                                        &roads[0][0],
+                                        &landPlans[0][0],
+                                        &cornGrowthTimers[0][0]
+                                    );
+
+                                if (loaded) {
+                                    for (
+                                        int index = 0;
+                                        index < MAX_BUILDINGS;
+                                        ++index
+                                    ) {
+                                        bakeryProductionTimers[
+                                            index
+                                        ] = 0.0f;
+
+                                        schoolStepTimers[
+                                            index
+                                        ] = 0.0f;
+                                    }
+
+                                    selectedTileX = -1;
+                                    selectedTileY = -1;
+
+                                    closeUnitUI(&unitUI);
+
+                                    gameUI
+                                        .selectedSchoolBuilding =
+                                        -1;
+
+                                    gameUI
+                                        .selectedStoreBuilding =
+                                        -1;
+
+                                    gameUI
+                                        .selectedBakeryBuilding =
+                                        -1;
+
+                                    gameUI
+                                        .selectedFarmBuilding =
+                                        -1;
+
+                                    gameUI.section =
+                                        GameUISection::Options;
+
+                                    gameUI.optionsFocus = true;
+                                }
+                            }
+                        }
+                    }
+
+                    crossPressed = false;
+                }
+
+                // This page owns all navigation input.
+                upPressed = false;
+                downPressed = false;
+                leftPressed = false;
+                rightPressed = false;
             }
         }
 
@@ -4415,6 +4671,123 @@ int main(int argc, char* argv[])
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
+            // =========================================
+            // SAVE-NAME TEXT INPUT
+            // =========================================
+
+            if (saveNameEditing) {
+                if (
+                    event.type ==
+                        SDL_TEXTINPUT
+                ) {
+                    const char* incoming =
+                        event.text.text;
+
+                    if (
+                        incoming &&
+                        incoming[0] != '\0'
+                    ) {
+                        if (!saveNameInputReceived) {
+                            gameUI.saveName[0] = '\0';
+                            saveNameInputReceived = true;
+                        }
+
+                        const size_t currentLength =
+                            std::strlen(
+                                gameUI.saveName
+                            );
+
+                        const size_t maximumLength =
+                            SAVE_NAME_LENGTH - 1;
+
+                        if (
+                            currentLength <
+                                maximumLength
+                        ) {
+                            const size_t freeLength =
+                                maximumLength -
+                                    currentLength;
+
+                            std::strncat(
+                                gameUI.saveName,
+                                incoming,
+                                freeLength
+                            );
+
+                            gameUI.saveName[
+                                maximumLength
+                            ] = '\0';
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (
+                    event.type ==
+                        SDL_KEYDOWN
+                ) {
+                    if (
+                        event.key.keysym.sym ==
+                            SDLK_BACKSPACE
+                    ) {
+                        const size_t length =
+                            std::strlen(
+                                gameUI.saveName
+                            );
+
+                        if (length > 0) {
+                            gameUI.saveName[
+                                length - 1
+                            ] = '\0';
+                        }
+
+                        saveNameInputReceived = true;
+                        continue;
+                    }
+
+                    if (
+                        event.key.keysym.sym ==
+                            SDLK_RETURN ||
+                        event.key.keysym.sym ==
+                            SDLK_KP_ENTER
+                    ) {
+                        SDL_StopTextInput();
+
+                        saveNameEditing = false;
+                        saveNameInputReceived = false;
+
+                        if (
+                            gameUI.saveName[0] ==
+                                '\0'
+                        ) {
+                            std::snprintf(
+                                gameUI.saveName,
+                                SAVE_NAME_LENGTH,
+                                "%s",
+                                "New Save"
+                            );
+                        }
+
+                        gameUI.saveLoadFocus = 2;
+                        continue;
+                    }
+
+                    if (
+                        event.key.keysym.sym ==
+                            SDLK_ESCAPE
+                    ) {
+                        SDL_StopTextInput();
+
+                        saveNameEditing = false;
+                        saveNameInputReceived = false;
+
+                        gameUI.saveLoadFocus = 1;
+                        continue;
+                    }
+                }
+            }
+
             if (event.type == SDL_QUIT) {
                 running = false;
             }
@@ -7540,6 +7913,409 @@ int main(int argc, char* argv[])
             cursorY
         );
 
+        // =================================================
+        // REMAKE-STYLE SAVE / LOAD PAGE RENDERER
+        // =================================================
+
+        if (
+            gameUI.section ==
+                GameUISection::OptionsLoad ||
+            gameUI.section ==
+                GameUISection::OptionsSave
+        ) {
+            const bool savePage =
+                gameUI.section ==
+                    GameUISection::OptionsSave;
+
+            constexpr int panelX = 9;
+            constexpr int panelY = 234;
+            constexpr int panelW = 180;
+
+            SDL_Rect listArea = {
+                panelX,
+                panelY + (savePage ? 4 : 2),
+                panelW,
+                savePage ? 220 : 260
+            };
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_BLEND
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                30,
+                24,
+                18,
+                150
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &listArea
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                15,
+                12,
+                9,
+                255
+            );
+
+            SDL_RenderDrawRect(
+                renderer,
+                &listArea
+            );
+
+            constexpr int rowHeight = 24;
+            constexpr int visibleRows = 8;
+
+            for (
+                int visibleIndex = 0;
+                visibleIndex < visibleRows;
+                ++visibleIndex
+            ) {
+                const int saveIndex =
+                    gameUI.saveLoadTop +
+                    visibleIndex;
+
+                if (
+                    saveIndex >=
+                        optionsSaveFiles.count
+                ) {
+                    break;
+                }
+
+                SDL_Rect row = {
+                    listArea.x + 3,
+                    listArea.y +
+                        3 +
+                        visibleIndex * rowHeight,
+                    listArea.w -
+                        (
+                            optionsSaveFiles.count >
+                                visibleRows
+                                ? 15
+                                : 6
+                        ),
+                    rowHeight - 2
+                };
+
+                const bool selected =
+                    gameUI.saveLoadFocus == 0 &&
+                    saveIndex ==
+                        gameUI.saveLoadSelection;
+
+                if (selected) {
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        210,
+                        180,
+                        100,
+                        85
+                    );
+
+                    SDL_RenderFillRect(
+                        renderer,
+                        &row
+                    );
+
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        235,
+                        207,
+                        126,
+                        255
+                    );
+
+                    SDL_RenderDrawRect(
+                        renderer,
+                        &row
+                    );
+                }
+
+                const char* name =
+                    optionsSaveFiles
+                        .entries[saveIndex]
+                        .name;
+
+                renderRuntimeMetalText(
+                    renderer,
+                    runtimeMetalFont,
+                    name,
+                    row.x + 5,
+                    row.y + 4
+                );
+            }
+
+            // Visible Remake-style scrollbar for save lists.
+            //
+            // saveLoadTop already controls the first visible
+            // row. The scrollbar only visualizes that state.
+            if (optionsSaveFiles.count > visibleRows) {
+                SDL_Rect scrollTrack = {
+                    listArea.x + listArea.w - 8,
+                    listArea.y + 4,
+                    4,
+                    listArea.h - 8
+                };
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    24,
+                    19,
+                    14,
+                    210
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &scrollTrack
+                );
+
+                const int maximumTop =
+                    optionsSaveFiles.count -
+                        visibleRows;
+
+                int thumbHeight =
+                    (
+                        scrollTrack.h *
+                        visibleRows
+                    ) /
+                    optionsSaveFiles.count;
+
+                if (thumbHeight < 14)
+                    thumbHeight = 14;
+
+                if (thumbHeight > scrollTrack.h)
+                    thumbHeight = scrollTrack.h;
+
+                const int thumbTravel =
+                    scrollTrack.h -
+                        thumbHeight;
+
+                const int thumbOffset =
+                    maximumTop > 0
+                        ? (
+                            gameUI.saveLoadTop *
+                            thumbTravel
+                        ) /
+                            maximumTop
+                        : 0;
+
+                SDL_Rect scrollThumb = {
+                    scrollTrack.x - 2,
+                    scrollTrack.y +
+                        thumbOffset,
+                    8,
+                    thumbHeight
+                };
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    171,
+                    154,
+                    121,
+                    255
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &scrollThumb
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    35,
+                    30,
+                    25,
+                    255
+                );
+
+                SDL_RenderDrawRect(
+                    renderer,
+                    &scrollThumb
+                );
+            }
+
+            if (optionsSaveFiles.count == 0) {
+                SDL_Rect emptyArea = {
+                    listArea.x,
+                    listArea.y + 15,
+                    listArea.w,
+                    30
+                };
+
+                renderRuntimeMetalTextCentered(
+                    renderer,
+                    runtimeMetalFont,
+                    "No Save Files",
+                    emptyArea
+                );
+            }
+
+            if (savePage) {
+                SDL_Rect editArea = {
+                    panelX,
+                    panelY + 235,
+                    panelW,
+                    20
+                };
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    gameUI.saveLoadFocus == 1
+                        ? 94
+                        : 45,
+                    gameUI.saveLoadFocus == 1
+                        ? 74
+                        : 37,
+                    gameUI.saveLoadFocus == 1
+                        ? 38
+                        : 28,
+                    220
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &editArea
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    gameUI.saveLoadFocus == 1
+                        ? 235
+                        : 120,
+                    gameUI.saveLoadFocus == 1
+                        ? 207
+                        : 100,
+                    gameUI.saveLoadFocus == 1
+                        ? 126
+                        : 70,
+                    255
+                );
+
+                SDL_RenderDrawRect(
+                    renderer,
+                    &editArea
+                );
+
+                renderRuntimeMetalText(
+                    renderer,
+                    runtimeMetalFont,
+                    gameUI.saveName,
+                    editArea.x + 5,
+                    editArea.y + 3
+                );
+
+                // Blinking cursor while the name field owns
+                // active text input.
+                if (
+                    saveNameEditing &&
+                    (
+                        (
+                            SDL_GetTicks() /
+                            500
+                        ) %
+                        2
+                    ) == 0
+                ) {
+                    const int textWidth =
+                        measureRuntimeMetalText(
+                            runtimeMetalFont,
+                            gameUI.saveName
+                        );
+
+                    SDL_Rect editCursor = {
+                        editArea.x +
+                            5 +
+                            textWidth +
+                            1,
+                        editArea.y + 3,
+                        2,
+                        14
+                    };
+
+                    if (
+                        editCursor.x >
+                            editArea.x +
+                                editArea.w - 4
+                    ) {
+                        editCursor.x =
+                            editArea.x +
+                            editArea.w - 4;
+                    }
+
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        255,
+                        255,
+                        255,
+                        255
+                    );
+
+                    SDL_RenderFillRect(
+                        renderer,
+                        &editCursor
+                    );
+                }
+            }
+
+            SDL_Rect confirmButton = {
+                panelX,
+                panelY + 270,
+                panelW,
+                30
+            };
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                70,
+                65,
+                55,
+                255
+            );
+
+            SDL_RenderFillRect(
+                renderer,
+                &confirmButton
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                gameUI.saveLoadFocus == 2
+                    ? 255
+                    : 170,
+                gameUI.saveLoadFocus == 2
+                    ? 221
+                    : 150,
+                gameUI.saveLoadFocus == 2
+                    ? 116
+                    : 90,
+                255
+            );
+
+            SDL_RenderDrawRect(
+                renderer,
+                &confirmButton
+            );
+
+            renderRuntimeMetalTextCentered(
+                renderer,
+                runtimeMetalFont,
+                savePage ? "Save" : "Load",
+                confirmButton
+            );
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
+        }
+
+
         if (
             gameUI.section ==
                 GameUISection::Unit
@@ -7568,6 +8344,15 @@ int main(int argc, char* argv[])
         SDL_Delay(16);
     }
 
+
+    if (saveNameEditing) {
+        SDL_StopTextInput();
+        saveNameEditing = false;
+    }
+
+    destroyRuntimeMetalFont(
+        &runtimeMetalFont
+    );
 
     // House textury musi byt uvolneny jeste pred
     // znicenim SDL rendereru.
