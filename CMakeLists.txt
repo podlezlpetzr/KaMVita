@@ -33,12 +33,14 @@ add_executable(${PROJECT_NAME}
     src/game/house_plan_catalog.cpp
     src/game/units.cpp
     src/game/save_units_v11.cpp
+    src/game/save_slots.cpp
     src/game/ware_distribution.cpp
     src/ui/game_ui.cpp
     src/ui/game_ui_unit.cpp
     src/ui/house_icons.cpp
     src/ui/game_ui_statistics.cpp
     src/ui/game_ui_ratios.cpp
+    src/ui/kam_runtime_font.cpp
 )
 
 target_link_options(${PROJECT_NAME}
@@ -92,6 +94,9 @@ target_link_libraries(${PROJECT_NAME}
 set_source_files_properties(
     src/main.cpp
     src/ui/game_ui.cpp
+    src/game/save_slots.cpp
+    src/game/buildings.cpp
+    src/game/units.cpp
     PROPERTIES
         COMPILE_OPTIONS "-Os"
 )
@@ -638,6 +643,42 @@ vita_create_vpk(
     FILE
         assets/ui/farm/text/corn.bmp
         assets/ui/farm/text/corn.bmp
+
+    # Runtime Metal font atlas for dynamic Save names
+
+    FILE
+        assets/ui/options/runtime_font/metal_ascii.bmp
+        assets/ui/options/runtime_font/metal_ascii.bmp
+
+    FILE
+        assets/ui/options/runtime_font/metal_ascii.json
+        assets/ui/options/runtime_font/metal_ascii.json
+
+    # Original KaM Remake Options ENG text
+
+    FILE
+        assets/ui/options/text/load_game.bmp
+        assets/ui/options/text/load_game.bmp
+
+    FILE
+        assets/ui/options/text/save_game.bmp
+        assets/ui/options/text/save_game.bmp
+
+    FILE
+        assets/ui/options/text/settings.bmp
+        assets/ui/options/text/settings.bmp
+
+    FILE
+        assets/ui/options/text/quit_mission.bmp
+        assets/ui/options/text/quit_mission.bmp
+
+    FILE
+        assets/ui/options/text/game_time.bmp
+        assets/ui/options/text/game_time.bmp
+
+    FILE
+        assets/ui/options/text/map.bmp
+        assets/ui/options/text/map.bmp
 
     FILE
         assets/ui/school/text/needs.bmp

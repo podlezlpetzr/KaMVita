@@ -88,6 +88,18 @@ struct GameUIState {
     int toolbarSelection;
     bool toolbarFocus;
 
+    // Originalni KaM Remake Options menu:
+    //
+    // 0 Load Game
+    // 1 Save Game
+    // 2 Settings
+    // 3 Quit Mission
+    //
+    // optionsFocus false znamena focus hlavniho toolbaru.
+    // optionsFocus true znamena focus menu polozek.
+    int optionsSelection;
+    bool optionsFocus;
+
     // Originalni Ratios 440 navigace.
     int ratiosTab;
     int ratiosRow;
@@ -201,6 +213,17 @@ struct SchoolUIResources {
     // GUI 49 = 12x12 Store accept/not-accept marker.
     SDL_Texture* storeWareIcons[STORE_WARE_COUNT];
     SDL_Texture* storeAcceptFlag;
+
+    // Original KaM Remake Options captions.
+    // Buttons: fnt_Metal.
+    SDL_Texture* optionsLoadGameText;
+    SDL_Texture* optionsSaveGameText;
+    SDL_Texture* optionsSettingsText;
+    SDL_Texture* optionsQuitMissionText;
+
+    // Labels: fnt_Outline.
+    SDL_Texture* optionsGameTimeText;
+    SDL_Texture* optionsMapText;
 
     // Originalni texty generovane z KaM FNTX fontu.
     SDL_Texture* needsText;

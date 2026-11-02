@@ -21,6 +21,9 @@ void initGameUI(
     ui->toolbarSelection = 0;
     ui->toolbarFocus = false;
 
+    ui->optionsSelection = 0;
+    ui->optionsFocus = false;
+
     ui->ratiosTab = 0;
     ui->ratiosRow = 0;
     ui->ratiosFocusTabs = true;
@@ -801,6 +804,369 @@ void renderGameUI(
             statistics
         );
     }
+
+    // =====================================================
+    // ORIGINAL KAM REMAKE OPTIONS MENU
+    //
+    // Exact Remake geometry:
+    //
+    // Panel_Menu:
+    //   X = TB_PAD = 9
+    //   Y = 44 relative to Panel_Controls
+    //   W = TB_WIDTH = 180
+    //
+    // KaMVita Panel_Controls translation:
+    //   Remake toolbar Y=4 -> Vita toolbar Y=194
+    //   translation = +190
+    //
+    // Absolute Panel_Menu Y = 44 + 190 = 234
+    //
+    // Buttons:
+    //   Load Game    y=254
+    //   Save Game    y=294
+    //   Settings     y=334
+    //   Quit Mission y=394
+    //
+    // TKMButton(..., bsGame) uses rxGui GUI 402 as the
+    // repeating stone background and a 3px chamfer for
+    // controls whose minimum dimension is >25.
+    //
+    // No game logo is rendered.
+    // =====================================================
+
+    if (
+        ui.section ==
+            GameUISection::Options
+    ) {
+        constexpr int optionsPanelX = 9;
+        constexpr int optionsPanelWidth = 180;
+        constexpr int optionsPanelY = 234;
+        constexpr int optionsButtonHeight = 30;
+
+        const int optionsButtonY[4] = {
+            optionsPanelY + 20,
+            optionsPanelY + 60,
+            optionsPanelY + 100,
+            optionsPanelY + 160
+        };
+
+        for (
+            int optionIndex = 0;
+            optionIndex < 4;
+            ++optionIndex
+        ) {
+            SDL_Rect button = {
+                optionsPanelX,
+                optionsButtonY[optionIndex],
+                optionsPanelWidth,
+                optionsButtonHeight
+            };
+
+            const bool selected =
+                ui.optionsFocus &&
+                ui.optionsSelection ==
+                    optionIndex;
+
+            // =============================================
+            // KaM Remake TKMRenderUI.Write3DButton bsGame
+            //
+            // GUI 402 is the stone background.
+            // KaMVita already loads it as buttonStone.
+            // =============================================
+
+            if (schoolResources.buttonStone) {
+                int stoneWidth = 0;
+                int stoneHeight = 0;
+
+                SDL_QueryTexture(
+                    schoolResources.buttonStone,
+                    nullptr,
+                    nullptr,
+                    &stoneWidth,
+                    &stoneHeight
+                );
+
+                if (
+                    stoneWidth > 0 &&
+                    stoneHeight > 0
+                ) {
+                    // Remake samples GUI 402 according to the
+                    // absolute button position. SDL wrapping is
+                    // reproduced by tiling the source texture.
+                    for (
+                        int drawY = 0;
+                        drawY < button.h;
+                        drawY += stoneHeight
+                    ) {
+                        for (
+                            int drawX = 0;
+                            drawX < button.w;
+                            drawX += stoneWidth
+                        ) {
+                            const int copyWidth =
+                                SDL_min(
+                                    stoneWidth,
+                                    button.w - drawX
+                                );
+
+                            const int copyHeight =
+                                SDL_min(
+                                    stoneHeight,
+                                    button.h - drawY
+                                );
+
+                            SDL_Rect stoneSource = {
+                                0,
+                                0,
+                                copyWidth,
+                                copyHeight
+                            };
+
+                            SDL_Rect stoneDestination = {
+                                button.x + drawX,
+                                button.y + drawY,
+                                copyWidth,
+                                copyHeight
+                            };
+
+                            SDL_RenderCopy(
+                                renderer,
+                                schoolResources.buttonStone,
+                                &stoneSource,
+                                &stoneDestination
+                            );
+                        }
+                    }
+                }
+            } else {
+                // Safe fallback only if GUI 402 failed to load.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    70,
+                    65,
+                    55,
+                    255
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &button
+                );
+            }
+
+            // =============================================
+            // Remake Write3DButton beveled edges
+            //
+            // Chamfer = 2 + Byte(Min(W,H) > 25)
+            //         = 3 px for 180x30.
+            //
+            // Normal:
+            // top/left bright
+            // bottom/right dark.
+            //
+            // Focus is represented by the Remake bsOver
+            // 15% white highlight.
+            // =============================================
+
+            constexpr int chamfer = 3;
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_BLEND
+            );
+
+            for (
+                int edge = 0;
+                edge < chamfer;
+                ++edge
+            ) {
+                const Uint8 brightAlpha =
+                    edge == 0
+                        ? 178
+                        : (
+                            edge == 1
+                                ? 153
+                                : 115
+                        );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    255,
+                    255,
+                    255,
+                    brightAlpha
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    button.x + edge,
+                    button.y + edge,
+                    button.x + button.w - 1 - edge,
+                    button.y + edge
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    button.x + edge,
+                    button.y + edge,
+                    button.x + edge,
+                    button.y + button.h - 1 - edge
+                );
+
+                const Uint8 darkAlpha =
+                    edge == 0
+                        ? 128
+                        : (
+                            edge == 1
+                                ? 102
+                                : 80
+                        );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    0,
+                    0,
+                    0,
+                    darkAlpha
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    button.x + edge,
+                    button.y + button.h - 1 - edge,
+                    button.x + button.w - 1 - edge,
+                    button.y + button.h - 1 - edge
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    button.x + button.w - 1 - edge,
+                    button.y + edge,
+                    button.x + button.w - 1 - edge,
+                    button.y + button.h - 1 - edge
+                );
+            }
+
+            if (selected) {
+                SDL_Rect highlight = {
+                    button.x + chamfer,
+                    button.y + chamfer,
+                    button.w - chamfer * 2,
+                    button.h - chamfer * 2
+                };
+
+                // Remake bsOver:
+                // glColor4f(1,1,1,0.15)
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    255,
+                    255,
+                    255,
+                    38
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &highlight
+                );
+            }
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
+
+            // Original KaM Remake ENG button caption,
+            // generated directly from metal.fntx.
+            SDL_Texture* optionCaption = nullptr;
+
+            switch (optionIndex) {
+                case 0:
+                    optionCaption =
+                        schoolResources.optionsLoadGameText;
+                    break;
+
+                case 1:
+                    optionCaption =
+                        schoolResources.optionsSaveGameText;
+                    break;
+
+                case 2:
+                    optionCaption =
+                        schoolResources.optionsSettingsText;
+                    break;
+
+                case 3:
+                    optionCaption =
+                        schoolResources.optionsQuitMissionText;
+                    break;
+
+                default:
+                    break;
+            }
+
+            renderCenteredTexture(
+                renderer,
+                optionCaption,
+                button
+            );
+        }
+
+        // Exact Remake label anchors.
+        //
+        // Game time title: relative 198
+        // Game time value: relative 218
+        // Map title:       relative 240
+        // Map value:       relative 260
+        //
+        // Text rendering is intentionally wired separately
+        // through the original KaM font pipeline.
+        SDL_Rect gameTimeTitleAnchor = {
+            optionsPanelX,
+            optionsPanelY + 198,
+            optionsPanelWidth,
+            30
+        };
+
+        SDL_Rect gameTimeValueAnchor = {
+            optionsPanelX,
+            optionsPanelY + 218,
+            optionsPanelWidth,
+            20
+        };
+
+        SDL_Rect mapTitleAnchor = {
+            optionsPanelX,
+            optionsPanelY + 240,
+            optionsPanelWidth,
+            30
+        };
+
+        SDL_Rect mapValueAnchor = {
+            optionsPanelX - 3,
+            optionsPanelY + 260,
+            optionsPanelWidth + 3,
+            20
+        };
+
+        // Original KaM Remake fnt_Outline headers.
+        renderCenteredTexture(
+            renderer,
+            schoolResources.optionsGameTimeText,
+            gameTimeTitleAnchor
+        );
+
+        renderCenteredTexture(
+            renderer,
+            schoolResources.optionsMapText,
+            mapTitleAnchor
+        );
+
+        // Dynamic fnt_Grey values are wired in OPTIONS 05B.
+        (void)gameTimeValueAnchor;
+        (void)mapValueAnchor;
+    }
+
 
     // School GUI podle puvodniho KaM.
     if (ui.section == GameUISection::School) {
@@ -4912,6 +5278,43 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/statistics/wip_counts.bmp"
         );
 
+    // Original KaM Remake Options text.
+    resources.optionsLoadGameText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/options/text/load_game.bmp"
+        );
+
+    resources.optionsSaveGameText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/options/text/save_game.bmp"
+        );
+
+    resources.optionsSettingsText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/options/text/settings.bmp"
+        );
+
+    resources.optionsQuitMissionText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/options/text/quit_mission.bmp"
+        );
+
+    resources.optionsGameTimeText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/options/text/game_time.bmp"
+        );
+
+    resources.optionsMapText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/options/text/map.bmp"
+        );
+
     resources.needsText =
         loadSchoolUITexture(
             renderer,
@@ -5258,6 +5661,42 @@ void destroySchoolUIResources(
     if (resources->statisticsWipCounts) {
         SDL_DestroyTexture(
             resources->statisticsWipCounts
+        );
+    }
+
+    if (resources->optionsLoadGameText) {
+        SDL_DestroyTexture(
+            resources->optionsLoadGameText
+        );
+    }
+
+    if (resources->optionsSaveGameText) {
+        SDL_DestroyTexture(
+            resources->optionsSaveGameText
+        );
+    }
+
+    if (resources->optionsSettingsText) {
+        SDL_DestroyTexture(
+            resources->optionsSettingsText
+        );
+    }
+
+    if (resources->optionsQuitMissionText) {
+        SDL_DestroyTexture(
+            resources->optionsQuitMissionText
+        );
+    }
+
+    if (resources->optionsGameTimeText) {
+        SDL_DestroyTexture(
+            resources->optionsGameTimeText
+        );
+    }
+
+    if (resources->optionsMapText) {
+        SDL_DestroyTexture(
+            resources->optionsMapText
         );
     }
 

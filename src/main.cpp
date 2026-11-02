@@ -3,6 +3,7 @@
 #include "game/buildings.h"
 #include "game/units.h"
 #include "game/save_units_v11.h"
+#include "game/save_slots.h"
 #include "ui/game_ui.h"
 #include "ui/game_ui_unit.h"
 #include "ui/game_ui_ratios.h"
@@ -430,12 +431,33 @@ static Building migrateBuildingSaveV8(
 }
 
 
+// ===========================================================
+// SAVE GAME PATHS
+//
+// KaM Remake principle:
+//
+// Save/Load operate on a selected named save instead of
+// owning one hard-coded filename internally.
+//
+// During this transition the existing Vita save.dat remains
+// the selected compatibility save. SAVE SLOTS will later
+// provide paths from ux0:data/kamvita/Saves/*.sav.
+// ===========================================================
+
+static constexpr const char* LEGACY_SAVE_PATH =
+    "ux0:data/kamvita/save.dat";
+
+
 static bool saveGame(
+    const char* savePath,
     const Building* buildings,
     int buildingCount,
     const WareDistribution& wareDistribution,
     const Unit* units,
-    int unitCount
+    int unitCount,
+    const RoadState* roads,
+    const LandPlanState* landPlans,
+    const float* cornGrowthTimers
 )
 {
     sceIoMkdir(
@@ -444,7 +466,7 @@ static bool saveGame(
     );
 
     FILE* file = fopen(
-        "ux0:data/kamvita/save.dat",
+        savePath,
         "wb"
     );
 
@@ -452,7 +474,12 @@ static bool saveGame(
         return false;
 
     if (
+        !savePath ||
+        savePath[0] == '\0' ||
         !units ||
+        !roads ||
+        !landPlans ||
+        !cornGrowthTimers ||
         unitCount < 0 ||
         unitCount > MAX_UNITS
     ) {
@@ -464,12 +491,17 @@ static bool saveGame(
 
     header.magic = 0x4B414D56;
 
-    // Save v11:
-    // - kompletni save v10 Buildings
+    // Save v12:
+    //
+    // - kompletni Buildings
     // - WareDistribution
-    // - unitCount
-    // - pevnych MAX_UNITS zaznamu UnitSaveV11
-    header.version = 11;
+    // - stabilni UnitSaveV11 blok
+    // - RoadState pro kazdy map tile
+    // - LandPlanState pro kazdy map tile
+    // - cornGrowthTimers pro kazdy map tile
+    //
+    // Unit payload zustava ve stabilnim V11 formatu.
+    header.version = 12;
     header.buildingCount = buildingCount;
 
     if (
@@ -530,19 +562,104 @@ static bool saveGame(
         return false;
     }
 
+
+    // =====================================================
+    // SAVE V12 MAP STATE
+    //
+    // Road:
+    // None, Plan, Dig1..Dig4, Complete.
+    //
+    // Land:
+    // Field/Wine construction and complete Corn lifecycle.
+    // =====================================================
+
+    constexpr int MAP_TILE_COUNT =
+        MAP_WIDTH * MAP_HEIGHT;
+
+    for (
+        int tileIndex = 0;
+        tileIndex < MAP_TILE_COUNT;
+        ++tileIndex
+    ) {
+        const unsigned char value =
+            static_cast<unsigned char>(
+                roads[tileIndex]
+            );
+
+        if (
+            fwrite(
+                &value,
+                sizeof(value),
+                1,
+                file
+            ) != 1
+        ) {
+            fclose(file);
+            return false;
+        }
+    }
+
+    for (
+        int tileIndex = 0;
+        tileIndex < MAP_TILE_COUNT;
+        ++tileIndex
+    ) {
+        const unsigned char value =
+            static_cast<unsigned char>(
+                landPlans[tileIndex]
+            );
+
+        if (
+            fwrite(
+                &value,
+                sizeof(value),
+                1,
+                file
+            ) != 1
+        ) {
+            fclose(file);
+            return false;
+        }
+    }
+
+    if (
+        fwrite(
+            cornGrowthTimers,
+            sizeof(float),
+            MAP_TILE_COUNT,
+            file
+        ) != MAP_TILE_COUNT
+    ) {
+        fclose(file);
+        return false;
+    }
+
+
     fclose(file);
 
     return true;
 }
 
 static bool loadGame(
+    const char* savePath,
     Building* buildings,
     int* buildingCount,
     WareDistribution* wareDistribution,
     Unit* units,
-    int* unitCount
+    int* unitCount,
+    RoadState* roads,
+    LandPlanState* landPlans,
+    float* cornGrowthTimers
 )
 {
+    if (
+        !savePath ||
+        savePath[0] == '\0'
+    ) {
+        return false;
+    }
+
+
 
 
     // Remake defaults plati pro novou hru,
@@ -553,7 +670,7 @@ static bool loadGame(
 
     FILE* file =
         fopen(
-            "ux0:data/kamvita/save.dat",
+            savePath,
             "rb"
         );
 
@@ -584,7 +701,8 @@ static bool loadGame(
             header.version != 8 &&
             header.version != 9 &&
             header.version != 10 &&
-            header.version != 11
+            header.version != 11 &&
+            header.version != 12
         ) ||
         header.buildingCount < 0 ||
         header.buildingCount > MAX_BUILDINGS
@@ -660,7 +778,8 @@ static bool loadGame(
 
     if (
         header.version == 10 ||
-        header.version == 11
+        header.version == 11 ||
+        header.version == 12
     ) {
         if (
             fread(
@@ -809,7 +928,8 @@ static bool loadGame(
         header.version == 8 ||
         header.version == 9 ||
         header.version == 10 ||
-        header.version == 11
+        header.version == 11 ||
+        header.version == 12
     ) {
         WareDistribution loadedDistribution = {};
 
@@ -1048,7 +1168,7 @@ static bool loadGame(
     // =====================================================
 
     if (
-        header.version == 11 &&
+        header.version >= 11 &&
         !readUnitsV11(
             file,
             units,
@@ -1059,6 +1179,169 @@ static bool loadGame(
         fclose(file);
         return false;
     }
+
+
+    // =====================================================
+    // SAVE V12 MAP STATE READ
+    //
+    // v4-v11 mapove vrstvy neobsahovaly.
+    // U starsich save zustanou caller arrays ve vychozim
+    // new-game stavu.
+    //
+    // V12 nejdrive nacte a overi docasna pole.
+    // Live mapu zmeni az po uspesnem overeni celeho bloku.
+    // =====================================================
+
+    if (header.version >= 12) {
+        if (
+            !roads ||
+            !landPlans ||
+            !cornGrowthTimers
+        ) {
+            fclose(file);
+            return false;
+        }
+
+        constexpr int MAP_TILE_COUNT =
+            MAP_WIDTH * MAP_HEIGHT;
+
+        RoadState loadedRoads[
+            MAP_TILE_COUNT
+        ] = {};
+
+        LandPlanState loadedLandPlans[
+            MAP_TILE_COUNT
+        ] = {};
+
+        float loadedCornGrowthTimers[
+            MAP_TILE_COUNT
+        ] = {};
+
+
+        for (
+            int tileIndex = 0;
+            tileIndex < MAP_TILE_COUNT;
+            ++tileIndex
+        ) {
+            unsigned char value = 0;
+
+            if (
+                fread(
+                    &value,
+                    sizeof(value),
+                    1,
+                    file
+                ) != 1
+            ) {
+                fclose(file);
+                return false;
+            }
+
+            if (
+                value >
+                    static_cast<unsigned char>(
+                        RoadState::Complete
+                    )
+            ) {
+                fclose(file);
+                return false;
+            }
+
+            loadedRoads[tileIndex] =
+                static_cast<RoadState>(
+                    value
+                );
+        }
+
+
+        for (
+            int tileIndex = 0;
+            tileIndex < MAP_TILE_COUNT;
+            ++tileIndex
+        ) {
+            unsigned char value = 0;
+
+            if (
+                fread(
+                    &value,
+                    sizeof(value),
+                    1,
+                    file
+                ) != 1
+            ) {
+                fclose(file);
+                return false;
+            }
+
+            if (
+                value >
+                    static_cast<unsigned char>(
+                        LandPlanState::FieldCut
+                    )
+            ) {
+                fclose(file);
+                return false;
+            }
+
+            loadedLandPlans[tileIndex] =
+                static_cast<LandPlanState>(
+                    value
+                );
+        }
+
+
+        if (
+            fread(
+                loadedCornGrowthTimers,
+                sizeof(float),
+                MAP_TILE_COUNT,
+                file
+            ) != MAP_TILE_COUNT
+        ) {
+            fclose(file);
+            return false;
+        }
+
+
+        for (
+            int tileIndex = 0;
+            tileIndex < MAP_TILE_COUNT;
+            ++tileIndex
+        ) {
+            const float timer =
+                loadedCornGrowthTimers[
+                    tileIndex
+                ];
+
+            if (
+                !std::isfinite(timer) ||
+                timer < 0.0f
+            ) {
+                fclose(file);
+                return false;
+            }
+        }
+
+
+        for (
+            int tileIndex = 0;
+            tileIndex < MAP_TILE_COUNT;
+            ++tileIndex
+        ) {
+            roads[tileIndex] =
+                loadedRoads[tileIndex];
+
+            landPlans[tileIndex] =
+                loadedLandPlans[tileIndex];
+
+            cornGrowthTimers[tileIndex] =
+                loadedCornGrowthTimers[
+                    tileIndex
+                ];
+        }
+    }
+
+
     fclose(file);
 
     return true;
@@ -1124,6 +1407,78 @@ int main(int argc, char* argv[])
         SDL_Quit();
         return 1;
     }
+    // =====================================================
+    // REMAKE-STYLE SAVE DIRECTORY ENUMERATION
+    //
+    // KaM Remake builds its Load/Save list from named save
+    // files in the Saves directory.
+    //
+    // This checkpoint only verifies the Vita directory layer.
+    //
+    // No .sav is automatically selected, loaded or created.
+    // Existing save.dat bootstrap behaviour stays unchanged.
+    // =====================================================
+
+    SaveFileEntry startupSaveFiles[
+        MAX_SAVE_FILES
+    ] = {};
+
+    const int startupSaveFileCount =
+        enumerateSaveFiles(
+            startupSaveFiles,
+            MAX_SAVE_FILES
+        );
+
+    FILE* saveSlotsScan =
+        fopen(
+            "ux0:data/kamvita/save_slots_scan.txt",
+            "w"
+        );
+
+    if (saveSlotsScan) {
+        fprintf(
+            saveSlotsScan,
+            "SAVE_DIRECTORY=ux0:data/kamvita/Saves\n"
+        );
+
+        fprintf(
+            saveSlotsScan,
+            "SAVE_COUNT=%d\n",
+            startupSaveFileCount
+        );
+
+        for (
+            int saveIndex = 0;
+            saveIndex < startupSaveFileCount;
+            ++saveIndex
+        ) {
+            fprintf(
+                saveSlotsScan,
+                "SAVE[%d].NAME=%s\n",
+                saveIndex,
+                startupSaveFiles[
+                    saveIndex
+                ].name
+            );
+
+            fprintf(
+                saveSlotsScan,
+                "SAVE[%d].PATH=%s\n",
+                saveIndex,
+                startupSaveFiles[
+                    saveIndex
+                ].path
+            );
+        }
+
+        fclose(
+            saveSlotsScan
+        );
+
+        saveSlotsScan = nullptr;
+    }
+
+
     TerrainResources terrain = loadTerrainResources(renderer);
 
     KaMPlanResources kamPlanResources =
@@ -1150,6 +1505,12 @@ int main(int argc, char* argv[])
 
     GameUIState gameUI = {};
     initGameUI(&gameUI);
+
+    // Runtime list of real named .sav files used by
+    // Options -> Load Game / Save Game.
+    SaveFileList optionsSaveFiles = {};
+    initSaveFileList(&optionsSaveFiles);
+    refreshSaveFileList(&optionsSaveFiles);
 
 
     sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
@@ -1361,11 +1722,15 @@ int main(int argc, char* argv[])
 
         const bool gameLoaded =
             loadGame(
+                LEGACY_SAVE_PATH,
                 buildings,
                 &buildingCount,
                 &wareDistribution,
                 units,
-                &unitCount
+                &unitCount,
+                &roads[0][0],
+                &landPlans[0][0],
+                &cornGrowthTimers[0][0]
             );
 
     // Development start:
@@ -1532,10 +1897,6 @@ int main(int argc, char* argv[])
         bool circlePressed =
             (pad.buttons & SCE_CTRL_CIRCLE) &&
             !(previousButtons & SCE_CTRL_CIRCLE);
-
-        bool startPressed =
-            (pad.buttons & SCE_CTRL_START) &&
-            !(previousButtons & SCE_CTRL_START);
 
         bool trianglePressed =
             (pad.buttons & SCE_CTRL_TRIANGLE) &&
@@ -2196,6 +2557,9 @@ int main(int argc, char* argv[])
 
                         gameUI.buildSectionActive =
                             false;
+
+                        gameUI.optionsSelection = 0;
+                        gameUI.optionsFocus = true;
                         break;
 
                     default:
@@ -2206,6 +2570,70 @@ int main(int argc, char* argv[])
                 break;
             }
         }
+
+        // =================================================
+        // OPTIONS MENU TOUCH
+        //
+        // The coordinates must match game_ui.cpp exactly.
+        // =================================================
+
+        if (
+            gameUI.section ==
+                GameUISection::Options &&
+            touchTapped
+        ) {
+            constexpr int optionsPanelX = 9;
+            constexpr int optionsPanelWidth = 180;
+            constexpr int optionsPanelY = 234;
+            constexpr int optionsButtonHeight = 30;
+
+            const int optionsButtonY[4] = {
+                optionsPanelY + 20,
+                optionsPanelY + 60,
+                optionsPanelY + 100,
+                optionsPanelY + 160
+            };
+
+            for (
+                int optionIndex = 0;
+                optionIndex < 4;
+                ++optionIndex
+            ) {
+                SDL_Rect optionArea = {
+                    optionsPanelX,
+                    optionsButtonY[optionIndex],
+                    optionsPanelWidth,
+                    optionsButtonHeight
+                };
+
+                const bool insideOption =
+                    touchStartX >= optionArea.x &&
+                    touchStartX <
+                        optionArea.x +
+                            optionArea.w &&
+                    touchStartY >= optionArea.y &&
+                    touchStartY <
+                        optionArea.y +
+                            optionArea.h;
+
+                if (!insideOption)
+                    continue;
+
+                gameUI.optionsSelection =
+                    optionIndex;
+
+                gameUI.optionsFocus = true;
+                gameUI.toolbarFocus = false;
+
+                // Touch uses the exact same action path as
+                // the gamepad Cross button.
+                crossPressed = true;
+                touchTapped = false;
+
+                break;
+            }
+        }
+
 
         // Touch ovladani originalniho House headeru.
         if (
@@ -2337,6 +2765,230 @@ int main(int argc, char* argv[])
                 crossPressed = true;
 
                 touchTapped = false;
+            }
+        }
+
+
+        // =================================================
+        // OPTIONS MENU GAMEPAD
+        //
+        // Up/Down navigate the four Remake menu entries.
+        // Circle returns focus to GUI 442 toolbar.
+        // Cross is consumed until each action is wired.
+        // =================================================
+
+        if (
+            gameUI.section ==
+                GameUISection::Options
+        ) {
+            if (
+                gameUI.optionsFocus &&
+                upPressed
+            ) {
+                gameUI.optionsSelection--;
+
+                if (
+                    gameUI.optionsSelection < 0
+                ) {
+                    gameUI.optionsSelection = 3;
+                }
+
+                upPressed = false;
+            }
+
+            if (
+                gameUI.optionsFocus &&
+                downPressed
+            ) {
+                gameUI.optionsSelection++;
+
+                if (
+                    gameUI.optionsSelection > 3
+                ) {
+                    gameUI.optionsSelection = 0;
+                }
+
+                downPressed = false;
+            }
+
+            if (
+                gameUI.optionsFocus &&
+                circlePressed
+            ) {
+                gameUI.optionsFocus = false;
+                gameUI.toolbarFocus = true;
+                circlePressed = false;
+            }
+
+            if (
+                gameUI.optionsFocus &&
+                crossPressed
+            ) {
+                switch (gameUI.optionsSelection) {
+                    case 0:
+                    {
+                        // LOAD GAME
+                        //
+                        // Refresh first so the action always
+                        // reflects real .sav files currently
+                        // present in the Saves directory.
+                        refreshSaveFileList(
+                            &optionsSaveFiles
+                        );
+
+                        const SaveFileEntry* selectedSave =
+                            getSelectedSaveFile(
+                                &optionsSaveFiles
+                            );
+
+                        if (selectedSave) {
+                            const bool loaded =
+                                loadGame(
+                                    selectedSave->path,
+                                    buildings,
+                                    &buildingCount,
+                                    &wareDistribution,
+                                    units,
+                                    &unitCount,
+                                    &roads[0][0],
+                                    &landPlans[0][0],
+                                    &cornGrowthTimers[0][0]
+                                );
+
+                            if (loaded) {
+                                // Runtime-only accumulators are
+                                // rebuilt from the loaded
+                                // authoritative state.
+                                for (
+                                    int index = 0;
+                                    index < MAX_BUILDINGS;
+                                    ++index
+                                ) {
+                                    bakeryProductionTimers[
+                                        index
+                                    ] = 0.0f;
+
+                                    schoolStepTimers[
+                                        index
+                                    ] = 0.0f;
+                                }
+
+                                selectedTileX = -1;
+                                selectedTileY = -1;
+
+                                closeUnitUI(&unitUI);
+
+                                gameUI.selectedSchoolBuilding =
+                                    -1;
+
+                                gameUI.selectedStoreBuilding =
+                                    -1;
+
+                                gameUI.selectedBakeryBuilding =
+                                    -1;
+
+                                gameUI.selectedFarmBuilding =
+                                    -1;
+
+                                // Stay on Options after loading.
+                                gameUI.section =
+                                    GameUISection::Options;
+
+                                gameUI.optionsFocus = true;
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        // SAVE GAME
+                        //
+                        // Until the on-screen naming page is
+                        // added, Save Game owns one explicit
+                        // named entry. START no longer saves.
+                        char namedSavePath[
+                            SAVE_PATH_LENGTH
+                        ] = {};
+
+                        if (
+                            buildNamedSavePath(
+                                "Manual Save",
+                                namedSavePath,
+                                SAVE_PATH_LENGTH
+                            )
+                        ) {
+                            const bool saved =
+                                saveGame(
+                                    namedSavePath,
+                                    buildings,
+                                    buildingCount,
+                                    wareDistribution,
+                                    units,
+                                    unitCount,
+                                    &roads[0][0],
+                                    &landPlans[0][0],
+                                    &cornGrowthTimers[0][0]
+                                );
+
+                            if (saved) {
+                                refreshSaveFileList(
+                                    &optionsSaveFiles
+                                );
+
+                                // Keep Manual Save selected
+                                // even if directory ordering
+                                // later changes.
+                                for (
+                                    int index = 0;
+                                    index <
+                                        optionsSaveFiles.count;
+                                    ++index
+                                ) {
+                                    if (
+                                        std::strcmp(
+                                            optionsSaveFiles
+                                                .entries[index]
+                                                .path,
+                                            namedSavePath
+                                        ) == 0
+                                    ) {
+                                        selectSaveFile(
+                                            &optionsSaveFiles,
+                                            index
+                                        );
+
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case 2:
+                        // SETTINGS
+                        //
+                        // Input is intentionally consumed.
+                        // The dedicated Settings page will be
+                        // connected in the next UI cut.
+                        break;
+
+                    case 3:
+                        // QUIT MISSION
+                        running = false;
+                        break;
+
+                    default:
+                        break;
+                }
+
+                // Options owns this Cross/touch activation.
+                // It must not fall through to map selection,
+                // Build placement or another GUI.
+                crossPressed = false;
             }
         }
 
@@ -3325,15 +3977,9 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (startPressed) {
-            saveGame(
-                buildings,
-                buildingCount,
-                wareDistribution,
-                units,
-                unitCount
-            );
-        }
+        // START intentionally has no Save Game action.
+        // Manual saving is available only from Options.
+
         int analogX = (int)pad.lx - 128;
         int analogY = (int)pad.ly - 128;
 
