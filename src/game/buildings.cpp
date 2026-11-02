@@ -469,7 +469,8 @@ void renderBuildings(
     float cameraY,
     int tileSize,
     const KaMPlanResources* planResources,
-    bool bakeryHasInsideBaker
+    bool bakeryHasInsideBaker,
+    bool farmHasInsideFarmer
 )
 {
     for (int i = 0; i < buildingCount; ++i) {
@@ -1357,6 +1358,269 @@ void renderBuildings(
                 resources.bakeryBreadSupplyAtlas,
                 &breadSource,
                 &breadDestination
+            );
+        }
+
+
+        // =================================================
+        // FARM ORIGINAL FLAG1 OVERLAY
+        //
+        // Original houses.dat Farm house index 8:
+        //
+        // ha_Flagpole = empty
+        //
+        // ha_Flag1:
+        // Count  = 10
+        // Move   = (-1,-69)
+        //
+        // RX:
+        //
+        // 1175,1176,1177,1178,1169,
+        // 1170,1171,1172,1173,1174
+        //
+        // Shared atlas geometry:
+        //
+        // cell   = 44x15
+        // anchor = (-46,-18)
+        //
+        // ha_Flag2 = empty
+        // ha_Flag3 = empty
+        // =================================================
+
+        if (
+            building.type == BuildingType::Farm &&
+            isBuildingComplete(building) &&
+            resources.farmFlag1Atlas
+        ) {
+            constexpr int flagCellWidth = 44;
+            constexpr int flagCellHeight = 15;
+            constexpr int flagFrameCount = 10;
+
+            constexpr int flagAnchorX = -46;
+            constexpr int flagAnchorY = -18;
+
+            constexpr int flagMoveX = -1;
+            constexpr int flagMoveY = -69;
+
+            const int flagFrame =
+                (SDL_GetTicks() / 120) %
+                flagFrameCount;
+
+            SDL_Rect flagSource = {
+                flagFrame * flagCellWidth,
+                0,
+                flagCellWidth,
+                flagCellHeight
+            };
+
+            SDL_Rect flagDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        flagAnchorX +
+                            flagMoveX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        flagAnchorY +
+                            flagMoveY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    flagCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    flagCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.farmFlag1Atlas,
+                &flagSource,
+                &flagDestination
+            );
+        }
+
+
+        // =================================================
+        // FARM ORIGINAL CORN SUPPLYOUT
+        //
+        // Original Remake AddHouseSupply:
+        //
+        // SupplyOut[
+        //     1,
+        //     Min(resourceOut[0], 5)
+        // ]
+        //
+        // Farm SupplyOut[1]:
+        //
+        // 1 -> RX 387
+        // 2 -> RX 388
+        // 3 -> RX 389
+        // 4 -> RX 390
+        // 5 -> RX 391
+        //
+        // Atlas geometry:
+        //
+        // cell   = 45x34
+        // anchor = (20,-3)
+        //
+        // resourceOut[0] remains the only authoritative
+        // physical Corn inventory.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Farm &&
+            isBuildingComplete(building) &&
+            building.resourceOut[0] > 0 &&
+            resources.farmCornSupplyAtlas
+        ) {
+            constexpr int cornCellWidth = 45;
+            constexpr int cornCellHeight = 34;
+            constexpr int cornFrameCount = 5;
+
+            constexpr int cornAnchorX = 20;
+            constexpr int cornAnchorY = -3;
+
+            int cornCount =
+                building.resourceOut[0];
+
+            if (cornCount > cornFrameCount)
+                cornCount = cornFrameCount;
+
+            if (cornCount < 1)
+                cornCount = 1;
+
+            const int cornFrame =
+                cornCount - 1;
+
+            SDL_Rect cornSource = {
+                cornFrame * cornCellWidth,
+                0,
+                cornCellWidth,
+                cornCellHeight
+            };
+
+            SDL_Rect cornDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        cornAnchorX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        cornAnchorY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    cornCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    cornCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.farmCornSupplyAtlas,
+                &cornSource,
+                &cornDestination
+            );
+        }
+
+
+        // =================================================
+        // FARM ORIGINAL OCCUPIED IDLE OVERLAY
+        //
+        // Originalni Farm ha_Idle:
+        //
+        // count  = 30
+        // cell   = 18x17
+        // anchor = (8,-6)
+        // move   = (-16,-11)
+        //
+        // RX sequence uses 1083..1088.
+        //
+        // Overlay is active only while a real Farmer is
+        // physically hidden inside this completed Farm.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Farm &&
+            isBuildingComplete(building) &&
+            farmHasInsideFarmer &&
+            resources.farmIdleAtlas
+        ) {
+            constexpr int idleCellWidth = 18;
+            constexpr int idleCellHeight = 17;
+            constexpr int idleFrameCount = 30;
+
+            constexpr int idleAnchorX = 8;
+            constexpr int idleAnchorY = -6;
+
+            constexpr int idleMoveX = -16;
+            constexpr int idleMoveY = -11;
+
+            // Same 100 ms House cadence as Bakery idle.
+            const int idleFrame =
+                (SDL_GetTicks() / 100) %
+                idleFrameCount;
+
+            SDL_Rect idleSource = {
+                idleFrame * idleCellWidth,
+                0,
+                idleCellWidth,
+                idleCellHeight
+            };
+
+            SDL_Rect idleDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        idleAnchorX +
+                            idleMoveX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        idleAnchorY +
+                            idleMoveY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    idleCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    idleCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.farmIdleAtlas,
+                &idleSource,
+                &idleDestination
             );
         }
 
@@ -2405,6 +2669,24 @@ BuildingResources loadBuildingResources(
         "app0:assets/buildings/construction/farm/stone_atlas.bmp"
     );
 
+    resources.farmIdleAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/farm/runtime/idle_atlas.bmp"
+        );
+
+    resources.farmFlag1Atlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/farm/runtime/flag1_atlas.bmp"
+        );
+
+    resources.farmCornSupplyAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/farm/runtime/corn_supply_atlas.bmp"
+        );
+
     resources.school = loadColorKeyTexture(
         renderer,
         "app0:assets/buildings/school.bmp"
@@ -2504,6 +2786,18 @@ void destroyBuildingResources(
     SDL_DestroyTexture(resources->farmWoodAtlas);
     SDL_DestroyTexture(resources->farmStoneAtlas);
 
+    SDL_DestroyTexture(
+        resources->farmIdleAtlas
+    );
+
+    SDL_DestroyTexture(
+        resources->farmFlag1Atlas
+    );
+
+    SDL_DestroyTexture(
+        resources->farmCornSupplyAtlas
+    );
+
     SDL_DestroyTexture(resources->schoolWoodAtlas);
     SDL_DestroyTexture(resources->schoolStoneAtlas);
 
@@ -2552,6 +2846,9 @@ void destroyBuildingResources(
 
     resources->farmWoodAtlas = nullptr;
     resources->farmStoneAtlas = nullptr;
+    resources->farmIdleAtlas = nullptr;
+    resources->farmFlag1Atlas = nullptr;
+    resources->farmCornSupplyAtlas = nullptr;
 
     resources->schoolWoodAtlas = nullptr;
     resources->schoolStoneAtlas = nullptr;
@@ -2876,9 +3173,23 @@ bool canStoreAcceptWare(
             ware
         );
 
-    // Ochrana proti preteceni int.
+    // ---------------------------------------------
+    // KaMVita Store ware capacity.
+    //
+    // Stop transport before this individual ware stack
+    // exceeds the Store GUI capacity.
+    // ---------------------------------------------
+
+    if (
+        currentAmount >=
+            STORE_WARE_CAPACITY
+    ) {
+        return false;
+    }
+
     return amount <=
-        INT_MAX - currentAmount;
+        STORE_WARE_CAPACITY -
+            currentAmount;
 }
 
 

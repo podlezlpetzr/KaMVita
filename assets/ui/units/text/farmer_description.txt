@@ -1,0 +1,14 @@
+unit=farmer
+source=original KaM Remake text.eng.libx
+font=original KaM Remake game.fntx
+width=180
+height=118
+line_height=18
+line_gap=2
+line_count=6
+line_0=The farmer plants and
+line_1=harvests corn on the
+line_2=farm.
+line_3=
+line_4=He also produces wine in
+line_5=the vineyard.

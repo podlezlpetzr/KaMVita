@@ -285,6 +285,16 @@ struct UnitResources {
 
     SDL_Texture* serfWalkAtlas;
 
+    // Original KaM Serf ua_WalkArm.
+    //
+    // Empty-handed Serf renders:
+    //
+    //   ua_Walk
+    //   + ua_WalkArm
+    //
+    // Carrying Serf replaces this arm layer with SerfCarry.
+    SDL_Texture* serfWalkArmAtlas;
+
     // Originalni Serf ua_Eat / ua_Die.
     SDL_Texture* serfEatAtlas;
     SDL_Texture* serfDieAtlas;
@@ -301,6 +311,16 @@ struct UnitResources {
     // Originalni KaM SerfCarry[wt_Bread].
     // 8 smeru x 8 animacnich kroku.
     SDL_Texture* serfCarryBreadAtlas;
+
+    // Originalni KaM SerfCarry[wt_Corn].
+    //
+    // unit.dat WareTypeToIndex[wt_Corn] = 9.
+    // 8 smeru x 8 animacnich kroku.
+    //
+    // Atlas:
+    // cell   = 44x59
+    // anchor = (-18,-33)
+    SDL_Texture* serfCarryCornAtlas;
 
     // ========================================================
     // ORIGINAL KaM BAKER UNIT

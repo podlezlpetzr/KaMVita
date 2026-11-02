@@ -17,7 +17,13 @@ enum class GameUISection {
     School,
     Store,
     Bakery,
-    Unit
+    Unit,
+
+    // Detail dokoncene Farmy.
+    //
+    // Pridano na konec, aby zustaly zachovane
+    // existujici hodnoty GameUISection.
+    Farm
 };
 
 enum class GameUISchoolSelection {
@@ -103,6 +109,10 @@ struct GameUIState {
     // Aktualne otevrena dokoncena Bakery.
     // -1 = zadny Bakery panel.
     int selectedBakeryBuilding;
+
+    // Aktualne otevrena dokoncena Farm.
+    // -1 = zadny Farm panel.
+    int selectedFarmBuilding;
 
     // Store GUI focus.
     // 0..27 odpovida WareType a GUI 351..378.
@@ -200,6 +210,11 @@ struct SchoolUIResources {
     SDL_Texture* bakeryFlourText;
     SDL_Texture* bakeryLoavesText;
     SDL_Texture* bakeryDeliversX2Text;
+
+    // Originalni game.fntx Farm captiony.
+    SDL_Texture* farmDeliversX1Text;
+    SDL_Texture* farmCornText;
+
     SDL_Texture* professionText[SCHOOL_PROFESSION_COUNT];
 
     SchoolProfessionUIResources

@@ -1,0 +1,6 @@
+cell_width=44
+cell_height=59
+frame_count=8
+direction_count=8
+anchor_x=-18
+anchor_y=-33

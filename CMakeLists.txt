@@ -75,16 +75,23 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # ============================================================
-# KAMVITA MAIN SIZE OPTIMIZATION
+# KAMVITA VITA ELF SIZE OPTIMIZATION
 #
-# main.cpp obsahuje save migrace a runtime orchestration.
-# -Os snizuje velikost Vita ELF kodu bez zmeny gameplay.
+# Vita ELF ma RX a RW LOAD segmenty zarovnane na 0x10000.
+# vita-elf-create potrebuje na konci RX segmentu prostor pro
+# SCE metadata.
 #
-# Toto je cilena optimalizace pouze pro main.cpp.
+# main.cpp a game_ui.cpp jsou nejvetsi KaMVita orchestration
+# / UI translation units. Pro tyto dva soubory pouzivame -Os,
+# aby RX segment zustal pod hranici dalsiho LOAD segmentu.
+#
+# Jde pouze o compile-time size optimalizaci. Gameplay ani
+# GUI logika se tim nemeni.
 # ============================================================
 
 set_source_files_properties(
     src/main.cpp
+    src/ui/game_ui.cpp
     PROPERTIES
         COMPILE_OPTIONS "-Os"
 )
@@ -271,6 +278,10 @@ vita_create_vpk(
         assets/units/serf/walk_atlas.bmp
 
     FILE
+        assets/units/serf/complete/actions/walk_arm_atlas.bmp
+        assets/units/serf/complete/actions/walk_arm_atlas.bmp
+
+    FILE
         assets/units/serf/carry_stone_atlas.bmp
         assets/units/serf/carry_stone_atlas.bmp
 
@@ -285,6 +296,10 @@ vita_create_vpk(
     FILE
         assets/units/serf/carry_bread_atlas.bmp
         assets/units/serf/carry_bread_atlas.bmp
+
+    FILE
+        assets/units/serf/carry_corn_atlas.bmp
+        assets/units/serf/carry_corn_atlas.bmp
 
     FILE
         assets/ui/school/serf_icon.bmp
@@ -408,6 +423,18 @@ vita_create_vpk(
     FILE
         assets/buildings/bakery/runtime/idle_atlas.bmp
         assets/buildings/bakery/runtime/idle_atlas.bmp
+
+    FILE
+        assets/buildings/farm/runtime/idle_atlas.bmp
+        assets/buildings/farm/runtime/idle_atlas.bmp
+
+    FILE
+        assets/buildings/farm/runtime/flag1_atlas.bmp
+        assets/buildings/farm/runtime/flag1_atlas.bmp
+
+    FILE
+        assets/buildings/farm/runtime/corn_supply_atlas.bmp
+        assets/buildings/farm/runtime/corn_supply_atlas.bmp
 
     FILE
         assets/buildings/bakery/runtime/work2_atlas.bmp
@@ -603,6 +630,14 @@ vita_create_vpk(
     FILE
         assets/ui/bakery/text/delivers_x2.bmp
         assets/ui/bakery/text/delivers_x2.bmp
+
+    FILE
+        assets/ui/farm/text/delivers_x1.bmp
+        assets/ui/farm/text/delivers_x1.bmp
+
+    FILE
+        assets/ui/farm/text/corn.bmp
+        assets/ui/farm/text/corn.bmp
 
     FILE
         assets/ui/school/text/needs.bmp
@@ -1223,6 +1258,14 @@ vita_create_vpk(
     FILE
         assets/ui/units/text/worker_description.bmp
         assets/ui/units/text/worker_description.bmp
+
+    FILE
+        assets/ui/units/text/farmer_description.bmp
+        assets/ui/units/text/farmer_description.bmp
+
+    FILE
+        assets/ui/units/text/baker_description.bmp
+        assets/ui/units/text/baker_description.bmp
 
     # Originalni KaM Store GUI 351..378
 

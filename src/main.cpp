@@ -2033,6 +2033,93 @@ int main(int argc, char* argv[])
         }
 
 
+        // -------------------------------------------------
+        // FARM HOUSE HEADER INPUT
+        //
+        // Stejna geometrie jako Store/Bakery:
+        //
+        // Delivery = x 6..35,  y 249..278
+        // Repair   = x 36..65, y 249..278
+        //
+        // Renderer pouziva:
+        // Delivery 37/38
+        // Repair   39/40
+        // -------------------------------------------------
+
+        if (
+            gameUI.section ==
+                GameUISection::Farm &&
+            gameUI.selectedFarmBuilding >= 0 &&
+            gameUI.selectedFarmBuilding <
+                buildingCount
+        ) {
+            Building& farm =
+                buildings[
+                    gameUI.selectedFarmBuilding
+                ];
+
+            const bool validFarm =
+                farm.active &&
+                farm.type ==
+                    BuildingType::Farm &&
+                isBuildingComplete(farm);
+
+            if (validFarm && touchTapped) {
+                const SDL_Rect deliveryArea = {
+                    6,
+                    249,
+                    30,
+                    30
+                };
+
+                const SDL_Rect repairArea = {
+                    36,
+                    249,
+                    30,
+                    30
+                };
+
+                const bool insideDelivery =
+                    touchStartX >=
+                        deliveryArea.x &&
+                    touchStartX <
+                        deliveryArea.x +
+                            deliveryArea.w &&
+                    touchStartY >=
+                        deliveryArea.y &&
+                    touchStartY <
+                        deliveryArea.y +
+                            deliveryArea.h;
+
+                const bool insideRepair =
+                    touchStartX >=
+                        repairArea.x &&
+                    touchStartX <
+                        repairArea.x +
+                            repairArea.w &&
+                    touchStartY >=
+                        repairArea.y &&
+                    touchStartY <
+                        repairArea.y +
+                            repairArea.h;
+
+                if (insideDelivery) {
+                    farm.wareDeliveryEnabled =
+                        !farm.wareDeliveryEnabled;
+
+                    touchTapped = false;
+                    crossPressed = false;
+                } else if (insideRepair) {
+                    farm.repairEnabled =
+                        !farm.repairEnabled;
+
+                    touchTapped = false;
+                    crossPressed = false;
+                }
+            }
+        }
+
+
         // Originalni hlavni KaM toolbar 439..442.
         // Kazdy glyph prepina skutecnou GameUISection.
         if (
@@ -3713,7 +3800,9 @@ int main(int argc, char* argv[])
             circlePressed &&
             (
                 gameUI.section == GameUISection::School ||
-                gameUI.section == GameUISection::Store
+                gameUI.section == GameUISection::Store ||
+                gameUI.section == GameUISection::Bakery ||
+                gameUI.section == GameUISection::Farm
             )
         ) {
             gameUI.section =
@@ -3721,6 +3810,8 @@ int main(int argc, char* argv[])
 
             gameUI.selectedSchoolBuilding = -1;
             gameUI.selectedStoreBuilding = -1;
+            gameUI.selectedBakeryBuilding = -1;
+            gameUI.selectedFarmBuilding = -1;
             gameUI.buildSectionActive = true;
 
             circlePressed = false;
@@ -3785,6 +3876,7 @@ int main(int argc, char* argv[])
             bool openedStore = false;
             bool openedSchool = false;
             bool openedBakery = false;
+            bool openedFarm = false;
 
             if (
                 houseSelectScreenX >=
@@ -3849,6 +3941,12 @@ int main(int argc, char* argv[])
                     gameUI.storeWareSelection = 0;
 
                     gameUI.selectedSchoolBuilding =
+                        -1;
+
+                    gameUI.selectedBakeryBuilding =
+                        -1;
+
+                    gameUI.selectedFarmBuilding =
                         -1;
 
                     gameUI.buildSectionActive =
@@ -3939,6 +4037,9 @@ int main(int argc, char* argv[])
                         gameUI.selectedSchoolBuilding =
                             -1;
 
+                        gameUI.selectedFarmBuilding =
+                            -1;
+
                         gameUI.buildSectionActive =
                             false;
 
@@ -3959,9 +4060,200 @@ int main(int argc, char* argv[])
                     }
                 }
 
+                // -----------------------------------------
+                // Dokoncena Farm
+                //
+                // Stejny House-selection model jako Bakery,
+                // Store a School.
+                // -----------------------------------------
+
+                if (
+                    !openedStore &&
+                    !openedBakery
+                ) {
+                    for (
+                        int i = buildingCount - 1;
+                        i >= 0;
+                        --i
+                    ) {
+                        if (!buildings[i].active)
+                            continue;
+
+                        if (
+                            buildings[i].type !=
+                                BuildingType::Farm
+                        ) {
+                            continue;
+                        }
+
+                        if (
+                            !isBuildingComplete(
+                                buildings[i]
+                            )
+                        ) {
+                            continue;
+                        }
+
+                        // ---------------------------------
+                        // FARM VISUAL GUI HITBOX
+                        //
+                        // Original Farm stone sprite:
+                        //   175x124 KaM pixels.
+                        //
+                        // Logical footprint:
+                        //   4x3 tiles.
+                        //
+                        // KaM coordinates use 40 px tiles,
+                        // KaMVita uses TILE_SIZE = 32.
+                        //
+                        // The visual Farm sprite is therefore
+                        // wider and slightly taller than the
+                        // logical footprint.
+                        //
+                        // Use both:
+                        //   1. complete logical footprint,
+                        //   2. actual rendered sprite rectangle.
+                        // ---------------------------------
+
+                        constexpr int
+                            FARM_SPRITE_WIDTH = 175;
+
+                        constexpr int
+                            FARM_SPRITE_HEIGHT = 124;
+
+                        const int farmWidth =
+                            getBuildingWidth(
+                                buildings[i].type
+                            );
+
+                        const int farmHeight =
+                            getBuildingHeight(
+                                buildings[i].type
+                            );
+
+                        const int footprintScreenX =
+                            buildings[i].tileX *
+                                TILE_SIZE -
+                            (int)cameraX;
+
+                        const int footprintScreenY =
+                            buildings[i].tileY *
+                                TILE_SIZE -
+                            (int)cameraY;
+
+                        const int footprintPixelWidth =
+                            farmWidth *
+                            TILE_SIZE;
+
+                        const int footprintPixelHeight =
+                            farmHeight *
+                            TILE_SIZE;
+
+                        // Same 40 -> TILE_SIZE conversion
+                        // used by the House renderer.
+                        const int scaledFarmWidth =
+                            (
+                                FARM_SPRITE_WIDTH *
+                                    TILE_SIZE +
+                                20
+                            ) / 40;
+
+                        const int scaledFarmHeight =
+                            (
+                                FARM_SPRITE_HEIGHT *
+                                    TILE_SIZE +
+                                20
+                            ) / 40;
+
+                        // Farm has no additional visual X
+                        // correction. It is centered on its
+                        // logical footprint.
+                        const int farmVisualX =
+                            footprintScreenX +
+                            (
+                                footprintPixelWidth -
+                                scaledFarmWidth
+                            ) / 2;
+
+                        const int farmVisualY =
+                            footprintScreenY +
+                            footprintPixelHeight -
+                            scaledFarmHeight;
+
+                        const bool insideFarmVisual =
+                            houseSelectScreenX >=
+                                farmVisualX &&
+                            houseSelectScreenX <
+                                farmVisualX +
+                                    scaledFarmWidth &&
+                            houseSelectScreenY >=
+                                farmVisualY &&
+                            houseSelectScreenY <
+                                farmVisualY +
+                                    scaledFarmHeight;
+
+                        const bool insideFarmFootprint =
+                            houseSelectTileX >=
+                                buildings[i].tileX &&
+                            houseSelectTileX <
+                                buildings[i].tileX +
+                                    farmWidth &&
+                            houseSelectTileY >=
+                                buildings[i].tileY &&
+                            houseSelectTileY <
+                                buildings[i].tileY +
+                                    farmHeight;
+
+                        const bool insideFarm =
+                            insideFarmVisual ||
+                            insideFarmFootprint;
+
+                        if (!insideFarm)
+                            continue;
+
+                        gameUI.section =
+                            GameUISection::Farm;
+
+                        gameUI.selectedFarmBuilding =
+                            i;
+
+                        gameUI.selectedStoreBuilding =
+                            -1;
+
+                        gameUI.selectedBakeryBuilding =
+                            -1;
+
+                        gameUI.selectedSchoolBuilding =
+                            -1;
+
+                        gameUI.buildSectionActive =
+                            false;
+
+                        gameUI.toolbarFocus =
+                            false;
+
+                        openedFarm = true;
+
+                        selectedTileX = -1;
+                        selectedTileY = -1;
+
+                        crossPressed = false;
+
+                        if (touchTapped)
+                            touchTapped = false;
+
+                        break;
+                    }
+                }
+
+
                 // Nakonec zkusime dokoncenou School.
 
-            if (!openedStore && !openedBakery) {
+            if (
+                !openedStore &&
+                !openedBakery &&
+                !openedFarm
+            ) {
             for (int i = buildingCount - 1;
                  i >= 0;
                  --i) {
@@ -4010,6 +4302,8 @@ int main(int argc, char* argv[])
 
                 gameUI.selectedSchoolBuilding = i;
                 gameUI.selectedStoreBuilding = -1;
+                gameUI.selectedBakeryBuilding = -1;
+                gameUI.selectedFarmBuilding = -1;
 
                 gameUI.buildSectionActive = false;
 
@@ -4030,6 +4324,7 @@ int main(int argc, char* argv[])
             if (
                 !openedStore &&
                 !openedBakery &&
+                !openedFarm &&
                 !openedSchool &&
                 gameUI.section ==
                     GameUISection::Build &&
@@ -4366,6 +4661,27 @@ int main(int argc, char* argv[])
                     buildingIndex
                 ) {
                     gameUI.selectedSchoolBuilding = -1;
+                }
+
+                if (
+                    gameUI.selectedStoreBuilding ==
+                    buildingIndex
+                ) {
+                    gameUI.selectedStoreBuilding = -1;
+                }
+
+                if (
+                    gameUI.selectedBakeryBuilding ==
+                    buildingIndex
+                ) {
+                    gameUI.selectedBakeryBuilding = -1;
+                }
+
+                if (
+                    gameUI.selectedFarmBuilding ==
+                    buildingIndex
+                ) {
+                    gameUI.selectedFarmBuilding = -1;
                 }
 
                 selectedTileX = -1;
@@ -6324,6 +6640,7 @@ int main(int argc, char* argv[])
         ) {
             if (entry.kind == 0) {
                 bool bakeryHasInsideBaker = false;
+                bool farmHasInsideFarmer = false;
 
                 const Building& renderBuilding =
                     buildings[entry.index];
@@ -6362,6 +6679,42 @@ int main(int argc, char* argv[])
                     }
                 }
 
+                if (
+                    renderBuilding.type ==
+                        BuildingType::Farm &&
+                    renderBuilding.active &&
+                    isBuildingComplete(
+                        renderBuilding
+                    )
+                ) {
+                    for (
+                        int farmerIndex = 0;
+                        farmerIndex < unitCount;
+                        ++farmerIndex
+                    ) {
+                        const Unit& farmer =
+                            units[farmerIndex];
+
+                        if (
+                            farmer.active &&
+                            farmer.type ==
+                                UnitType::Farmer &&
+                            !farmer.visible &&
+                            farmer.targetBuilding ==
+                                entry.index &&
+                            (
+                                farmer.state ==
+                                    UnitState::Idle ||
+                                farmer.state ==
+                                    UnitState::Working
+                            )
+                        ) {
+                            farmHasInsideFarmer = true;
+                            break;
+                        }
+                    }
+                }
+
                 renderBuildings(
                     renderer,
                     buildingResources,
@@ -6371,7 +6724,8 @@ int main(int argc, char* argv[])
                     cameraY,
                     TILE_SIZE,
                     &kamPlanResources,
-                    bakeryHasInsideBaker
+                    bakeryHasInsideBaker,
+                    farmHasInsideFarmer
                 );
             } else {
                 renderUnits(

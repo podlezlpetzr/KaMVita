@@ -1,0 +1,13 @@
+unit=baker
+source=original KaM Remake text.eng.libx
+font=original KaM Remake game.fntx
+width=180
+height=98
+line_height=18
+line_gap=2
+line_count=5
+line_0=The baker grinds corn
+line_1=into flour in the mill.
+line_2=
+line_3=He also bakes bread in the
+line_4=bakery.

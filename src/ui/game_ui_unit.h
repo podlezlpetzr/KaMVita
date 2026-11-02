@@ -23,8 +23,17 @@ struct UnitUIResources {
     SDL_Texture* workerScroll;
     SDL_Texture* serfScroll;
 
+    // Originalni gRes.Units[].GUIScroll:
+    //
+    // Farmer = GUI 525
+    // Baker  = GUI 527
+    SDL_Texture* farmerScroll;
+    SDL_Texture* bakerScroll;
+
     SDL_Texture* workerName;
     SDL_Texture* serfName;
+    SDL_Texture* farmerName;
+    SDL_Texture* bakerName;
 
     // Original KaM fnt_Grey English Unit text.
     SDL_Texture* conditionText;
@@ -42,6 +51,11 @@ struct UnitUIResources {
 
     SDL_Texture* serfDescription;
     SDL_Texture* workerDescription;
+
+    // Originalni KaM Remake descriptions vykreslene
+    // originalnim game.fntx.
+    SDL_Texture* farmerDescription;
+    SDL_Texture* bakerDescription;
 };
 
 void initUnitUI(

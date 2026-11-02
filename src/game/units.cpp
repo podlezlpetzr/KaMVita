@@ -65,6 +65,12 @@ UnitResources loadUnitResources(
         "app0:assets/units/serf/walk_atlas.bmp"
     );
 
+    resources.serfWalkArmAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/complete/actions/walk_arm_atlas.bmp"
+        );
+
     resources.serfCarryStoneAtlas =
         loadColorKeyTexture(
             renderer,
@@ -87,6 +93,12 @@ UnitResources loadUnitResources(
         loadColorKeyTexture(
             renderer,
             "app0:assets/units/serf/carry_bread_atlas.bmp"
+        );
+
+    resources.serfCarryCornAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/units/serf/carry_corn_atlas.bmp"
         );
 
     // =====================================================
@@ -223,10 +235,12 @@ void destroyUnitResources(
     SDL_DestroyTexture(resources->workerDigAtlas);
     SDL_DestroyTexture(resources->workerPaveAtlas);
     SDL_DestroyTexture(resources->serfWalkAtlas);
+    SDL_DestroyTexture(resources->serfWalkArmAtlas);
     SDL_DestroyTexture(resources->serfCarryStoneAtlas);
     SDL_DestroyTexture(resources->serfCarryGoldAtlas);
     SDL_DestroyTexture(resources->serfCarryFlourAtlas);
     SDL_DestroyTexture(resources->serfCarryBreadAtlas);
+    SDL_DestroyTexture(resources->serfCarryCornAtlas);
 
     SDL_DestroyTexture(resources->workerEatAtlas);
     SDL_DestroyTexture(resources->workerDieAtlas);
@@ -257,10 +271,12 @@ void destroyUnitResources(
     resources->workerDigAtlas = nullptr;
     resources->workerPaveAtlas = nullptr;
     resources->serfWalkAtlas = nullptr;
+    resources->serfWalkArmAtlas = nullptr;
     resources->serfCarryStoneAtlas = nullptr;
     resources->serfCarryGoldAtlas = nullptr;
     resources->serfCarryFlourAtlas = nullptr;
     resources->serfCarryBreadAtlas = nullptr;
+    resources->serfCarryCornAtlas = nullptr;
 
     resources->workerEatAtlas = nullptr;
     resources->workerDieAtlas = nullptr;
@@ -1017,6 +1033,77 @@ void renderUnits(
         );
 
         // =================================================
+        // ORIGINAL KaM SERF WALK ARM LAYER
+        //
+        // Remake TKMUnitSerf.Paint:
+        //
+        // if Carry <> wt_None then
+        //     AddUnitCarry(...)
+        // else
+        //     AddUnit(... ua_WalkArm ...)
+        //
+        // The base ua_Walk body does not contain the complete
+        // empty-hand arm animation.
+        // =================================================
+
+        if (
+            isSerf &&
+            units[i].carriedWare ==
+                WareType::Count &&
+            resources.serfWalkArmAtlas
+        ) {
+            constexpr int armCellWidth = 29;
+            constexpr int armCellHeight = 33;
+
+            constexpr int armAnchorX = -15;
+            constexpr int armAnchorY = -32;
+
+            int armFrame =
+                units[i].animationFrame % 8;
+
+            if (armFrame < 0)
+                armFrame += 8;
+
+            SDL_Rect armSource = {
+                armFrame * armCellWidth,
+                direction * armCellHeight,
+                armCellWidth,
+                armCellHeight
+            };
+
+            SDL_Rect armDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX +
+                    scaleKaMUnitPixel(
+                        armAnchorX
+                    ) +
+                    doorwaySlideX,
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    scaleKaMUnitPixel(
+                        armAnchorY
+                    ) +
+                    doorwaySlideY,
+
+                scaleKaMUnitPixel(
+                    armCellWidth
+                ),
+
+                scaleKaMUnitPixel(
+                    armCellHeight
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.serfWalkArmAtlas,
+                &armSource,
+                &armDestination
+            );
+        }
+
+        // =================================================
         // ORIGINAL KaM FARMER WALK TOOL LAYER
         //
         // Remake KM_Units.pas:
@@ -1106,6 +1193,117 @@ void renderUnits(
                 &toolDestination
             );
         }
+
+        // =================================================
+        // ORIGINAL KaM FARMER WALK BOOTY LAYER
+        //
+        // Remake harvest return renders two layers:
+        //
+        //   ua_Walk
+        //   + ua_WalkBooty
+        //
+        // carriedWare == Corn is the authoritative cargo
+        // state until the Farmer enters his home Farm.
+        // =================================================
+
+        const bool farmerCarriesCorn =
+            isFarmer &&
+            units[i].carriedWare ==
+                WareType::Corn &&
+            (
+                units[i].state ==
+                    UnitState::Walking ||
+                units[i].state ==
+                    UnitState::ApproachingBuilding ||
+                units[i].state ==
+                    UnitState::EnteringBuilding
+            );
+
+        if (
+            farmerCarriesCorn &&
+            resources.farmerWalkBootyAtlas
+        ) {
+            int bootyAtlasWidth = 0;
+            int bootyAtlasHeight = 0;
+
+            const int queryResult =
+                SDL_QueryTexture(
+                    resources.farmerWalkBootyAtlas,
+                    nullptr,
+                    nullptr,
+                    &bootyAtlasWidth,
+                    &bootyAtlasHeight
+                );
+
+            if (
+                queryResult == 0 &&
+                bootyAtlasWidth > 0 &&
+                bootyAtlasHeight > 0 &&
+                bootyAtlasWidth % 8 == 0 &&
+                bootyAtlasHeight % 8 == 0
+            ) {
+                const int bootyCellWidth =
+                    bootyAtlasWidth / 8;
+
+                const int bootyCellHeight =
+                    bootyAtlasHeight / 8;
+
+                int bootyFrame =
+                    units[i].animationFrame % 8;
+
+                if (bootyFrame < 0)
+                    bootyFrame += 8;
+
+                SDL_Rect bootySource = {
+                    bootyFrame *
+                        bootyCellWidth,
+                    direction *
+                        bootyCellHeight,
+                    bootyCellWidth,
+                    bootyCellHeight
+                };
+
+                // Original action layer shares the Farmer
+                // walking foot point.
+                const int bootyAnchorX =
+                    -(bootyCellWidth / 2);
+
+                const int bootyAnchorY =
+                    -bootyCellHeight + 3;
+
+                SDL_Rect bootyDestination = {
+                    (int)units[i].worldX -
+                        (int)cameraX +
+                        scaleKaMUnitPixel(
+                            bootyAnchorX
+                        ) +
+                        doorwaySlideX,
+
+                    (int)units[i].worldY -
+                        (int)cameraY +
+                        scaleKaMUnitPixel(
+                            bootyAnchorY
+                        ) +
+                        doorwaySlideY,
+
+                    scaleKaMUnitPixel(
+                        bootyCellWidth
+                    ),
+
+                    scaleKaMUnitPixel(
+                        bootyCellHeight
+                    )
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    resources.farmerWalkBootyAtlas,
+                    &bootySource,
+                    &bootyDestination
+                );
+            }
+        }
+
 
         // =================================================
         // ORIGINAL KaM SERF GOLD CARRY LAYER
@@ -1244,6 +1442,100 @@ void renderUnits(
                 resources.serfCarryBreadAtlas,
                 &breadSource,
                 &breadDestination
+            );
+        }
+
+
+        // =================================================
+        // ORIGINAL KaM SERF CORN CARRY LAYER
+        //
+        // unit.dat:
+        // WareTypeToIndex[wt_Corn] = 9.
+        //
+        // Atlas:
+        // cell   = 44x59
+        // anchor = (-18,-33)
+        // 8 smeru x 8 kroku.
+        //
+        // Vrstva se kresli pres standardni Serf walk.
+        // Doorway slide je sdileny se vsemi carry vrstvami.
+        // =================================================
+
+        if (
+            isSerf &&
+            units[i].carriedWare ==
+                WareType::Corn &&
+            resources.serfCarryCornAtlas
+        ) {
+            constexpr int cornCellWidth = 44;
+            constexpr int cornCellHeight = 59;
+
+            constexpr int cornAnchorX = -18;
+            constexpr int cornAnchorY = -33;
+
+            int cornFrame =
+                units[i].animationFrame % 8;
+
+            if (cornFrame < 0)
+                cornFrame += 8;
+
+            SDL_Rect cornSource = {
+                cornFrame * cornCellWidth,
+                direction * cornCellHeight,
+                cornCellWidth,
+                cornCellHeight
+            };
+
+            // Original unit.dat SerfCarry[wt_Corn].
+            //
+            // Only North has an animation-level offset:
+            //
+            //   MoveX = -10
+            //   MoveY = -30
+            //
+            // Remake AddUnitCarry applies MoveX/MoveY only
+            // to the carry sprite, never to the Serf body.
+            const int cornMoveX =
+                direction == 0
+                    ? -10
+                    : 0;
+
+            const int cornMoveY =
+                direction == 0
+                    ? -30
+                    : 0;
+
+            SDL_Rect cornDestination = {
+                (int)units[i].worldX -
+                    (int)cameraX +
+                    scaleKaMUnitPixel(
+                        cornAnchorX +
+                            cornMoveX
+                    ) +
+                    doorwaySlideX,
+
+                (int)units[i].worldY -
+                    (int)cameraY +
+                    scaleKaMUnitPixel(
+                        cornAnchorY +
+                            cornMoveY
+                    ) +
+                    doorwaySlideY,
+
+                scaleKaMUnitPixel(
+                    cornCellWidth
+                ),
+
+                scaleKaMUnitPixel(
+                    cornCellHeight
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.serfCarryCornAtlas,
+                &cornSource,
+                &cornDestination
             );
         }
 
@@ -1622,6 +1914,19 @@ static bool canBuildingProvideTransportWare(
         return source.resourceOut[0] > 0;
     }
 
+    // FARM CORN TRANSPORT SOURCE
+    //
+    // Farm resourceOut[0] is the authoritative Corn stock.
+    //
+    // Assignment only checks availability. It does not
+    // remove Corn before the Serf physically enters Farm.
+    if (
+        source.type == BuildingType::Farm &&
+        ware == WareType::Corn
+    ) {
+        return source.resourceOut[0] > 0;
+    }
+
     return false;
 }
 
@@ -1654,6 +1959,25 @@ static bool takeBuildingTransportWare(
     if (
         source->type == BuildingType::Bakery &&
         ware == WareType::Bread
+    ) {
+        --source->resourceOut[0];
+        return true;
+    }
+
+    // FARM CORN PHYSICAL PICKUP
+    //
+    // takeBuildingTransportWare() is called only after the
+    // Serf physically enters the source House.
+    //
+    // The same resourceOut[0] is observed by:
+    //
+    // - Farmer output-capacity guard,
+    // - Farm GUI,
+    // - Farm world SupplyOut,
+    // - Serf logistics.
+    if (
+        source->type == BuildingType::Farm &&
+        ware == WareType::Corn
     ) {
         --source->resourceOut[0];
         return true;
@@ -3328,12 +3652,14 @@ void updateUnits(
             bool pickedUp = false;
 
             // =================================================
-            // BAKERY BREAD MUST ENTER SOURCE HOUSE
+            // BAKERY BREAD / FARM CORN
+            // MUST ENTER SOURCE HOUSE
             //
             // Store zachovava existujici fast-path pickup,
             // kdy Serf muze uz stat na approach tile.
             //
-            // Bakery Bread ale musi projit fyzickym doorway:
+            // Bakery Bread a Farm Corn musi projit
+            // fyzickym doorway:
             //
             // approach -> EnteringBuilding -> pickup uvnitr
             // -> LeavingBuilding.
@@ -3344,12 +3670,24 @@ void updateUnits(
 
             const bool sourceRequiresPhysicalEntry =
                 validSource &&
-                buildings[
-                    unit.sourceBuilding
-                ].type ==
-                    BuildingType::Bakery &&
-                unit.assignedWare ==
-                    WareType::Bread;
+                (
+                    (
+                        buildings[
+                            unit.sourceBuilding
+                        ].type ==
+                            BuildingType::Bakery &&
+                        unit.assignedWare ==
+                            WareType::Bread
+                    ) ||
+                    (
+                        buildings[
+                            unit.sourceBuilding
+                        ].type ==
+                            BuildingType::Farm &&
+                        unit.assignedWare ==
+                            WareType::Corn
+                    )
+                );
 
             if (
                 validSource &&
@@ -3504,6 +3842,7 @@ void updateUnits(
         // 1. Store Gold   -> School
         // 2. Store Flour  -> Bakery
         // 3. Bakery Bread -> Store
+        // 4. Farm Corn    -> Store
         //
         // Flour kapacita je rezervovana pred zahajenim
         // cesty. Gold zachovava dosavadni School runtime.
@@ -3522,7 +3861,8 @@ void updateUnits(
             static const WareType transportWares[] = {
                 WareType::Gold,
                 WareType::Flour,
-                WareType::Bread
+                WareType::Bread,
+                WareType::Corn
             };
 
             for (
@@ -3953,6 +4293,34 @@ void updateUnits(
                     unit.visible = false;
                     unit.state = UnitState::Idle;
 
+                    // -------------------------------------
+                    // FARMER DEPOSITS HARVESTED CORN
+                    //
+                    // This branch executes only after the
+                    // full physical doorway entry.
+                    //
+                    // Farm output mapping:
+                    //
+                    //   resourceOut[0] = Corn
+                    //
+                    // Cargo is cleared only after the Farm
+                    // inventory has received it.
+                    // -------------------------------------
+
+                    if (
+                        unit.carriedWare ==
+                            WareType::Corn
+                    ) {
+                        ++buildings[
+                            unit.targetBuilding
+                        ].resourceOut[0];
+
+                        unit.carriedWare =
+                            WareType::Count;
+                    }
+
+                    // Farmer is now inside and available for
+                    // the next Farm work-plan selection.
                     unit.workAction =
                         UnitWorkAction::None;
 
@@ -4351,6 +4719,20 @@ void updateUnits(
                 unit.state == UnitState::Idle &&
                 unit.workAction ==
                     UnitWorkAction::None &&
+
+                // Original KaM Farm output capacity is
+                // MAX_WARES_IN_HOUSE = 5.
+                //
+                // A full Farm must not reserve another
+                // FieldRipe or start FarmerToHarvest.
+                //
+                // This condition guards only harvesting.
+                // The following sow/resow block remains
+                // independent and continues to run.
+                buildings[
+                    unit.targetBuilding
+                ].resourceOut[0] < 5 &&
+
                 landPlans
             ) {
                 const Building& farm =
@@ -4541,7 +4923,11 @@ void updateUnits(
             // FARMER FIND EMPTY CORN FIELD
             //
             // Original KaM Farmer MiningRange = 10.
-            // FieldComplete corresponds to FieldAge 0.
+            //
+            // FieldComplete = new empty constructed field.
+            // FieldCut      = empty field after harvest.
+            //
+            // Both can be sown.
             // -------------------------------------------------
 
             if (
@@ -4584,14 +4970,21 @@ void updateUnits(
                         fieldX < mapWidth;
                         ++fieldX
                     ) {
+                        const LandPlanState
+                            fieldState =
+                                landPlans[
+                                    fieldY *
+                                        mapWidth +
+                                    fieldX
+                                ];
+
                         if (
-                            landPlans[
-                                fieldY *
-                                    mapWidth +
-                                fieldX
-                            ] !=
+                            fieldState !=
                                 LandPlanState::
-                                    FieldComplete
+                                    FieldComplete &&
+                            fieldState !=
+                                LandPlanState::
+                                    FieldCut
                         ) {
                             continue;
                         }
@@ -4858,7 +5251,9 @@ void updateUnits(
 
             if (
                 field !=
-                    LandPlanState::FieldComplete
+                    LandPlanState::FieldComplete &&
+                field !=
+                    LandPlanState::FieldCut
             ) {
                 unit.targetRoadX = -1;
                 unit.targetRoadY = -1;
@@ -4973,13 +5368,20 @@ void updateUnits(
                     fieldX < mapWidth;
                     ++fieldX
                 ) {
+                    const LandPlanState
+                        fieldState =
+                            landPlans[
+                                fieldY * mapWidth +
+                                fieldX
+                            ];
+
                     if (
-                        landPlans[
-                            fieldY * mapWidth +
-                            fieldX
-                        ] !=
+                        fieldState !=
                             LandPlanState::
-                                FieldComplete
+                                FieldComplete &&
+                        fieldState !=
+                            LandPlanState::
+                                FieldCut
                     ) {
                         continue;
                     }
@@ -5071,8 +5473,14 @@ void updateUnits(
         // =================================================
         // FARMER RETURN TO FARM
         //
-        // Farmer po zaseti jde zpet na approach tile
-        // sve rezervovane domovske Farmy.
+        // Farmer se vraci na approach tile sve
+        // rezervovane domovske Farmy:
+        //
+        // - po seti bez nakladu,
+        // - po sklizni s carriedWare == Corn.
+        //
+        // Sklizeny Corn se ulozi az po fyzickem
+        // dokonceni doorway vstupu do Farmy.
         // =================================================
 
         if (
@@ -5412,10 +5820,20 @@ void updateUnits(
                 unit.targetRoadX = -1;
                 unit.targetRoadY = -1;
 
-                // First isolated harvest checkpoint:
-                // Farmer stays outside without Corn output.
+                // Original Farmer harvest output:
+                //
+                // ResourcePlan(... wt_Corn)
+                // ActionWalkFrom = ua_WalkBooty
+                //
+                // Corn remains attached to the Farmer until
+                // physical doorway entry into the home Farm
+                // has completed.
+                unit.carriedWare =
+                    WareType::Corn;
+
                 unit.workAction =
-                    UnitWorkAction::None;
+                    UnitWorkAction::
+                        FarmerReturnFarm;
 
                 unit.workTimer = 0.0f;
                 unit.animationFrame = 0;
@@ -5430,8 +5848,14 @@ void updateUnits(
         // FARMER SOW FIELD
         //
         // Original ua_Work1 uses 10 frames.
+        //
+        // Initial sow:
         // FieldComplete -> FieldSown.
         // Terrain 62    -> Terrain 61.
+        //
+        // Resow after harvest:
+        // FieldCut      -> FieldSown.
+        // Terrain 63    -> Terrain 61.
         // =================================================
 
         if (
@@ -5472,7 +5896,9 @@ void updateUnits(
 
             if (
                 field !=
-                    LandPlanState::FieldComplete
+                    LandPlanState::FieldComplete &&
+                field !=
+                    LandPlanState::FieldCut
             ) {
                 unit.state = UnitState::Idle;
 
@@ -5604,14 +6030,21 @@ void updateUnits(
                             fieldX < mapWidth;
                             ++fieldX
                         ) {
+                            const LandPlanState
+                                fieldState =
+                                    landPlans[
+                                        fieldY *
+                                            mapWidth +
+                                        fieldX
+                                    ];
+
                             if (
-                                landPlans[
-                                    fieldY *
-                                        mapWidth +
-                                    fieldX
-                                ] !=
+                                fieldState !=
                                     LandPlanState::
-                                        FieldComplete
+                                        FieldComplete &&
+                                fieldState !=
+                                    LandPlanState::
+                                        FieldCut
                             ) {
                                 continue;
                             }

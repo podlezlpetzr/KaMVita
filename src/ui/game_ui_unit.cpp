@@ -89,6 +89,20 @@ UnitUIResources loadUnitUIResources(
             "serf_scroll.bmp"
         );
 
+    resources.farmerScroll =
+        loadUnitUIColorKeyTexture(
+            renderer,
+            "app0:assets/ui/school/"
+            "professions/farmer/scroll.bmp"
+        );
+
+    resources.bakerScroll =
+        loadUnitUIColorKeyTexture(
+            renderer,
+            "app0:assets/ui/school/"
+            "professions/baker/scroll.bmp"
+        );
+
     resources.workerName =
         loadUnitUIColorKeyTexture(
             renderer,
@@ -101,6 +115,20 @@ UnitUIResources loadUnitUIResources(
             renderer,
             "app0:assets/ui/school/text/"
             "professions/serf.bmp"
+        );
+
+    resources.farmerName =
+        loadUnitUIColorKeyTexture(
+            renderer,
+            "app0:assets/ui/school/text/"
+            "professions/farmer.bmp"
+        );
+
+    resources.bakerName =
+        loadUnitUIColorKeyTexture(
+            renderer,
+            "app0:assets/ui/school/text/"
+            "professions/baker.bmp"
         );
 
     resources.conditionText =
@@ -169,6 +197,18 @@ UnitUIResources loadUnitUIResources(
             "app0:assets/ui/units/text/worker_description.bmp"
         );
 
+    resources.farmerDescription =
+        loadUnitUIColorKeyTexture(
+            renderer,
+            "app0:assets/ui/units/text/farmer_description.bmp"
+        );
+
+    resources.bakerDescription =
+        loadUnitUIColorKeyTexture(
+            renderer,
+            "app0:assets/ui/units/text/baker_description.bmp"
+        );
+
     return resources;
 }
 
@@ -201,11 +241,27 @@ void destroyUnitUIResources(
     );
 
     SDL_DestroyTexture(
+        resources->farmerScroll
+    );
+
+    SDL_DestroyTexture(
+        resources->bakerScroll
+    );
+
+    SDL_DestroyTexture(
         resources->workerName
     );
 
     SDL_DestroyTexture(
         resources->serfName
+    );
+
+    SDL_DestroyTexture(
+        resources->farmerName
+    );
+
+    SDL_DestroyTexture(
+        resources->bakerName
     );
 
     SDL_DestroyTexture(
@@ -252,6 +308,14 @@ void destroyUnitUIResources(
         resources->workerDescription
     );
 
+    SDL_DestroyTexture(
+        resources->farmerDescription
+    );
+
+    SDL_DestroyTexture(
+        resources->bakerDescription
+    );
+
     *resources = {};
 }
 
@@ -284,20 +348,37 @@ int hitTestUnit(
             continue;
         }
 
-        const bool serf =
-            unit.type == UnitType::Serf;
+        int selectionWidth = 56;
+        int selectionHeight = 50;
+        int anchorX = -21;
+        int anchorY = -42;
 
-        const int selectionWidth =
-            serf ? 43 : 56;
+        switch (unit.type) {
+            case UnitType::Serf:
+                selectionWidth = 43;
+                selectionHeight = 47;
+                anchorX = -18;
+                anchorY = -38;
+                break;
 
-        const int selectionHeight =
-            serf ? 47 : 50;
+            case UnitType::Farmer:
+                selectionWidth = 40;
+                selectionHeight = 46;
+                anchorX = -19;
+                anchorY = -38;
+                break;
 
-        const int anchorX =
-            serf ? -18 : -21;
+            case UnitType::Baker:
+                selectionWidth = 36;
+                selectionHeight = 47;
+                anchorX = -15;
+                anchorY = -39;
+                break;
 
-        const int anchorY =
-            serf ? -38 : -42;
+            case UnitType::Worker:
+            default:
+                break;
+        }
 
         SDL_Rect area = {
             (int)unit.worldX -
@@ -409,10 +490,20 @@ static SDL_Texture* getUnitScroll(
     UnitType type
 )
 {
-    return
-        type == UnitType::Serf
-            ? resources.serfScroll
-            : resources.workerScroll;
+    switch (type) {
+        case UnitType::Serf:
+            return resources.serfScroll;
+
+        case UnitType::Farmer:
+            return resources.farmerScroll;
+
+        case UnitType::Baker:
+            return resources.bakerScroll;
+
+        case UnitType::Worker:
+        default:
+            return resources.workerScroll;
+    }
 }
 
 
@@ -421,10 +512,20 @@ static SDL_Texture* getUnitName(
     UnitType type
 )
 {
-    return
-        type == UnitType::Serf
-            ? resources.serfName
-            : resources.workerName;
+    switch (type) {
+        case UnitType::Serf:
+            return resources.serfName;
+
+        case UnitType::Farmer:
+            return resources.farmerName;
+
+        case UnitType::Baker:
+            return resources.bakerName;
+
+        case UnitType::Worker:
+        default:
+            return resources.workerName;
+    }
 }
 
 
@@ -440,6 +541,24 @@ static SDL_Texture* getUnitActivityText(
         unit.state == UnitState::LeavingBuilding
     ) {
         return resources.walkingText;
+    }
+
+    if (
+        unit.type == UnitType::Farmer
+    ) {
+        switch (unit.workAction) {
+            case UnitWorkAction::FarmerSow:
+            case UnitWorkAction::FarmerToHarvest:
+            case UnitWorkAction::FarmerHarvest:
+                return resources.fieldText;
+
+            case UnitWorkAction::FarmerToField:
+            case UnitWorkAction::FarmerReturnFarm:
+                return resources.walkingText;
+
+            default:
+                break;
+        }
     }
 
     if (
@@ -478,10 +597,20 @@ static SDL_Texture* getUnitDescriptionText(
     UnitType type
 )
 {
-    return
-        type == UnitType::Serf
-            ? resources.serfDescription
-            : resources.workerDescription;
+    switch (type) {
+        case UnitType::Serf:
+            return resources.serfDescription;
+
+        case UnitType::Farmer:
+            return resources.farmerDescription;
+
+        case UnitType::Baker:
+            return resources.bakerDescription;
+
+        case UnitType::Worker:
+        default:
+            return resources.workerDescription;
+    }
 }
 
 

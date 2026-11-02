@@ -167,6 +167,12 @@ struct Building {
 
 static constexpr int MAX_BUILDINGS = 32;
 
+// KaMVita Store capacity for one ware type.
+//
+// Store GUI represents one ware stack up to 32 pieces.
+// Delivery must stop before exceeding that visible stock.
+static constexpr int STORE_WARE_CAPACITY = 32;
+
 
 // ============================================================
 // STORE WARE API
@@ -290,7 +296,8 @@ void renderBuildings(
     float cameraY,
     int tileSize,
     const KaMPlanResources* planResources,
-    bool bakeryHasInsideBaker
+    bool bakeryHasInsideBaker,
+    bool farmHasInsideFarmer
 );
 
 
@@ -372,6 +379,41 @@ struct BuildingResources {
 
     SDL_Texture* farmWoodAtlas;
     SDL_Texture* farmStoneAtlas;
+
+    // Originalni Farm ha_Idle z houses.rx.
+    //
+    // House index 8:
+    // count  = 30
+    // cell   = 18x17
+    // anchor = (8,-6)
+    // Move   = (-16,-11)
+    SDL_Texture* farmIdleAtlas;
+
+    // Originalni Farm ha_Flag1.
+    //
+    // Farm nema ha_Flagpole, ha_Flag2 ani ha_Flag3.
+    //
+    // Count  = 10
+    // cell   = 44x15
+    // anchor = (-46,-18)
+    // Move   = (-1,-69)
+    SDL_Texture* farmFlag1Atlas;
+
+    // Originalni Farm SupplyOut[1] pro wt_Corn.
+    //
+    // houses.dat:
+    // DAT 386..390
+    //
+    // houses.rx:
+    // RX 387..391
+    //
+    // 5 quantity states:
+    // resourceOut[0] = 1..5+
+    //
+    // Atlas:
+    // cell   = 45x34
+    // anchor = (20,-3)
+    SDL_Texture* farmCornSupplyAtlas;
 
     SDL_Texture* schoolWoodAtlas;
     SDL_Texture* schoolStoneAtlas;

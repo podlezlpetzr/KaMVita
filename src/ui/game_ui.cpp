@@ -34,6 +34,7 @@ void initGameUI(
     ui->selectedSchoolBuilding = -1;
     ui->selectedStoreBuilding = -1;
     ui->selectedBakeryBuilding = -1;
+    ui->selectedFarmBuilding = -1;
     ui->storeWareSelection = 0;
 }
 
@@ -424,6 +425,7 @@ void renderGameUI(
     const Building* selectedSchool = nullptr;
     const Building* selectedStore = nullptr;
     const Building* selectedBakery = nullptr;
+    const Building* selectedFarm = nullptr;
 
     if (
         buildings &&
@@ -459,6 +461,28 @@ void renderGameUI(
             selectedBakery = &candidate;
         }
     }
+
+    if (
+        buildings &&
+        ui.section == GameUISection::Farm &&
+        ui.selectedFarmBuilding >= 0 &&
+        ui.selectedFarmBuilding < buildingCount
+    ) {
+        const Building& candidate =
+            buildings[
+                ui.selectedFarmBuilding
+            ];
+
+        if (
+            candidate.active &&
+            candidate.type ==
+                BuildingType::Farm &&
+            isBuildingComplete(candidate)
+        ) {
+            selectedFarm = &candidate;
+        }
+    }
+
 
     if (
         buildings &&
@@ -3760,6 +3784,404 @@ void renderGameUI(
 
 
     // =====================================================
+    // ORIGINAL KaM FARM PANEL_HOUSE_COMMON
+    //
+    // Originalni UI resources:
+    //
+    // - Farm House title
+    // - Farm House icon
+    // - Farmer profession icon
+    // - Farmer profession text
+    // - Corn GUI ware icon
+    // - Delivery 37/38
+    // - Repair 39/40
+    //
+    // Farm output:
+    //
+    //   resourceOut[0] = Corn
+    // =====================================================
+
+    if (
+        ui.section == GameUISection::Farm &&
+        selectedFarm
+    ) {
+        const int panelX = 6;
+        const int houseTop = 198;
+        const int houseControlsY = 249;
+        const int contentWidth = 180;
+
+        SDL_Texture* farmTitle =
+            schoolResources.buildHouseNameText[
+                static_cast<int>(
+                    HouseIconType::Farm
+                )
+            ];
+
+        renderHorizontallyCenteredTexture(
+            renderer,
+            farmTitle,
+            panelX,
+            contentWidth,
+            229
+        );
+
+        SDL_Rect deliveryButton = {
+            panelX,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect repairButton = {
+            panelX + 30,
+            houseControlsY,
+            30,
+            30
+        };
+
+        SDL_Rect houseLogoArea = {
+            panelX + 60,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect workerArea = {
+            panelX + 90,
+            houseControlsY - 1,
+            32,
+            32
+        };
+
+        SDL_Rect healthBar = {
+            panelX + 120,
+            houseTop + 66,
+            55,
+            15
+        };
+
+        renderHouseHeaderButtons(
+            renderer,
+            schoolResources,
+            *selectedFarm,
+            deliveryButton,
+            repairButton
+        );
+
+        SDL_Texture* farmHouseIcon =
+            getHouseIcon(
+                houseIcons,
+                HouseIconType::Farm
+            );
+
+        renderCenteredTexture(
+            renderer,
+            farmHouseIcon,
+            houseLogoArea
+        );
+
+        SDL_Texture* farmerIcon =
+            schoolResources.professions[
+                static_cast<int>(
+                    GameUISchoolSelection::Farmer
+                )
+            ].icon;
+
+        renderCenteredTexture(
+            renderer,
+            farmerIcon,
+            workerArea
+        );
+
+        SDL_Texture* farmerProfessionText =
+            schoolResources.professionText[
+                static_cast<int>(
+                    GameUISchoolSelection::Farmer
+                )
+            ];
+
+        if (farmerProfessionText) {
+            int textW = 0;
+            int textH = 0;
+
+            SDL_QueryTexture(
+                farmerProfessionText,
+                nullptr,
+                nullptr,
+                &textW,
+                &textH
+            );
+
+            SDL_Rect textDestination = {
+                panelX +
+                    (
+                        contentWidth -
+                        textW
+                    ) / 2,
+
+                houseControlsY + 33,
+
+                textW,
+                textH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                farmerProfessionText,
+                nullptr,
+                &textDestination
+            );
+        }
+
+        renderSimpleHouseHealthBar(
+            renderer,
+            *selectedFarm,
+            healthBar,
+            false
+        );
+
+        // ---------------------------------------------
+        // ORIGINAL FARM OUTPUT
+        //
+        // Remake Panel_House_Common:
+        //
+        // Label_Common_Offer =
+        //   "Delivers (x1)"
+        //
+        // ResRow_Common_Resource:
+        //   Caption   = "Corn"
+        //   WareCount = resourceOut[0]
+        //
+        // Both caption textures come directly from
+        // original game.fntx.
+        // ---------------------------------------------
+
+        const int deliversTitleY = 305;
+        const int cornRowY =
+            deliversTitleY + 19;
+
+        if (
+            schoolResources.farmDeliversX1Text
+        ) {
+            int textW = 0;
+            int textH = 0;
+
+            SDL_QueryTexture(
+                schoolResources.farmDeliversX1Text,
+                nullptr,
+                nullptr,
+                &textW,
+                &textH
+            );
+
+            SDL_Rect destination = {
+                panelX +
+                    (
+                        contentWidth -
+                        textW
+                    ) / 2,
+                deliversTitleY,
+                textW,
+                textH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.farmDeliversX1Text,
+                nullptr,
+                &destination
+            );
+        }
+
+        SDL_Rect cornRow = {
+            panelX,
+            cornRowY,
+            contentWidth,
+            24
+        };
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_BLEND
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            45, 38, 30, 150
+        );
+
+        SDL_RenderFillRect(
+            renderer,
+            &cornRow
+        );
+
+        // Recessed top and left border.
+        SDL_SetRenderDrawColor(
+            renderer,
+            25, 21, 17, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            cornRow.x,
+            cornRow.y,
+            cornRow.x +
+                cornRow.w - 1,
+            cornRow.y
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            cornRow.x,
+            cornRow.y,
+            cornRow.x,
+            cornRow.y +
+                cornRow.h - 1
+        );
+
+        // Light bottom and right border.
+        SDL_SetRenderDrawColor(
+            renderer,
+            176, 156, 120, 255
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            cornRow.x,
+            cornRow.y +
+                cornRow.h - 1,
+            cornRow.x +
+                cornRow.w - 1,
+            cornRow.y +
+                cornRow.h - 1
+        );
+
+        SDL_RenderDrawLine(
+            renderer,
+            cornRow.x +
+                cornRow.w - 1,
+            cornRow.y,
+            cornRow.x +
+                cornRow.w - 1,
+            cornRow.y +
+                cornRow.h - 1
+        );
+
+        SDL_SetRenderDrawBlendMode(
+            renderer,
+            SDL_BLENDMODE_NONE
+        );
+
+        // Originalni game.fntx ware title.
+        if (schoolResources.farmCornText) {
+            int textW = 0;
+            int textH = 0;
+
+            SDL_QueryTexture(
+                schoolResources.farmCornText,
+                nullptr,
+                nullptr,
+                &textW,
+                &textH
+            );
+
+            SDL_Rect destination = {
+                cornRow.x + 5,
+                cornRow.y +
+                    (
+                        cornRow.h -
+                        textH
+                    ) / 2,
+                textW,
+                textH
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                schoolResources.farmCornText,
+                nullptr,
+                &destination
+            );
+        }
+
+        SDL_Texture* cornIcon =
+            schoolResources.storeWareIcons[
+                wareTypeToIndex(
+                    WareType::Corn
+                )
+            ];
+
+        int cornAmount =
+            selectedFarm->resourceOut[0];
+
+        if (cornAmount < 0)
+            cornAmount = 0;
+
+        // Original KaM MAX_WARES_IN_HOUSE.
+        //
+        // Farm resourceOut[0] is an output stock and its
+        // authoritative runtime capacity is 5.
+        constexpr int FARM_OUTPUT_CAPACITY = 5;
+
+        if (
+            cornAmount >
+                FARM_OUTPUT_CAPACITY
+        ) {
+            cornAmount =
+                FARM_OUTPUT_CAPACITY;
+        }
+
+        if (cornIcon) {
+            int iconW = 0;
+            int iconH = 0;
+
+            SDL_QueryTexture(
+                cornIcon,
+                nullptr,
+                nullptr,
+                &iconW,
+                &iconH
+            );
+
+            // Actual Farm resourceOut[0].
+            //
+            // Text "Corn" identifies the ware on the left.
+            // Only physically stored Corn pieces are drawn
+            // on the right.
+            for (
+                int index = 0;
+                index < cornAmount;
+                ++index
+            ) {
+                SDL_Rect destination = {
+                    cornRow.x +
+                        cornRow.w -
+                        5 -
+                        iconW -
+                        index * 18,
+
+                    cornRow.y +
+                        (
+                            cornRow.h -
+                            iconH
+                        ) / 2,
+
+                    iconW,
+                    iconH
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    cornIcon,
+                    nullptr,
+                    &destination
+                );
+            }
+        }
+    }
+
+
+    // =====================================================
     // ORIGINAL KaM STORE PANEL
     //
     // KM_GUIGameHouse:
@@ -4520,6 +4942,18 @@ SchoolUIResources loadSchoolUIResources(
             "app0:assets/ui/bakery/text/delivers_x2.bmp"
         );
 
+    resources.farmDeliversX1Text =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/farm/text/delivers_x1.bmp"
+        );
+
+    resources.farmCornText =
+        loadSchoolUITexture(
+            renderer,
+            "app0:assets/ui/farm/text/corn.bmp"
+        );
+
     static const char* professionTextFiles[
         SCHOOL_PROFESSION_COUNT
     ] = {
@@ -4855,6 +5289,24 @@ void destroySchoolUIResources(
         SDL_DestroyTexture(
             resources->bakeryDeliversX2Text
         );
+    }
+
+    if (resources->farmDeliversX1Text) {
+        SDL_DestroyTexture(
+            resources->farmDeliversX1Text
+        );
+
+        resources->farmDeliversX1Text =
+            nullptr;
+    }
+
+    if (resources->farmCornText) {
+        SDL_DestroyTexture(
+            resources->farmCornText
+        );
+
+        resources->farmCornText =
+            nullptr;
     }
 
     for (
