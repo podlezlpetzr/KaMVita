@@ -654,6 +654,36 @@ vita_create_vpk(
         assets/ui/options/runtime_font/metal_ascii.json
         assets/ui/options/runtime_font/metal_ascii.json
 
+    # Original KaM Remake Settings fnt_Outline headings
+
+    FILE
+        assets/ui/settings/text/graphics.bmp
+        assets/ui/settings/text/graphics.bmp
+
+    FILE
+        assets/ui/settings/text/controls.bmp
+        assets/ui/settings/text/controls.bmp
+
+    # Original KaM Remake Settings middle headings
+
+    FILE
+        assets/ui/settings/text/sound.bmp
+        assets/ui/settings/text/sound.bmp
+
+    FILE
+        assets/ui/settings/text/gameplay.bmp
+        assets/ui/settings/text/gameplay.bmp
+
+    # Original KaM Remake Settings popup assets
+
+    FILE
+        assets/ui/settings/original/guimain_0015.bmp
+        assets/ui/settings/original/guimain_0015.bmp
+
+    FILE
+        assets/ui/settings/original/guimain_0009.bmp
+        assets/ui/settings/original/guimain_0009.bmp
+
     # Original KaM Remake Options ENG text
 
     FILE

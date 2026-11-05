@@ -1522,6 +1522,10 @@ int main(int argc, char* argv[])
     bool saveNameEditing = false;
     bool saveNameInputReceived = false;
 
+    // Remake-style Game Settings modal.
+    // Visual checkpoint only.
+    bool settingsPopupOpen = false;
+
     if (
         !loadRuntimeMetalFont(
             renderer,
@@ -1531,6 +1535,180 @@ int main(int argc, char* argv[])
         std::printf(
             "Runtime Metal font failed to load\n"
         );
+    }
+
+    // Original KaM fnt_Outline Settings headings.
+    SDL_Texture* settingsGraphicsText = nullptr;
+    SDL_Texture* settingsControlsText = nullptr;
+
+    {
+        SDL_Surface* surface = SDL_LoadBMP(
+            "app0:assets/ui/settings/text/graphics.bmp"
+        );
+
+        if (surface) {
+            SDL_SetColorKey(
+                surface,
+                SDL_TRUE,
+                SDL_MapRGB(
+                    surface->format,
+                    255,
+                    0,
+                    255
+                )
+            );
+
+            settingsGraphicsText =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_FreeSurface(surface);
+        }
+    }
+
+    {
+        SDL_Surface* surface = SDL_LoadBMP(
+            "app0:assets/ui/settings/text/controls.bmp"
+        );
+
+        if (surface) {
+            SDL_SetColorKey(
+                surface,
+                SDL_TRUE,
+                SDL_MapRGB(
+                    surface->format,
+                    255,
+                    0,
+                    255
+                )
+            );
+
+            settingsControlsText =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_FreeSurface(surface);
+        }
+    }
+
+    // Original KaM fnt_Outline middle headings.
+    SDL_Texture* settingsSoundText = nullptr;
+    SDL_Texture* settingsGameplayText = nullptr;
+
+    {
+        SDL_Surface* surface =
+            SDL_LoadBMP(
+                "app0:assets/ui/settings/text/sound.bmp"
+            );
+
+        if (surface) {
+            SDL_SetColorKey(
+                surface,
+                SDL_TRUE,
+                SDL_MapRGB(
+                    surface->format,
+                    255,
+                    0,
+                    255
+                )
+            );
+
+            settingsSoundText =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_FreeSurface(surface);
+        }
+    }
+
+    {
+        SDL_Surface* surface =
+            SDL_LoadBMP(
+                "app0:assets/ui/settings/text/gameplay.bmp"
+            );
+
+        if (surface) {
+            SDL_SetColorKey(
+                surface,
+                SDL_TRUE,
+                SDL_MapRGB(
+                    surface->format,
+                    255,
+                    0,
+                    255
+                )
+            );
+
+            settingsGameplayText =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_FreeSurface(surface);
+        }
+    }
+
+    // Original GUIMain:15 stretched popup parchment.
+    SDL_Texture* settingsPopupTexture = nullptr;
+
+    {
+        SDL_Surface* surface =
+            SDL_LoadBMP(
+                "app0:assets/ui/settings/original/"
+                "guimain_0015.bmp"
+            );
+
+        if (surface) {
+            settingsPopupTexture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_FreeSurface(surface);
+
+            if (settingsPopupTexture) {
+                SDL_SetTextureBlendMode(
+                    settingsPopupTexture,
+                    SDL_BLENDMODE_BLEND
+                );
+            }
+        }
+    }
+
+    // Original GUIMain:9 bsMenu metal background.
+    SDL_Texture* settingsMenuButtonTexture = nullptr;
+
+    {
+        SDL_Surface* surface =
+            SDL_LoadBMP(
+                "app0:assets/ui/settings/original/"
+                "guimain_0009.bmp"
+            );
+
+        if (surface) {
+            settingsMenuButtonTexture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_FreeSurface(surface);
+
+            if (settingsMenuButtonTexture) {
+                SDL_SetTextureBlendMode(
+                    settingsMenuButtonTexture,
+                    SDL_BLENDMODE_BLEND
+                );
+            }
+        }
     }
 
 
@@ -2898,7 +3076,8 @@ int main(int argc, char* argv[])
                     }
 
                     case 2:
-                        // SETTINGS remains a separate cut.
+                        // SETTINGS
+                        settingsPopupOpen = true;
                         crossPressed = false;
                         break;
 
@@ -3246,6 +3425,73 @@ int main(int argc, char* argv[])
                 leftPressed = false;
                 rightPressed = false;
             }
+        }
+
+
+        // =============================================
+        // REMAKE-STYLE SETTINGS MODAL INPUT
+        // =============================================
+
+        if (settingsPopupOpen) {
+            // Exact rendered Close geometry:
+            //
+            // popupX = 320
+            // popupY = 32
+            // Close:
+            //   X = 320 + 16  = 336
+            //   Y = 32  + 436 = 468
+            //   W = 224
+            //   H = 24
+            const SDL_Rect settingsCloseArea = {
+                336,
+                468,
+                224,
+                24
+            };
+
+            bool closeSettingsPopup =
+                circlePressed ||
+                crossPressed;
+
+            if (touchTapped) {
+                const bool insideClose =
+                    touchStartX >=
+                        settingsCloseArea.x &&
+                    touchStartX <
+                        settingsCloseArea.x +
+                            settingsCloseArea.w &&
+                    touchStartY >=
+                        settingsCloseArea.y &&
+                    touchStartY <
+                        settingsCloseArea.y +
+                            settingsCloseArea.h;
+
+                if (insideClose) {
+                    closeSettingsPopup = true;
+                    touchTapped = false;
+                }
+            }
+
+            if (closeSettingsPopup) {
+                settingsPopupOpen = false;
+
+                // Return focus to Settings in the underlying
+                // Options menu.
+                gameUI.section =
+                    GameUISection::Options;
+
+                gameUI.optionsSelection = 2;
+                gameUI.optionsFocus = true;
+                gameUI.toolbarFocus = false;
+            }
+
+            // Modal consumes all underlying Options input.
+            circlePressed = false;
+            crossPressed = false;
+            upPressed = false;
+            downPressed = false;
+            leftPressed = false;
+            rightPressed = false;
         }
 
 
@@ -7914,6 +8160,1128 @@ int main(int argc, char* argv[])
         );
 
         // =================================================
+        // ORIGINAL KAM REMAKE GAME SETTINGS POPUP
+        //
+        // Background: GUIMain:15
+        // Close:      GUIMain:9 / bsMenu
+        //
+        // No replacement fills or temporary layout panels.
+        // =================================================
+
+        if (
+            settingsPopupOpen &&
+            settingsPopupTexture
+        ) {
+            constexpr int popupX = 320;
+            constexpr int popupY = 32;
+            constexpr int popupWidth = 512;
+            constexpr int popupHeight = 480;
+
+            SDL_Rect popupDestination = {
+                popupX,
+                popupY,
+                popupWidth,
+                popupHeight
+            };
+
+            // Remake ImageStretch:
+            // stretch the complete GUIMain:15 sprite.
+            SDL_RenderCopy(
+                renderer,
+                settingsPopupTexture,
+                nullptr,
+                &popupDestination
+            );
+
+            // Original reference title position after 0.8
+            // conversion from the full-size Settings popup.
+            SDL_Rect titleArea = {
+                popupX,
+                popupY + 17,
+                popupWidth,
+                24
+            };
+
+            renderRuntimeMetalTextCentered(
+                renderer,
+                runtimeMetalFont,
+                "Game Settings",
+                titleArea
+            );
+
+            // =============================================
+            // SETTINGS 18: GRAPHICS / CONTROLS
+            //
+            // Exact upper two-column composition converted
+            // uniformly from the supplied Remake reference.
+            // Visual-only checkpoint.
+            // =============================================
+
+            constexpr int leftGroupX =
+                popupX + 24;
+
+            constexpr int rightGroupX =
+                popupX + 251;
+
+            constexpr int upperHeadingY =
+                popupY + 80;
+
+            constexpr int upperGroupY =
+                popupY + 100;
+
+            constexpr int upperGroupWidth =
+                224;
+
+            constexpr int upperGroupHeight =
+                94;
+
+
+            // ---------------------------------------------
+            // Original Remake WriteBevel equivalent.
+            // ---------------------------------------------
+
+            auto drawSettingsBevel =
+                [
+                    renderer
+                ](
+                    const SDL_Rect& area,
+                    Uint8 backAlpha
+                )
+            {
+                SDL_SetRenderDrawBlendMode(
+                    renderer,
+                    SDL_BLENDMODE_BLEND
+                );
+
+                SDL_Rect background = {
+                    area.x + 1,
+                    area.y + 1,
+                    area.w - 2,
+                    area.h - 2
+                };
+
+                // WriteBevel background:
+                // glColor4f(0,0,0,aBackAlpha).
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    0,
+                    0,
+                    0,
+                    backAlpha
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &background
+                );
+
+                // Dark top and left edge.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    0,
+                    0,
+                    0,
+                    255
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    area.x,
+                    area.y,
+                    area.x + area.w - 1,
+                    area.y
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    area.x,
+                    area.y,
+                    area.x,
+                    area.y + area.h - 1
+                );
+
+                // Bright right and bottom edge.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    190,
+                    190,
+                    190,
+                    190
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    area.x + area.w - 1,
+                    area.y,
+                    area.x + area.w - 1,
+                    area.y + area.h - 1
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    area.x,
+                    area.y + area.h - 1,
+                    area.x + area.w - 1,
+                    area.y + area.h - 1
+                );
+
+                SDL_SetRenderDrawBlendMode(
+                    renderer,
+                    SDL_BLENDMODE_NONE
+                );
+            };
+
+
+            // ---------------------------------------------
+            // Original checkbox visual.
+            // ---------------------------------------------
+
+            auto drawSettingsCheckbox =
+                [
+                    renderer,
+                    &runtimeMetalFont
+                ](
+                    int x,
+                    int y,
+                    const char* caption,
+                    bool checked
+                )
+            {
+                SDL_Rect box = {
+                    x,
+                    y,
+                    12,
+                    12
+                };
+
+                SDL_SetRenderDrawBlendMode(
+                    renderer,
+                    SDL_BLENDMODE_BLEND
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    0,
+                    0,
+                    0,
+                    165
+                );
+
+                SDL_RenderFillRect(
+                    renderer,
+                    &box
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    30,
+                    24,
+                    17,
+                    255
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    box.x,
+                    box.y,
+                    box.x + box.w - 1,
+                    box.y
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    box.x,
+                    box.y,
+                    box.x,
+                    box.y + box.h - 1
+                );
+
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    195,
+                    178,
+                    132,
+                    255
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    box.x + box.w - 1,
+                    box.y,
+                    box.x + box.w - 1,
+                    box.y + box.h - 1
+                );
+
+                SDL_RenderDrawLine(
+                    renderer,
+                    box.x,
+                    box.y + box.h - 1,
+                    box.x + box.w - 1,
+                    box.y + box.h - 1
+                );
+
+                if (checked) {
+                    SDL_SetRenderDrawColor(
+                        renderer,
+                        245,
+                        238,
+                        213,
+                        255
+                    );
+
+                    SDL_RenderDrawLine(
+                        renderer,
+                        box.x + 2,
+                        box.y + 5,
+                        box.x + 5,
+                        box.y + 9
+                    );
+
+                    SDL_RenderDrawLine(
+                        renderer,
+                        box.x + 5,
+                        box.y + 9,
+                        box.x + 10,
+                        box.y + 2
+                    );
+
+                    SDL_RenderDrawLine(
+                        renderer,
+                        box.x + 3,
+                        box.y + 5,
+                        box.x + 6,
+                        box.y + 8
+                    );
+                }
+
+                SDL_SetRenderDrawBlendMode(
+                    renderer,
+                    SDL_BLENDMODE_NONE
+                );
+
+                renderRuntimeMetalText(
+                    renderer,
+                    runtimeMetalFont,
+                    caption,
+                    x + 17,
+                    y - 1
+                );
+            };
+
+
+            // ---------------------------------------------
+            // Original-style trackbar.
+            // ---------------------------------------------
+
+            auto drawSettingsTrackbar =
+                [
+                    renderer,
+                    &runtimeMetalFont,
+                    &drawSettingsBevel,
+                    &schoolUIResources
+                ](
+                    int x,
+                    int y,
+                    int width,
+                    const char* caption,
+                    int value,
+                    int maximum
+                )
+            {
+                renderRuntimeMetalText(
+                    renderer,
+                    runtimeMetalFont,
+                    caption,
+                    x,
+                    y
+                );
+
+                SDL_Rect track = {
+                    x,
+                    y + 17,
+                    width,
+                    14
+                };
+
+                drawSettingsBevel(
+                    track,
+                    128
+                );
+
+                constexpr int thumbWidth = 27;
+                constexpr int thumbHeight = 16;
+
+                const int travel =
+                    track.w -
+                    thumbWidth -
+                    2;
+
+                const int thumbOffset =
+                    maximum > 0
+                        ? (
+                            travel *
+                            value
+                        ) /
+                            maximum
+                        : 0;
+
+                SDL_Rect thumb = {
+                    track.x + 1 + thumbOffset,
+                    track.y - 1,
+                    thumbWidth,
+                    thumbHeight
+                };
+
+                // Original KaM trackbar thumb.
+                if (
+                    schoolUIResources.ratiosTrackbarThumb
+                ) {
+                    SDL_RenderCopy(
+                        renderer,
+                        schoolUIResources.ratiosTrackbarThumb,
+                        nullptr,
+                        &thumb
+                    );
+                }
+            };
+
+
+            // ---------------------------------------------
+            // Original KaM fnt_Outline section headings.
+            // ---------------------------------------------
+
+            auto drawSettingsHeading =
+                [renderer](
+                    SDL_Texture* texture,
+                    int x,
+                    int y
+                )
+            {
+                if (!texture)
+                    return;
+
+                int width = 0;
+                int height = 0;
+
+                SDL_QueryTexture(
+                    texture,
+                    nullptr,
+                    nullptr,
+                    &width,
+                    &height
+                );
+
+                SDL_Rect destination = {
+                    x,
+                    y,
+                    width,
+                    height
+                };
+
+                SDL_RenderCopy(
+                    renderer,
+                    texture,
+                    nullptr,
+                    &destination
+                );
+            };
+
+            drawSettingsHeading(
+                settingsGraphicsText,
+                leftGroupX + 5,
+                upperHeadingY
+            );
+
+            drawSettingsHeading(
+                settingsControlsText,
+                rightGroupX + 5,
+                upperHeadingY
+            );
+
+
+            // ---------------------------------------------
+            // Bevel groups.
+            // ---------------------------------------------
+
+            SDL_Rect graphicsGroup = {
+                leftGroupX,
+                upperGroupY,
+                upperGroupWidth,
+                upperGroupHeight
+            };
+
+            SDL_Rect controlsGroup = {
+                rightGroupX,
+                upperGroupY,
+                upperGroupWidth,
+                upperGroupHeight
+            };
+
+            drawSettingsBevel(
+                graphicsGroup,
+                112
+            );
+
+            drawSettingsBevel(
+                controlsGroup,
+                112
+            );
+
+
+            // ---------------------------------------------
+            // GRAPHICS
+            // ---------------------------------------------
+
+            drawSettingsCheckbox(
+                graphicsGroup.x + 8,
+                graphicsGroup.y + 8,
+                "HD movements",
+                true
+            );
+
+            drawSettingsCheckbox(
+                graphicsGroup.x + 8,
+                graphicsGroup.y + 25,
+                "HD animations",
+                true
+            );
+
+            drawSettingsTrackbar(
+                graphicsGroup.x + 8,
+                graphicsGroup.y + 44,
+                graphicsGroup.w - 16,
+                "Brightness",
+                2,
+                20
+            );
+
+
+            // ---------------------------------------------
+            // CONTROLS
+            // ---------------------------------------------
+
+            drawSettingsTrackbar(
+                controlsGroup.x + 8,
+                controlsGroup.y + 8,
+                controlsGroup.w - 16,
+                "Scroll speed",
+                2,
+                20
+            );
+
+            SDL_Rect keyBindingsButton = {
+                controlsGroup.x + 8,
+                controlsGroup.y + 52,
+                controlsGroup.w - 16,
+                24
+            };
+
+            if (settingsMenuButtonTexture) {
+                int textureWidth = 0;
+                int textureHeight = 0;
+
+                SDL_QueryTexture(
+                    settingsMenuButtonTexture,
+                    nullptr,
+                    nullptr,
+                    &textureWidth,
+                    &textureHeight
+                );
+
+                if (
+                    textureWidth > 0 &&
+                    textureHeight > 0
+                ) {
+                    // Write3DButton bsMenu samples the
+                    // GUIMain:9 texture from absolute control
+                    // coordinates at half scale.
+                    const int sourceX =
+                        (
+                            keyBindingsButton.x /
+                            2
+                        ) %
+                        textureWidth;
+
+                    const int sourceY =
+                        (
+                            keyBindingsButton.y /
+                            2
+                        ) %
+                        textureHeight;
+
+                    int sourceWidth =
+                        keyBindingsButton.w /
+                        2;
+
+                    int sourceHeight =
+                        keyBindingsButton.h /
+                        2;
+
+                    if (
+                        sourceX + sourceWidth >
+                        textureWidth
+                    ) {
+                        sourceWidth =
+                            textureWidth -
+                            sourceX;
+                    }
+
+                    if (
+                        sourceY + sourceHeight >
+                        textureHeight
+                    ) {
+                        sourceHeight =
+                            textureHeight -
+                            sourceY;
+                    }
+
+                    if (sourceWidth < 1)
+                        sourceWidth = 1;
+
+                    if (sourceHeight < 1)
+                        sourceHeight = 1;
+
+                    SDL_Rect source = {
+                        sourceX,
+                        sourceY,
+                        sourceWidth,
+                        sourceHeight
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        settingsMenuButtonTexture,
+                        &source,
+                        &keyBindingsButton
+                    );
+                }
+            }
+
+            // Key-bindings bsMenu bevel.
+            constexpr int keyChamfer = 2;
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_BLEND
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                255,
+                255,
+                255,
+                179
+            );
+
+            SDL_Rect keyTop = {
+                keyBindingsButton.x,
+                keyBindingsButton.y,
+                keyBindingsButton.w,
+                keyChamfer
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &keyTop
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                255,
+                255,
+                255,
+                153
+            );
+
+            SDL_Rect keyLeft = {
+                keyBindingsButton.x,
+                keyBindingsButton.y,
+                keyChamfer,
+                keyBindingsButton.h
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &keyLeft
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                0,
+                0,
+                0,
+                128
+            );
+
+            SDL_Rect keyRight = {
+                keyBindingsButton.x +
+                    keyBindingsButton.w -
+                    keyChamfer,
+                keyBindingsButton.y,
+                keyChamfer,
+                keyBindingsButton.h
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &keyRight
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                0,
+                0,
+                0,
+                102
+            );
+
+            SDL_Rect keyBottom = {
+                keyBindingsButton.x,
+                keyBindingsButton.y +
+                    keyBindingsButton.h -
+                    keyChamfer,
+                keyBindingsButton.w,
+                keyChamfer
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &keyBottom
+            );
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
+
+            renderRuntimeMetalTextCentered(
+                renderer,
+                runtimeMetalFont,
+                "Key-bindings",
+                keyBindingsButton
+            );
+
+
+            // =============================================
+            // SETTINGS 23: SOUND / GAMEPLAY
+            //
+            // Visual-only Remake layout.
+            // Upper SETTINGS 19L geometry remains locked.
+            // =============================================
+
+            constexpr int middleHeadingY =
+                popupY + 207;
+
+            constexpr int middleGroupY =
+                popupY + 227;
+
+            constexpr int soundGroupHeight =
+                130;
+
+            constexpr int gameplayGroupHeight =
+                194;
+
+
+            // ---------------------------------------------
+            // Original Outline headings.
+            // ---------------------------------------------
+
+            drawSettingsHeading(
+                settingsSoundText,
+                leftGroupX + 5,
+                middleHeadingY
+            );
+
+            drawSettingsHeading(
+                settingsGameplayText,
+                rightGroupX + 5,
+                middleHeadingY
+            );
+
+
+            // ---------------------------------------------
+            // Original WriteBevel group backgrounds.
+            // ---------------------------------------------
+
+            SDL_Rect soundGroup = {
+                leftGroupX,
+                middleGroupY,
+                upperGroupWidth,
+                soundGroupHeight
+            };
+
+            SDL_Rect gameplayGroup = {
+                rightGroupX,
+                middleGroupY,
+                upperGroupWidth,
+                gameplayGroupHeight
+            };
+
+            drawSettingsBevel(
+                soundGroup,
+                112
+            );
+
+            drawSettingsBevel(
+                gameplayGroup,
+                112
+            );
+
+
+            // =============================================
+            // SOUND
+            // =============================================
+
+            drawSettingsTrackbar(
+                soundGroup.x + 8,
+                soundGroup.y + 8,
+                soundGroup.w - 16,
+                "SFX",
+                5,
+                20
+            );
+
+            drawSettingsTrackbar(
+                soundGroup.x + 8,
+                soundGroup.y + 48,
+                soundGroup.w - 16,
+                "Music",
+                5,
+                20
+            );
+
+            drawSettingsCheckbox(
+                soundGroup.x + 8,
+                soundGroup.y + 91,
+                "Disable music",
+                false
+            );
+
+            drawSettingsCheckbox(
+                soundGroup.x + 8,
+                soundGroup.y + 109,
+                "Shuffle tracks",
+                false
+            );
+
+
+            // =============================================
+            // GAMEPLAY
+            // =============================================
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 8,
+                "Autosave",
+                true
+            );
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 27,
+                "Autosave at game end",
+                false
+            );
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 46,
+                "Make replay savepoints",
+                true
+            );
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 65,
+                "Save ware distribution",
+                false
+            );
+
+            renderRuntimeMetalText(
+                renderer,
+                runtimeMetalFont,
+                "between games",
+                gameplayGroup.x + 25,
+                gameplayGroup.y + 81
+            );
+
+            renderRuntimeMetalText(
+                renderer,
+                runtimeMetalFont,
+                "Players colors:",
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 106
+            );
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 126,
+                "Default",
+                true
+            );
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 145,
+                "Ally / Enemy",
+                false
+            );
+
+            drawSettingsCheckbox(
+                gameplayGroup.x + 8,
+                gameplayGroup.y + 164,
+                "Teams",
+                false
+            );
+
+
+            // Original Close geometry converted by 0.8.
+            SDL_Rect closeButton = {
+                popupX + 16,
+                popupY + 436,
+                224,
+                24
+            };
+
+            if (settingsMenuButtonTexture) {
+                int textureWidth = 0;
+                int textureHeight = 0;
+
+                SDL_QueryTexture(
+                    settingsMenuButtonTexture,
+                    nullptr,
+                    nullptr,
+                    &textureWidth,
+                    &textureHeight
+                );
+
+                if (
+                    textureWidth > 0 &&
+                    textureHeight > 0
+                ) {
+                    // Exact Write3DButton bsMenu source
+                    // calculation from KM_RenderUI.pas.
+                    //
+                    // GUIMain:9 is sampled according to the
+                    // absolute control position, not stretched
+                    // from the entire 300x400 texture.
+                    const int down = 0;
+
+                    const float centerBlockX =
+                        static_cast<float>(
+                            (
+                                closeButton.x +
+                                closeButton.w / 2
+                            ) /
+                            textureWidth
+                        ) /
+                        2.0f;
+
+                    const float centerBlockY =
+                        static_cast<float>(
+                            (
+                                closeButton.y +
+                                closeButton.h / 2
+                            ) /
+                            textureHeight
+                        ) /
+                        2.0f;
+
+                    float u1 =
+                        static_cast<float>(
+                            closeButton.x - down
+                        ) /
+                        2.0f /
+                        textureWidth -
+                        centerBlockX;
+
+                    float u2 =
+                        static_cast<float>(
+                            closeButton.x +
+                            closeButton.w -
+                            down
+                        ) /
+                        2.0f /
+                        textureWidth -
+                        centerBlockX;
+
+                    float v1 =
+                        static_cast<float>(
+                            closeButton.y - down
+                        ) /
+                        2.0f /
+                        textureHeight -
+                        centerBlockY;
+
+                    float v2 =
+                        static_cast<float>(
+                            closeButton.y +
+                            closeButton.h -
+                            down
+                        ) /
+                        2.0f /
+                        textureHeight -
+                        centerBlockY;
+
+                    if (u1 < 0.0f)
+                        u1 = 0.0f;
+
+                    if (u2 > 1.0f)
+                        u2 = 1.0f;
+
+                    if (v1 < 0.0f)
+                        v1 = 0.0f;
+
+                    if (v2 > 1.0f)
+                        v2 = 1.0f;
+
+                    SDL_Rect buttonSource = {
+                        static_cast<int>(
+                            u1 * textureWidth
+                        ),
+                        static_cast<int>(
+                            v1 * textureHeight
+                        ),
+                        static_cast<int>(
+                            (u2 - u1) *
+                            textureWidth
+                        ),
+                        static_cast<int>(
+                            (v2 - v1) *
+                            textureHeight
+                        )
+                    };
+
+                    if (buttonSource.w < 1)
+                        buttonSource.w = 1;
+
+                    if (buttonSource.h < 1)
+                        buttonSource.h = 1;
+
+                    SDL_RenderCopy(
+                        renderer,
+                        settingsMenuButtonTexture,
+                        &buttonSource,
+                        &closeButton
+                    );
+                }
+            }
+
+            // Original Write3DButton bevel.
+            //
+            // Scaled 24px-high Close uses a 2px chamfer.
+            constexpr int chamfer = 2;
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_BLEND
+            );
+
+            // Top edge: white, alpha 0.7.
+            SDL_SetRenderDrawColor(
+                renderer,
+                255,
+                255,
+                255,
+                179
+            );
+
+            SDL_Rect topEdge = {
+                closeButton.x,
+                closeButton.y,
+                closeButton.w,
+                chamfer
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &topEdge
+            );
+
+            // Left edge: white, alpha 0.6.
+            SDL_SetRenderDrawColor(
+                renderer,
+                255,
+                255,
+                255,
+                153
+            );
+
+            SDL_Rect leftEdge = {
+                closeButton.x,
+                closeButton.y,
+                chamfer,
+                closeButton.h
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &leftEdge
+            );
+
+            // Right edge: black, alpha 0.5.
+            SDL_SetRenderDrawColor(
+                renderer,
+                0,
+                0,
+                0,
+                128
+            );
+
+            SDL_Rect rightEdge = {
+                closeButton.x +
+                    closeButton.w -
+                    chamfer,
+                closeButton.y,
+                chamfer,
+                closeButton.h
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &rightEdge
+            );
+
+            // Bottom edge: black, alpha 0.4.
+            SDL_SetRenderDrawColor(
+                renderer,
+                0,
+                0,
+                0,
+                102
+            );
+
+            SDL_Rect bottomEdge = {
+                closeButton.x,
+                closeButton.y +
+                    closeButton.h -
+                    chamfer,
+                closeButton.w,
+                chamfer
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &bottomEdge
+            );
+
+            SDL_SetRenderDrawBlendMode(
+                renderer,
+                SDL_BLENDMODE_NONE
+            );
+
+            // TKMButton caption:
+            // fnt_Metal, taCenter, icWhite.
+            renderRuntimeMetalTextCentered(
+                renderer,
+                runtimeMetalFont,
+                "Close",
+                closeButton
+            );
+        }
+
+
+        // =================================================
         // REMAKE-STYLE SAVE / LOAD PAGE RENDERER
         // =================================================
 
@@ -8348,6 +9716,48 @@ int main(int argc, char* argv[])
     if (saveNameEditing) {
         SDL_StopTextInput();
         saveNameEditing = false;
+    }
+
+    if (settingsPopupTexture) {
+        SDL_DestroyTexture(
+            settingsPopupTexture
+        );
+
+        settingsPopupTexture = nullptr;
+    }
+
+    if (settingsMenuButtonTexture) {
+        SDL_DestroyTexture(
+            settingsMenuButtonTexture
+        );
+
+        settingsMenuButtonTexture = nullptr;
+    }
+
+    if (settingsSoundText) {
+        SDL_DestroyTexture(
+            settingsSoundText
+        );
+
+        settingsSoundText = nullptr;
+    }
+
+    if (settingsGameplayText) {
+        SDL_DestroyTexture(
+            settingsGameplayText
+        );
+
+        settingsGameplayText = nullptr;
+    }
+
+    if (settingsGraphicsText) {
+        SDL_DestroyTexture(settingsGraphicsText);
+        settingsGraphicsText = nullptr;
+    }
+
+    if (settingsControlsText) {
+        SDL_DestroyTexture(settingsControlsText);
+        settingsControlsText = nullptr;
     }
 
     destroyRuntimeMetalFont(
