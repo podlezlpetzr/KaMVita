@@ -452,7 +452,7 @@ void renderKaMHouseEdge(
             edgeY
         };
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 4; ++i) {
             vertices[i].color = color;
         }
 
@@ -567,7 +567,7 @@ void renderKaMHouseEdge(
         bottomY
     };
 
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 4; ++i) {
         vertices[i].color = color;
     }
 
