@@ -113,6 +113,16 @@ KaMPlanResources loadKaMPlanResources(
             renderer,
             "app0:assets/buildings/tablets/original/school_264.bmp"
         );
+    resources.houseTablets[4] =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/tablets/original/quarry_265.bmp"
+        );
+    resources.houseTablets[5] =
+        loadMagentaTexture(
+            renderer,
+            "app0:assets/buildings/tablets/original/mill_273.bmp"
+        );
 
     return resources;
 }
@@ -160,7 +170,7 @@ void destroyKaMPlanResources(
             resources->houseWipVertical
         );
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         if (resources->houseTablets[i]) {
             SDL_DestroyTexture(
                 resources->houseTablets[i]
@@ -178,7 +188,7 @@ void destroyKaMPlanResources(
     resources->houseWipHorizontal = nullptr;
     resources->houseWipVertical = nullptr;
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         resources->houseTablets[i] = nullptr;
     }
 }
@@ -442,7 +452,7 @@ void renderKaMHouseEdge(
             edgeY
         };
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 6; ++i) {
             vertices[i].color = color;
         }
 
@@ -557,7 +567,7 @@ void renderKaMHouseEdge(
         bottomY
     };
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         vertices[i].color = color;
     }
 

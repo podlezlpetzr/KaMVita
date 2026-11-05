@@ -4703,6 +4703,22 @@ int main(int argc, char* argv[])
                                 );
                             break;
 
+                        case HouseIconType::Quarry:
+                            hoveredBuildItem =
+                                static_cast<int>(
+                                    GameUIBuildSelection::
+                                        Quarry
+                                );
+                            break;
+
+                        case HouseIconType::Mill:
+                            hoveredBuildItem =
+                                static_cast<int>(
+                                    GameUIBuildSelection::
+                                        Mill
+                                );
+                            break;
+
                         case HouseIconType::School:
                             hoveredBuildItem =
                                 static_cast<int>(
@@ -4825,10 +4841,18 @@ int main(int argc, char* argv[])
                     else if (selection == 3)
                         selectedBuildingType =
                             BuildingType::Farm;
-                    else
+                    else if (selection == 4)
                         selectedBuildingType =
                             BuildingType::School;
+                    else if (selection == 5)
+                        selectedBuildingType =
+                            BuildingType::Quarry;
+                    else if (selection == 6)
+                        selectedBuildingType =
+                            BuildingType::Mill;
 
+                    // Store, Bakery, Farm, School, Quarry and Mill
+                    // now use the real building placement tool.
                     activeBuildTool =
                         BuildTool::Building;
                 }
@@ -7990,7 +8014,10 @@ int main(int argc, char* argv[])
                     TILE_SIZE,
                     &kamPlanResources,
                     bakeryHasInsideBaker,
-                    farmHasInsideFarmer
+                    farmHasInsideFarmer,
+                    units,
+                    unitCount,
+                    entry.index
                 );
             } else {
                 renderUnits(

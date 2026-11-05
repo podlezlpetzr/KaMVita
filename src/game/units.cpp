@@ -3247,9 +3247,9 @@ void updateUnits(
         }
 
         // =================================================
-        // BAKER AUTOMATIC BAKERY OCCUPATION
+        // BAKER AUTOMATIC BAKERY / MILL OCCUPATION
         //
-        // Originalni Baker obsluhuje Bakery zevnitr House.
+        // Originalni Baker obsluhuje Bakery i Mill zevnitr House.
         //
         // Prvni bezpecny runtime slice:
         //
@@ -3285,8 +3285,12 @@ void updateUnits(
 
                 if (
                     !bakery.active ||
-                    bakery.type !=
-                        BuildingType::Bakery ||
+                    (
+                        bakery.type !=
+                            BuildingType::Bakery &&
+                        bakery.type !=
+                            BuildingType::Mill
+                    ) ||
                     !isBuildingComplete(bakery)
                 ) {
                     continue;
@@ -4178,7 +4182,7 @@ void updateUnits(
                 continue;
 
             // ---------------------------------------------
-            // BAKER OCCUPIES BAKERY
+            // BAKER OCCUPIES BAKERY OR MILL
             //
             // Baker nema Serf transfer a po vstupu se nesmi
             // automaticky otocit zpet ven.
@@ -4198,10 +4202,16 @@ void updateUnits(
                     buildings[
                         unit.targetBuilding
                     ].active &&
-                    buildings[
-                        unit.targetBuilding
-                    ].type ==
-                        BuildingType::Bakery &&
+                    (
+                        buildings[
+                            unit.targetBuilding
+                        ].type ==
+                            BuildingType::Bakery ||
+                        buildings[
+                            unit.targetBuilding
+                        ].type ==
+                            BuildingType::Mill
+                    ) &&
                     isBuildingComplete(
                         buildings[
                             unit.targetBuilding
@@ -4602,7 +4612,7 @@ void updateUnits(
         }
 
         // =================================================
-        // BAKER INSIDE BAKERY
+        // BAKER INSIDE BAKERY OR MILL
         //
         // Baker zustava uvnitr, dokud je prirazena Bakery
         // aktivni a dokoncena.
@@ -4627,10 +4637,16 @@ void updateUnits(
                 buildings[
                     unit.targetBuilding
                 ].active &&
-                buildings[
-                    unit.targetBuilding
-                ].type ==
-                    BuildingType::Bakery &&
+                (
+                    buildings[
+                        unit.targetBuilding
+                    ].type ==
+                        BuildingType::Bakery ||
+                    buildings[
+                        unit.targetBuilding
+                    ].type ==
+                        BuildingType::Mill
+                ) &&
                 isBuildingComplete(
                     buildings[
                         unit.targetBuilding
@@ -6398,7 +6414,7 @@ void updateUnits(
                 unit.pathIndex = 0;
 
                 // =========================================
-                // BAKER ENTER ASSIGNED BAKERY
+                // BAKER ENTER ASSIGNED BAKERY OR MILL
                 //
                 // Baker dokoncil normalni pathfinding na
                 // connected entrance-road tile.
@@ -6418,10 +6434,16 @@ void updateUnits(
                         buildings[
                             unit.targetBuilding
                         ].active &&
-                        buildings[
-                            unit.targetBuilding
-                        ].type ==
-                            BuildingType::Bakery &&
+                        (
+                            buildings[
+                                unit.targetBuilding
+                            ].type ==
+                                BuildingType::Bakery ||
+                            buildings[
+                                unit.targetBuilding
+                            ].type ==
+                                BuildingType::Mill
+                        ) &&
                         isBuildingComplete(
                             buildings[
                                 unit.targetBuilding

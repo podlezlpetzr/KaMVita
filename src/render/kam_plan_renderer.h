@@ -18,10 +18,11 @@ struct KaMPlanResources {
     SDL_Texture* houseWipVertical;
 
     // Aktualni BuildingType poradi:
-    // 0 Store, 1 Bakery, 2 Farm, 3 School.
+    // 0 Store, 1 Bakery, 2 Farm, 3 School,
+    // 4 Quarry, 5 Mill.
     //
     // Textury se nacitaji jednou pri startu.
-    SDL_Texture* houseTablets[4];
+    SDL_Texture* houseTablets[6];
 };
 
 KaMPlanResources loadKaMPlanResources(

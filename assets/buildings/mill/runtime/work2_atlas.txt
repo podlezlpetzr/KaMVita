@@ -1,0 +1,12 @@
+house_index=22
+house_action=ha_Work2
+cell_width=17
+cell_height=15
+frame_count=8
+columns=8
+rows=1
+anchor_x=5
+anchor_y=-51
+move_x=0
+move_y=-1
+rx_sequence=881,882,883,884,885,886,887,888

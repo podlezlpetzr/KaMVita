@@ -3,11 +3,15 @@
 #include <SDL2/SDL.h>
 #include "../render/kam_plan_renderer.h"
 
+struct Unit;
+
 enum class BuildingType {
     Store = 0,
     Bakery = 1,
     Farm = 2,
-    School = 3
+    School = 3,
+    Quarry = 4,
+    Mill = 5
 };
 
 // Originalni KaM WareType poradi pouzivane Store GUI.
@@ -297,7 +301,10 @@ void renderBuildings(
     int tileSize,
     const KaMPlanResources* planResources,
     bool bakeryHasInsideBaker,
-    bool farmHasInsideFarmer
+    bool farmHasInsideFarmer,
+    const Unit* units,
+    int unitCount,
+    int buildingIndexBase
 );
 
 
@@ -417,6 +424,31 @@ struct BuildingResources {
 
     SDL_Texture* schoolWoodAtlas;
     SDL_Texture* schoolStoneAtlas;
+
+    // Original Quarry construction from houses.rx.
+    SDL_Texture* quarryWoodAtlas;
+    SDL_Texture* quarryStoneAtlas;
+
+    // Original Mill construction from houses.rx:
+    // Wood  RX 359 + mask 361, 21 steps.
+    // Stone RX 358 + mask 360, 31 steps.
+    SDL_Texture* millWoodAtlas;
+    SDL_Texture* millStoneAtlas;
+
+    // Original Mill ha_Flagpole turbine:
+    // RX 348..357, 10 frames.
+    // cell   = 106x147
+    // grid   = 5x2
+    // anchor = (-35,-34)
+    // Move   = (-17,-80)
+    SDL_Texture* millTurbineAtlas;
+
+    // Original Mill ha_Idle:
+    // RX 1095..1100 in original 30-frame sequence.
+    // cell   = 17x16
+    // anchor = (4,-52)
+    // Move   = (0,-1)
+    SDL_Texture* millIdleAtlas;
 };
 
 BuildingResources loadBuildingResources(

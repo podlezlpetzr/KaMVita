@@ -1,0 +1,10 @@
+graphic_id=212
+mask_id=214
+frame_width=146
+frame_height=85
+frame_count=18
+step_count=17
+columns=6
+rows=3
+pivot_x=-48
+pivot_y=-55

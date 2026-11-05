@@ -197,6 +197,30 @@ vita_create_vpk(
     FILE
         assets/buildings/construction/school/stone_atlas.bmp
         assets/buildings/construction/school/stone_atlas.bmp
+    FILE
+        assets/buildings/construction/quarry/wood_atlas.bmp
+        assets/buildings/construction/quarry/wood_atlas.bmp
+    FILE
+        assets/buildings/construction/quarry/stone_atlas.bmp
+        assets/buildings/construction/quarry/stone_atlas.bmp
+    FILE
+        assets/buildings/construction/mill/wood_atlas.bmp
+        assets/buildings/construction/mill/wood_atlas.bmp
+    FILE
+        assets/buildings/construction/mill/stone_atlas.bmp
+        assets/buildings/construction/mill/stone_atlas.bmp
+    FILE
+        assets/buildings/mill/runtime/turbine_atlas.bmp
+        assets/buildings/mill/runtime/turbine_atlas.bmp
+    FILE
+        assets/buildings/mill/runtime/idle_atlas.bmp
+        assets/buildings/mill/runtime/idle_atlas.bmp
+    FILE
+        assets/buildings/tablets/original/quarry_265.bmp
+        assets/buildings/tablets/original/quarry_265.bmp
+    FILE
+        assets/buildings/tablets/original/mill_273.bmp
+        assets/buildings/tablets/original/mill_273.bmp
 
     FILE
         assets/units/worker/idle_s.bmp

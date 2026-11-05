@@ -1,4 +1,5 @@
 #include "buildings.h"
+#include "units.h"
 #include <climits>
 #include "house_plan_catalog.h"
 
@@ -470,7 +471,10 @@ void renderBuildings(
     int tileSize,
     const KaMPlanResources* planResources,
     bool bakeryHasInsideBaker,
-    bool farmHasInsideFarmer
+    bool farmHasInsideFarmer,
+    const Unit* units,
+    int unitCount,
+    int buildingIndexBase
 )
 {
     for (int i = 0; i < buildingCount; ++i) {
@@ -478,6 +482,37 @@ void renderBuildings(
             continue;
 
         const Building& building = buildings[i];
+
+        const int globalBuildingIndex =
+            buildingIndexBase + i;
+
+        bool millHasInsideBaker = false;
+
+        if (
+            building.type == BuildingType::Mill &&
+            units &&
+            unitCount > 0
+        ) {
+            for (
+                int unitIndex = 0;
+                unitIndex < unitCount;
+                ++unitIndex
+            ) {
+                const Unit& candidate =
+                    units[unitIndex];
+
+                if (
+                    candidate.active &&
+                    candidate.type == UnitType::Baker &&
+                    !candidate.visible &&
+                    candidate.targetBuilding ==
+                        globalBuildingIndex
+                ) {
+                    millHasInsideBaker = true;
+                    break;
+                }
+            }
+        }
 
         int footprintX =
             building.tileX * tileSize - (int)cameraX;
@@ -589,6 +624,46 @@ void renderBuildings(
                 stoneMaximumStep = 65;
                 stonePivotX = -89;
                 stonePivotY = -107;
+                break;
+            case BuildingType::Quarry:
+                woodAtlas = resources.quarryWoodAtlas;
+                stoneAtlas = resources.quarryStoneAtlas;
+
+                // Original houses.rx 212 + 214.
+                woodFrameWidth = 146;
+                woodFrameHeight = 85;
+                woodColumns = 6;
+                woodMaximumStep = 17;
+                woodPivotX = -48;
+                woodPivotY = -55;
+
+                // Original houses.rx 211 + 213.
+                stoneFrameWidth = 148;
+                stoneFrameHeight = 91;
+                stoneColumns = 5;
+                stoneMaximumStep = 18;
+                stonePivotX = -52;
+                stonePivotY = -61;
+                break;
+            case BuildingType::Mill:
+                woodAtlas = resources.millWoodAtlas;
+                stoneAtlas = resources.millStoneAtlas;
+
+                // Original houses.rx 359 + 361.
+                woodFrameWidth = 103;
+                woodFrameHeight = 113;
+                woodColumns = 6;
+                woodMaximumStep = 21;
+                woodPivotX = -27;
+                woodPivotY = -85;
+
+                // Original houses.rx 358 + 360.
+                stoneFrameWidth = 111;
+                stoneFrameHeight = 113;
+                stoneColumns = 8;
+                stoneMaximumStep = 31;
+                stonePivotX = -35;
+                stonePivotY = -85;
                 break;
         }
 
@@ -763,7 +838,7 @@ void renderBuildings(
                 if (
                     !preparedTerrain &&
                     (int)building.type >= 0 &&
-                    (int)building.type < 4
+                    (int)building.type < 6
                 ) {
                     SDL_Texture* tablet =
                         planResources->houseTablets[
@@ -1446,6 +1521,190 @@ void renderBuildings(
                 resources.farmFlag1Atlas,
                 &flagSource,
                 &flagDestination
+            );
+        }
+
+
+        // =================================================
+        // MILL ORIGINAL TURBINE
+        //
+        // Real Mill houses.dat record 22:
+        //
+        // ha_Flagpole
+        // RX sequence = 348..357
+        // count       = 10
+        // cell        = 106x147
+        // grid        = 5x2
+        // anchor      = (-35,-34)
+        // Move        = (-17,-80)
+        //
+        // Original House overlay alignment:
+        //
+        // stoneDestination +
+        // (overlay anchor + House Move - StonePic pivot)
+        //
+        // The turbine is part of the completed Mill House
+        // decoration and therefore rotates continuously.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Mill &&
+            isBuildingComplete(building) &&
+            resources.millTurbineAtlas
+        ) {
+            constexpr int turbineCellWidth = 106;
+            constexpr int turbineCellHeight = 147;
+
+            constexpr int turbineColumns = 5;
+            constexpr int turbineFrameCount = 10;
+
+            constexpr int turbineAnchorX = -35;
+            constexpr int turbineAnchorY = -34;
+
+            constexpr int turbineMoveX = -17;
+            constexpr int turbineMoveY = -80;
+
+            // Original House flag/decorative cadence.
+            const int turbineFrame =
+                (SDL_GetTicks() / 120) %
+                turbineFrameCount;
+
+            const int turbineColumn =
+                turbineFrame %
+                turbineColumns;
+
+            const int turbineRow =
+                turbineFrame /
+                turbineColumns;
+
+            SDL_Rect turbineSource = {
+                turbineColumn *
+                    turbineCellWidth,
+
+                turbineRow *
+                    turbineCellHeight,
+
+                turbineCellWidth,
+                turbineCellHeight
+            };
+
+            SDL_Rect turbineDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        turbineAnchorX +
+                            turbineMoveX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        turbineAnchorY +
+                            turbineMoveY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    turbineCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    turbineCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.millTurbineAtlas,
+                &turbineSource,
+                &turbineDestination
+            );
+        }
+
+
+        // =================================================
+        // MILL ORIGINAL IDLE OVERLAY
+        //
+        // Real Mill houses.dat record 22:
+        //
+        // ha_Idle
+        // count  = 30
+        // cell   = 17x16
+        // anchor = (4,-52)
+        // Move   = (0,-1)
+        //
+        // ha_Idle is visible only while a real Baker is
+        // physically hidden inside this specific Mill.
+        //
+        // Alignment:
+        //
+        // stoneDestination +
+        // (overlay anchor + House Move - StonePic pivot)
+        // =================================================
+
+        if (
+            building.type == BuildingType::Mill &&
+            isBuildingComplete(building) &&
+            millHasInsideBaker &&
+            resources.millIdleAtlas
+        ) {
+            constexpr int idleCellWidth = 17;
+            constexpr int idleCellHeight = 16;
+            constexpr int idleFrameCount = 30;
+
+            constexpr int idleAnchorX = 4;
+            constexpr int idleAnchorY = -52;
+
+            constexpr int idleMoveX = 0;
+            constexpr int idleMoveY = -1;
+
+            const int idleFrame =
+                (SDL_GetTicks() / 100) %
+                idleFrameCount;
+
+            SDL_Rect idleSource = {
+                idleFrame * idleCellWidth,
+                0,
+                idleCellWidth,
+                idleCellHeight
+            };
+
+            SDL_Rect idleDestination = {
+                stoneDestinationX +
+                    scaleKaMHousePixel(
+                        idleAnchorX +
+                            idleMoveX -
+                            stonePivotX,
+                        tileSize
+                    ),
+
+                stoneDestinationY +
+                    scaleKaMHousePixel(
+                        idleAnchorY +
+                            idleMoveY -
+                            stonePivotY,
+                        tileSize
+                    ),
+
+                scaleKaMHousePixel(
+                    idleCellWidth,
+                    tileSize
+                ),
+
+                scaleKaMHousePixel(
+                    idleCellHeight,
+                    tileSize
+                )
+            };
+
+            SDL_RenderCopy(
+                renderer,
+                resources.millIdleAtlas,
+                &idleSource,
+                &idleDestination
             );
         }
 
@@ -2725,6 +2984,38 @@ BuildingResources loadBuildingResources(
         "app0:assets/buildings/construction/school/stone_atlas.bmp"
     );
 
+    resources.quarryWoodAtlas = loadColorKeyTexture(
+        renderer,
+        "app0:assets/buildings/construction/quarry/wood_atlas.bmp"
+    );
+
+    resources.quarryStoneAtlas = loadColorKeyTexture(
+        renderer,
+        "app0:assets/buildings/construction/quarry/stone_atlas.bmp"
+    );
+
+    resources.millWoodAtlas = loadColorKeyTexture(
+        renderer,
+        "app0:assets/buildings/construction/mill/wood_atlas.bmp"
+    );
+
+    resources.millStoneAtlas = loadColorKeyTexture(
+        renderer,
+        "app0:assets/buildings/construction/mill/stone_atlas.bmp"
+    );
+
+    resources.millTurbineAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/mill/runtime/turbine_atlas.bmp"
+        );
+
+    resources.millIdleAtlas =
+        loadColorKeyTexture(
+            renderer,
+            "app0:assets/buildings/mill/runtime/idle_atlas.bmp"
+        );
+
     return resources;
 }
 
@@ -2801,6 +3092,20 @@ void destroyBuildingResources(
     SDL_DestroyTexture(resources->schoolWoodAtlas);
     SDL_DestroyTexture(resources->schoolStoneAtlas);
 
+    SDL_DestroyTexture(resources->quarryWoodAtlas);
+    SDL_DestroyTexture(resources->quarryStoneAtlas);
+
+    SDL_DestroyTexture(resources->millWoodAtlas);
+    SDL_DestroyTexture(resources->millStoneAtlas);
+
+    SDL_DestroyTexture(
+        resources->millTurbineAtlas
+    );
+
+    SDL_DestroyTexture(
+        resources->millIdleAtlas
+    );
+
     resources->store = nullptr;
     resources->bakery = nullptr;
     resources->farm = nullptr;
@@ -2852,6 +3157,16 @@ void destroyBuildingResources(
 
     resources->schoolWoodAtlas = nullptr;
     resources->schoolStoneAtlas = nullptr;
+
+    resources->quarryWoodAtlas = nullptr;
+    resources->quarryStoneAtlas = nullptr;
+
+    resources->millWoodAtlas = nullptr;
+    resources->millStoneAtlas = nullptr;
+
+    resources->millTurbineAtlas = nullptr;
+
+    resources->millIdleAtlas = nullptr;
 }
 
 int getBuildingWidth(BuildingType type)
@@ -2867,6 +3182,10 @@ int getBuildingWidth(BuildingType type)
             return 4;
 
         case BuildingType::School:
+            return 3;
+        case BuildingType::Quarry:
+            return 3;
+        case BuildingType::Mill:
             return 3;
     }
 
@@ -2887,6 +3206,10 @@ int getBuildingHeight(BuildingType type)
 
         case BuildingType::School:
             return 3;
+        case BuildingType::Quarry:
+            return 2;
+        case BuildingType::Mill:
+            return 2;
     }
 
     return 3;
@@ -2922,6 +3245,23 @@ int getBuildingPlanValue(
         {1, 2, 1}
     };
 
+    // Original Quarry PlanYX normalized from 4x4
+    // to its active 3x2 footprint:
+    //
+    // 1 1 1
+    // 1 2 1
+    static const int quarryPlan[2][3] = {
+        {1, 1, 1},
+        {1, 2, 1}
+    };
+
+    // Original Mill PlanYX normalized from 4x4
+    // to its active 3x2 footprint.
+    static const int millPlan[2][3] = {
+        {1, 1, 1},
+        {1, 2, 1}
+    };
+
     int width = getBuildingWidth(type);
     int height = getBuildingHeight(type);
 
@@ -2942,6 +3282,10 @@ int getBuildingPlanValue(
 
         case BuildingType::School:
             return schoolPlan[localY][localX];
+        case BuildingType::Quarry:
+            return quarryPlan[localY][localX];
+        case BuildingType::Mill:
+            return millPlan[localY][localX];
     }
 
     return 0;
@@ -2961,6 +3305,10 @@ int getBuildingWoodCost(BuildingType type)
 
         case BuildingType::School:
             return 6;
+        case BuildingType::Quarry:
+            return 3;
+        case BuildingType::Mill:
+            return 4;
     }
 
     return 0;
@@ -2980,6 +3328,10 @@ int getBuildingStoneCost(BuildingType type)
 
         case BuildingType::School:
             return 5;
+        case BuildingType::Quarry:
+            return 2;
+        case BuildingType::Mill:
+            return 3;
     }
 
     return 0;
@@ -2998,6 +3350,10 @@ int getBuildingWoodSteps(BuildingType type)
             return 26;
 
         case BuildingType::School:
+            return 21;
+        case BuildingType::Quarry:
+            return 17;
+        case BuildingType::Mill:
             return 21;
     }
 
@@ -3018,6 +3374,10 @@ int getBuildingStoneSteps(BuildingType type)
 
         case BuildingType::School:
             return 65;
+        case BuildingType::Quarry:
+            return 18;
+        case BuildingType::Mill:
+            return 31;
     }
 
     return 0;
@@ -3080,6 +3440,36 @@ BuildingEntrance getBuildingEntrance(
                 2,
                 9,
                 4
+            };
+
+        case BuildingType::Quarry:
+            // Original houses.dat:
+            // EntranceOffset   = (0, 0)
+            // EntranceOffsetPx = (26, 10)
+            //
+            // Original PlanYX entrance (2,3)
+            // normalized to active 3x2 footprint:
+            // local entrance (1,1).
+            return {
+                1,
+                1,
+                26,
+                10
+            };
+
+        case BuildingType::Mill:
+            // Original houses.dat record 22:
+            // EntranceOffset   = (0, 0)
+            // EntranceOffsetPx = (16, 15)
+            //
+            // Original PlanYX entrance (2,3)
+            // normalized to active 3x2 footprint:
+            // local entrance (1,1).
+            return {
+                1,
+                1,
+                16,
+                15
             };
 
         default:

@@ -3251,6 +3251,32 @@ void renderGameUI(
 
                 selectedIsBuilding = true;
                 break;
+
+            case GameUIBuildSelection::Quarry:
+                selectedBuildIcon =
+                    getHouseIcon(
+                        houseIcons,
+                        HouseIconType::Quarry
+                    );
+
+                selectedBuildingType =
+                    BuildingType::Quarry;
+
+                selectedIsBuilding = true;
+                break;
+
+            case GameUIBuildSelection::Mill:
+                selectedBuildIcon =
+                    getHouseIcon(
+                        houseIcons,
+                        HouseIconType::Mill
+                    );
+
+                selectedBuildingType =
+                    BuildingType::Mill;
+
+                selectedIsBuilding = true;
+                break;
         }
         }
 
@@ -3549,6 +3575,8 @@ void renderGameUI(
                 case HouseIconType::Farm:
                 case HouseIconType::Bakery:
                 case HouseIconType::Store:
+                case HouseIconType::Quarry:
+                case HouseIconType::Mill:
                     implemented = true;
                     break;
 
@@ -4909,9 +4937,10 @@ void moveGameUISelection(
             ui->buildSelection
         );
 
-    // Aktualni KaMVita Build obsahuje pet funkcnich
-    // polozek v jedine rade podle ButtonFlat geometrie.
-    const int itemCount = 5;
+    // Mill is selectable as the sixth implemented Build
+    // selection. Placement remains intentionally disabled
+    // until its original footprint/runtime is connected.
+    const int itemCount = 6;
 
     if (deltaX < 0) {
         --current;

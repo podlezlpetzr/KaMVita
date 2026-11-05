@@ -1,0 +1,12 @@
+house_index=22
+house_action=ha_Idle
+cell_width=17
+cell_height=16
+frame_count=30
+columns=30
+rows=1
+anchor_x=4
+anchor_y=-52
+move_x=0
+move_y=-1
+rx_sequence=1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1096,1097,1098,1099,1100,1100,1100,1100,1100,1100,1099,1098,1097,1096,1095,1095,1095,1095,1095

@@ -64,7 +64,9 @@ enum class GameUIBuildSelection {
     Store = 1,
     Bakery = 2,
     Farm = 3,
-    School = 4
+    School = 4,
+    Quarry = 5,
+    Mill = 6
 };
 
 struct GameUIState {
