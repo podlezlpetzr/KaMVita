@@ -1,4 +1,5 @@
 #include "render/terrain.h"
+#include "original_kam/original_kam_resources.h"
 #include "render/kam_plan_renderer.h"
 #include "game/buildings.h"
 #include "game/units.h"
@@ -1409,6 +1410,191 @@ int main(int argc, char* argv[])
         return 1;
     }
     // =====================================================
+    // ORIGINAL KAM DATA RUNTIME DIAGNOSTIC
+    //
+    // Experimental KAMV00002 only.
+    //
+    // Original game data stays external at:
+    //
+    // ux0:data/kamvita_runtime/original/data
+    //
+    // This checkpoint is read-only.
+    // Current BMP assets remain authoritative.
+    // Failure to load original data is non-fatal.
+    // =====================================================
+
+    OriginalKaM::Resources originalKaMResources;
+
+    const char* originalKaMDataRoot =
+        "ux0:data/kamvita_runtime/original/data";
+
+    const bool originalKaMReady =
+        originalKaMResources.initialize(
+            originalKaMDataRoot
+        );
+
+    FILE* originalDataDiagnostic =
+        fopen(
+            "ux0:data/kamvita_runtime/"
+            "original_data_runtime.txt",
+            "w"
+        );
+
+    if (originalDataDiagnostic) {
+        fprintf(
+            originalDataDiagnostic,
+            "DATARUNTIME_TITLE_ID=KAMV00002\n"
+        );
+
+        fprintf(
+            originalDataDiagnostic,
+            "DATA_ROOT=%s\n",
+            originalKaMDataRoot
+        );
+
+        fprintf(
+            originalDataDiagnostic,
+            "INITIALIZE=%s\n",
+            originalKaMReady
+                ? "OK"
+                : "FAILED"
+        );
+
+        if (originalKaMReady) {
+            OriginalKaM::HouseDatRecord mill;
+
+            const bool millRecordOk =
+                originalKaMResources.readMillRecord(
+                    &mill
+                );
+
+            fprintf(
+                originalDataDiagnostic,
+                "MILL_RECORD=%s\n",
+                millRecordOk
+                    ? "OK"
+                    : "FAILED"
+            );
+
+            if (millRecordOk) {
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_DAT_INDEX=%d\n",
+                    mill.datIndex
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_STONE_RX=%d\n",
+                    mill.stonePicRx
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_WOOD_RX=%d\n",
+                    mill.woodPicRx
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_WOOD_STEPS=%d\n",
+                    mill.woodSteps
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_STONE_STEPS=%d\n",
+                    mill.stoneSteps
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_WOOD_COST=%d\n",
+                    mill.woodCost
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_STONE_COST=%d\n",
+                    mill.stoneCost
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_ENTRANCE_PX=%d,%d\n",
+                    mill.entrancePixelX,
+                    mill.entrancePixelY
+                );
+            }
+
+            OriginalKaM::RxSprite millStone;
+
+            const bool millStoneOk =
+                millRecordOk &&
+                originalKaMResources.loadRxSprite(
+                    mill.stonePicRx,
+                    &millStone
+                );
+
+            fprintf(
+                originalDataDiagnostic,
+                "MILL_STONE_SPRITE=%s\n",
+                millStoneOk
+                    ? "OK"
+                    : "FAILED"
+            );
+
+            if (millStoneOk) {
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_STONE_SIZE=%d,%d\n",
+                    millStone.width,
+                    millStone.height
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_STONE_PIVOT=%d,%d\n",
+                    millStone.pivotX,
+                    millStone.pivotY
+                );
+
+                fprintf(
+                    originalDataDiagnostic,
+                    "MILL_STONE_RGBA_PIXELS=%lu\n",
+                    static_cast<unsigned long>(
+                        millStone.rgbaPixels.size()
+                    )
+                );
+            }
+        } else {
+            fprintf(
+                originalDataDiagnostic,
+                "ERROR=%s\n",
+                originalKaMResources
+                    .getLastError()
+                    .c_str()
+            );
+
+            fprintf(
+                originalDataDiagnostic,
+                "BMP_FALLBACK=ACTIVE\n"
+            );
+        }
+
+        fprintf(
+            originalDataDiagnostic,
+            "BMP_RENDERER=UNCHANGED\n"
+        );
+
+        fclose(
+            originalDataDiagnostic
+        );
+
+        originalDataDiagnostic = nullptr;
+    }
+
+    // =====================================================
     // REMAKE-STYLE SAVE DIRECTORY ENUMERATION
     //
     // KaM Remake builds its Load/Save list from named save
@@ -1485,7 +1671,228 @@ int main(int argc, char* argv[])
     KaMPlanResources kamPlanResources =
         loadKaMPlanResources(renderer);
     BuildingResources buildingResources = loadBuildingResources(renderer);
+
+    // =====================================================
+    // MILL STONEPIC SDL RUNTIME TEXTURE
+    //
+    // First visual proof that KAMV00002 renders the
+    // completed Mill base directly from the StonePic
+    // selected by the original Mill houses.dat record.
+    //
+    // The construction atlases remain packaged fallbacks.
+    // =====================================================
+
+    bool runtimeMillStoneTextureReady = false;
+
+    int runtimeMillDatIndex = -1;
+    int runtimeMillStoneRx = 0;
+
+    int runtimeMillStoneWidth = 0;
+    int runtimeMillStoneHeight = 0;
+
+    int runtimeMillStonePivotX = 0;
+    int runtimeMillStonePivotY = 0;
+
+    if (originalKaMReady) {
+        OriginalKaM::HouseDatRecord runtimeMillRecord;
+        OriginalKaM::RxSprite runtimeMillStone;
+
+        const bool runtimeMillRecordReady =
+            originalKaMResources.readHouseRecord(
+                OriginalKaM::HouseType::Mill,
+                &runtimeMillRecord
+            );
+
+        bool runtimeMillStoneDecoded = false;
+
+        if (runtimeMillRecordReady) {
+            runtimeMillDatIndex =
+                runtimeMillRecord.datIndex;
+
+            runtimeMillStoneRx =
+                runtimeMillRecord.stonePicRx;
+
+            runtimeMillStoneDecoded =
+                originalKaMResources.loadRxSprite(
+                    runtimeMillStoneRx,
+                    &runtimeMillStone
+                );
+        }
+
+        if (runtimeMillStoneDecoded) {
+            runtimeMillStoneWidth =
+                runtimeMillStone.width;
+
+            runtimeMillStoneHeight =
+                runtimeMillStone.height;
+
+            runtimeMillStonePivotX =
+                runtimeMillStone.pivotX;
+
+            runtimeMillStonePivotY =
+                runtimeMillStone.pivotY;
+        }
+
+        const std::size_t expectedPixelCount =
+            runtimeMillStoneDecoded
+                ? static_cast<std::size_t>(
+                    runtimeMillStone.width
+                ) *
+                    static_cast<std::size_t>(
+                        runtimeMillStone.height
+                    )
+                : 0;
+
+        if (
+            runtimeMillStoneDecoded &&
+            runtimeMillStone.width > 0 &&
+            runtimeMillStone.height > 0 &&
+            runtimeMillStone.rgbaPixels.size() ==
+                expectedPixelCount &&
+            !runtimeMillStone.rgbaPixels.empty()
+        ) {
+            SDL_Texture* runtimeTexture =
+                SDL_CreateTexture(
+                    renderer,
+                    SDL_PIXELFORMAT_ABGR8888,
+                    SDL_TEXTUREACCESS_STATIC,
+                    runtimeMillStone.width,
+                    runtimeMillStone.height
+                );
+
+            if (runtimeTexture) {
+                const int texturePitch =
+                    runtimeMillStone.width *
+                    static_cast<int>(
+                        sizeof(std::uint32_t)
+                    );
+
+                const void* runtimePixelData =
+                    static_cast<const void*>(
+                        &runtimeMillStone
+                            .rgbaPixels[0]
+                    );
+
+                const int updateResult =
+                    SDL_UpdateTexture(
+                        runtimeTexture,
+                        nullptr,
+                        runtimePixelData,
+                        texturePitch
+                    );
+
+                if (updateResult == 0) {
+                    SDL_SetTextureBlendMode(
+                        runtimeTexture,
+                        SDL_BLENDMODE_BLEND
+                    );
+
+                    buildingResources
+                        .millRuntimeStoneTexture =
+                            runtimeTexture;
+
+                    runtimeMillStoneTextureReady =
+                        true;
+                } else {
+                    SDL_DestroyTexture(
+                        runtimeTexture
+                    );
+
+                    runtimeTexture = nullptr;
+                }
+            }
+        }
+    }
+
     UnitResources unitResources = loadUnitResources(renderer);
+
+    FILE* runtimeTextureDiagnostic =
+        fopen(
+            "ux0:data/kamvita_runtime/"
+            "original_data_texture.txt",
+            "w"
+        );
+
+    if (runtimeTextureDiagnostic) {
+        fprintf(
+            runtimeTextureDiagnostic,
+            "TITLE_ID=KAMV00002\n"
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "ORIGINAL_DATA_READY=%s\n",
+            originalKaMReady
+                ? "YES"
+                : "NO"
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "MILL_DAT_INDEX=%d\n",
+            runtimeMillDatIndex
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "MILL_STONE_RX=%d\n",
+            runtimeMillStoneRx
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "MILL_STONE_TEXTURE=%s\n",
+            runtimeMillStoneTextureReady
+                ? "OK"
+                : "FALLBACK"
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "MILL_STONE_SIZE=%d,%d\n",
+            runtimeMillStoneWidth,
+            runtimeMillStoneHeight
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "MILL_STONE_PIVOT=%d,%d\n",
+            runtimeMillStonePivotX,
+            runtimeMillStonePivotY
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "COMPLETED_MILL_SOURCE=%s\n",
+            runtimeMillStoneTextureReady
+                ? "EXTERNAL_HOUSES_RX"
+                : "PACKAGED_BMP_ATLAS"
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "CONSTRUCTION_SOURCE="
+            "PACKAGED_BMP_ATLAS\n"
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "TURBINE_SOURCE="
+            "PACKAGED_BMP_ATLAS\n"
+        );
+
+        fprintf(
+            runtimeTextureDiagnostic,
+            "IDLE_SOURCE="
+            "PACKAGED_BMP_ATLAS\n"
+        );
+
+        fclose(
+            runtimeTextureDiagnostic
+        );
+
+        runtimeTextureDiagnostic = nullptr;
+    }
 
     UnitUIResources unitUIResources =
         loadUnitUIResources(renderer);

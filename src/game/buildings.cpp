@@ -1030,18 +1030,41 @@ void renderBuildings(
 
         // Kamenna vrstva se vykresluje pres hotove drevo.
         if (stoneAtlas && stoneStep > 0) {
-            int frameColumn =
-                stoneStep % stoneColumns;
+            const bool useRuntimeMillStone =
+                building.type == BuildingType::Mill &&
+                stoneStep >= stoneMaximumStep &&
+                resources.millRuntimeStoneTexture !=
+                    nullptr;
 
-            int frameRow =
-                stoneStep / stoneColumns;
+            SDL_Texture* renderedStoneTexture =
+                useRuntimeMillStone
+                    ? resources.millRuntimeStoneTexture
+                    : stoneAtlas;
 
-            SDL_Rect source = {
-                frameColumn * stoneFrameWidth,
-                frameRow * stoneFrameHeight,
-                stoneFrameWidth,
-                stoneFrameHeight
-            };
+            SDL_Rect source = {};
+
+            if (useRuntimeMillStone) {
+                // Direct external houses.rx sprite RX 358.
+                source.x = 0;
+                source.y = 0;
+                source.w = stoneFrameWidth;
+                source.h = stoneFrameHeight;
+            } else {
+                const int frameColumn =
+                    stoneStep % stoneColumns;
+
+                const int frameRow =
+                    stoneStep / stoneColumns;
+
+                source.x =
+                    frameColumn * stoneFrameWidth;
+
+                source.y =
+                    frameRow * stoneFrameHeight;
+
+                source.w = stoneFrameWidth;
+                source.h = stoneFrameHeight;
+            }
 
             SDL_Rect destination = {
                 stoneDestinationX,
@@ -1052,7 +1075,7 @@ void renderBuildings(
 
             SDL_RenderCopy(
                 renderer,
-                stoneAtlas,
+                renderedStoneTexture,
                 &source,
                 &destination
             );
@@ -3004,6 +3027,10 @@ BuildingResources loadBuildingResources(
         "app0:assets/buildings/construction/mill/stone_atlas.bmp"
     );
 
+    // main.cpp may replace the completed Mill source with
+    // a texture decoded directly from external houses.rx.
+    resources.millRuntimeStoneTexture = nullptr;
+
     resources.millTurbineAtlas =
         loadColorKeyTexture(
             renderer,
@@ -3099,6 +3126,10 @@ void destroyBuildingResources(
     SDL_DestroyTexture(resources->millStoneAtlas);
 
     SDL_DestroyTexture(
+        resources->millRuntimeStoneTexture
+    );
+
+    SDL_DestroyTexture(
         resources->millTurbineAtlas
     );
 
@@ -3163,6 +3194,7 @@ void destroyBuildingResources(
 
     resources->millWoodAtlas = nullptr;
     resources->millStoneAtlas = nullptr;
+    resources->millRuntimeStoneTexture = nullptr;
 
     resources->millTurbineAtlas = nullptr;
 

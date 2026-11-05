@@ -435,6 +435,13 @@ struct BuildingResources {
     SDL_Texture* millWoodAtlas;
     SDL_Texture* millStoneAtlas;
 
+    // Optional completed Mill StonePic loaded directly
+    // from external original houses.rx, sprite RX 358.
+    //
+    // If unavailable, the final frame of millStoneAtlas
+    // remains the complete packaged fallback.
+    SDL_Texture* millRuntimeStoneTexture;
+
     // Original Mill ha_Flagpole turbine:
     // RX 348..357, 10 frames.
     // cell   = 106x147

@@ -1,0 +1,27 @@
+KaMVita Original Data Runtime experiment
+
+Stable KaMVita:
+  TITLE_ID:
+    KAMV00001
+
+  Vita application data:
+    ux0:data/kamvita/
+
+Experimental DataRuntime:
+  TITLE_ID:
+    KAMV00002
+
+  Vita application data:
+    ux0:data/kamvita_runtime/
+
+  Original Knights and Merchants data:
+    ux0:data/kamvita_runtime/original/data/
+
+Expected first runtime files:
+
+  ux0:data/kamvita_runtime/original/data/defines/houses.dat
+  ux0:data/kamvita_runtime/original/data/gfx/res/houses.rx
+  ux0:data/kamvita_runtime/original/data/gfx/pal0.bbm
+
+The original game data remains external.
+It must not be packaged into the KaMVita VPK.

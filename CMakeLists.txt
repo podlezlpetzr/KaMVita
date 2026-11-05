@@ -19,14 +19,15 @@ project(KaMVita LANGUAGES C CXX)
 
 include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
-set(VITA_APP_NAME "KaM Vita")
-set(VITA_TITLEID "KAMV00001")
+set(VITA_APP_NAME "KaM Vita DataRuntime")
+set(VITA_TITLEID "KAMV00002")
 set(VITA_VERSION "00.01")
 
 find_package(SDL2 REQUIRED)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/original_kam/original_kam_resources.cpp
     src/render/terrain.cpp
     src/render/kam_plan_renderer.cpp
     src/game/buildings.cpp
