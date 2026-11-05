@@ -3323,8 +3323,295 @@ int getBuildingPlanValue(
     return 0;
 }
 
+namespace {
+
+
+constexpr int RuntimeCostBuildingCount = 6;
+
+
+int gBuildingRuntimeWoodCosts[
+    RuntimeCostBuildingCount
+] = {
+    0, 0, 0, 0, 0, 0
+};
+
+
+int gBuildingRuntimeStoneCosts[
+    RuntimeCostBuildingCount
+] = {
+    0, 0, 0, 0, 0, 0
+};
+
+
+int gBuildingRuntimeWoodSteps[
+    RuntimeCostBuildingCount
+] = {
+    0, 0, 0, 0, 0, 0
+};
+
+
+int gBuildingRuntimeStoneSteps[
+    RuntimeCostBuildingCount
+] = {
+    0, 0, 0, 0, 0, 0
+};
+
+
+int buildingTypeToRuntimeCostIndex(
+    BuildingType type
+)
+{
+    switch (type) {
+        case BuildingType::Store:
+            return 0;
+
+        case BuildingType::Bakery:
+            return 1;
+
+        case BuildingType::Farm:
+            return 2;
+
+        case BuildingType::School:
+            return 3;
+
+        case BuildingType::Quarry:
+            return 4;
+
+        case BuildingType::Mill:
+            return 5;
+    }
+
+    return -1;
+}
+
+
+} // namespace
+
+
+void clearBuildingRuntimeCosts()
+{
+    for (
+        int index = 0;
+        index < RuntimeCostBuildingCount;
+        ++index
+    ) {
+        gBuildingRuntimeWoodCosts[index] = 0;
+        gBuildingRuntimeStoneCosts[index] = 0;
+    }
+}
+
+
+bool setBuildingRuntimeCosts(
+    BuildingType type,
+    int woodCost,
+    int stoneCost
+)
+{
+    const int index =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        index < 0 ||
+        index >= RuntimeCostBuildingCount ||
+        woodCost <= 0 ||
+        stoneCost <= 0
+    ) {
+        return false;
+    }
+
+    gBuildingRuntimeWoodCosts[index] =
+        woodCost;
+
+    gBuildingRuntimeStoneCosts[index] =
+        stoneCost;
+
+    return true;
+}
+
+
+bool hasBuildingRuntimeCosts(
+    BuildingType type
+)
+{
+    const int index =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        index < 0 ||
+        index >= RuntimeCostBuildingCount
+    ) {
+        return false;
+    }
+
+    return
+        gBuildingRuntimeWoodCosts[index] > 0 &&
+        gBuildingRuntimeStoneCosts[index] > 0;
+}
+
+
+void clearBuildingRuntimeSteps()
+{
+    for (
+        int index = 0;
+        index < RuntimeCostBuildingCount;
+        ++index
+    ) {
+        gBuildingRuntimeWoodSteps[index] = 0;
+        gBuildingRuntimeStoneSteps[index] = 0;
+    }
+}
+
+
+bool setBuildingRuntimeSteps(
+    BuildingType type,
+    int woodSteps,
+    int stoneSteps
+)
+{
+    const int index =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        index < 0 ||
+        index >= RuntimeCostBuildingCount ||
+        woodSteps <= 0 ||
+        stoneSteps <= 0
+    ) {
+        return false;
+    }
+
+    gBuildingRuntimeWoodSteps[index] =
+        woodSteps;
+
+    gBuildingRuntimeStoneSteps[index] =
+        stoneSteps;
+
+    return true;
+}
+
+
+bool hasBuildingRuntimeSteps(
+    BuildingType type
+)
+{
+    const int index =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        index < 0 ||
+        index >= RuntimeCostBuildingCount
+    ) {
+        return false;
+    }
+
+    return
+        gBuildingRuntimeWoodSteps[index] > 0 &&
+        gBuildingRuntimeStoneSteps[index] > 0;
+}
+
+
+namespace {
+
+
+int gBuildingRuntimeEntrancePixelX[6] = {
+    0, 0, 0, 0, 0, 0
+};
+
+
+int gBuildingRuntimeEntrancePixelY[6] = {
+    0, 0, 0, 0, 0, 0
+};
+
+
+bool gBuildingRuntimeEntranceValid[6] = {
+    false, false, false,
+    false, false, false
+};
+
+
+} // namespace
+
+
+void clearBuildingRuntimeEntrancePixels()
+{
+    for (int index = 0; index < 6; ++index) {
+        gBuildingRuntimeEntrancePixelX[index] = 0;
+        gBuildingRuntimeEntrancePixelY[index] = 0;
+        gBuildingRuntimeEntranceValid[index] = false;
+    }
+}
+
+
+bool setBuildingRuntimeEntrancePixels(
+    BuildingType type,
+    int pixelOffsetX,
+    int pixelOffsetY
+)
+{
+    const int index =
+        static_cast<int>(type);
+
+    if (index < 0 || index >= 6)
+        return false;
+
+    gBuildingRuntimeEntrancePixelX[index] =
+        pixelOffsetX;
+
+    gBuildingRuntimeEntrancePixelY[index] =
+        pixelOffsetY;
+
+    gBuildingRuntimeEntranceValid[index] =
+        true;
+
+    return true;
+}
+
+
+bool hasBuildingRuntimeEntrancePixels(
+    BuildingType type
+)
+{
+    const int index =
+        static_cast<int>(type);
+
+    return
+        index >= 0 &&
+        index < 6 &&
+        gBuildingRuntimeEntranceValid[index];
+}
+
+
 int getBuildingWoodCost(BuildingType type)
 {
+    const int runtimeIndex =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        runtimeIndex >= 0 &&
+        runtimeIndex <
+            RuntimeCostBuildingCount &&
+        gBuildingRuntimeWoodCosts[
+            runtimeIndex
+        ] > 0
+    ) {
+        return
+            gBuildingRuntimeWoodCosts[
+                runtimeIndex
+            ];
+    }
+
+    // Stable fallback used if external houses.dat
+    // is missing or its record was rejected.
     switch (type) {
         case BuildingType::Store:
             return 6;
@@ -3348,6 +3635,27 @@ int getBuildingWoodCost(BuildingType type)
 
 int getBuildingStoneCost(BuildingType type)
 {
+    const int runtimeIndex =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        runtimeIndex >= 0 &&
+        runtimeIndex <
+            RuntimeCostBuildingCount &&
+        gBuildingRuntimeStoneCosts[
+            runtimeIndex
+        ] > 0
+    ) {
+        return
+            gBuildingRuntimeStoneCosts[
+                runtimeIndex
+            ];
+    }
+
+    // Stable fallback used if external houses.dat
+    // is missing or its record was rejected.
     switch (type) {
         case BuildingType::Store:
             return 5;
@@ -3371,6 +3679,26 @@ int getBuildingStoneCost(BuildingType type)
 
 int getBuildingWoodSteps(BuildingType type)
 {
+    const int runtimeIndex =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        runtimeIndex >= 0 &&
+        runtimeIndex <
+            RuntimeCostBuildingCount &&
+        gBuildingRuntimeWoodSteps[
+            runtimeIndex
+        ] > 0
+    ) {
+        return
+            gBuildingRuntimeWoodSteps[
+                runtimeIndex
+            ];
+    }
+
+    // Stable fallback for missing external data.
     switch (type) {
         case BuildingType::Store:
             return 24;
@@ -3394,6 +3722,26 @@ int getBuildingWoodSteps(BuildingType type)
 
 int getBuildingStoneSteps(BuildingType type)
 {
+    const int runtimeIndex =
+        buildingTypeToRuntimeCostIndex(
+            type
+        );
+
+    if (
+        runtimeIndex >= 0 &&
+        runtimeIndex <
+            RuntimeCostBuildingCount &&
+        gBuildingRuntimeStoneSteps[
+            runtimeIndex
+        ] > 0
+    ) {
+        return
+            gBuildingRuntimeStoneSteps[
+                runtimeIndex
+            ];
+    }
+
+    // Stable fallback for missing external data.
     switch (type) {
         case BuildingType::Store:
             return 75;
@@ -3428,22 +3776,26 @@ BuildingEntrance getBuildingEntrance(
     BuildingType type
 )
 {
+    BuildingEntrance result = {};
+
     switch (type) {
         case BuildingType::School:
-            return {
-                1,  // prostredni pole
-                2,  // spodni rada footprintu
+            result = {
+                1,
+                2,
                 17,
                 10
             };
+            break;
 
         case BuildingType::Store:
-            return {
+            result = {
                 1,
                 2,
                 19,
                 7
             };
+            break;
 
         case BuildingType::Bakery:
             // Originalni houses.dat:
@@ -3452,12 +3804,13 @@ BuildingEntrance getBuildingEntrance(
             // Aktivni KaMVita footprint entrance zustava
             // na local (2,2). Pixelovy offset nyni odpovida
             // skutecnemu Bakery vstupu v originalnim sprite.
-            return {
+            result = {
                 2,
                 2,
                 17,
                 12
             };
+            break;
 
         case BuildingType::Farm:
             // Originalni houses.dat:
@@ -3467,12 +3820,13 @@ BuildingEntrance getBuildingEntrance(
             // Aktivni KaMVita footprint entrance zustava
             // na local (1,2). Pixelovy offset odpovida
             // skutecnemu Farm vstupu v originalnim sprite.
-            return {
+            result = {
                 1,
                 2,
                 9,
                 4
             };
+            break;
 
         case BuildingType::Quarry:
             // Original houses.dat:
@@ -3482,12 +3836,13 @@ BuildingEntrance getBuildingEntrance(
             // Original PlanYX entrance (2,3)
             // normalized to active 3x2 footprint:
             // local entrance (1,1).
-            return {
+            result = {
                 1,
                 1,
                 26,
                 10
             };
+            break;
 
         case BuildingType::Mill:
             // Original houses.dat record 22:
@@ -3497,21 +3852,46 @@ BuildingEntrance getBuildingEntrance(
             // Original PlanYX entrance (2,3)
             // normalized to active 3x2 footprint:
             // local entrance (1,1).
-            return {
+            result = {
                 1,
                 1,
                 16,
                 15
             };
+            break;
 
         default:
-            return {
+            result = {
                 0,
                 0,
                 0,
                 0
             };
+            break;
     }
+
+    const int runtimeIndex =
+        static_cast<int>(type);
+
+    if (
+        runtimeIndex >= 0 &&
+        runtimeIndex < 6 &&
+        gBuildingRuntimeEntranceValid[
+            runtimeIndex
+        ]
+    ) {
+        result.pixelOffsetX =
+            gBuildingRuntimeEntrancePixelX[
+                runtimeIndex
+            ];
+
+        result.pixelOffsetY =
+            gBuildingRuntimeEntrancePixelY[
+                runtimeIndex
+            ];
+    }
+
+    return result;
 }
 
 // ============================================================

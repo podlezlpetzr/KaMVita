@@ -475,8 +475,42 @@ int getBuildingPlanValue(
     int localY
 );
 
+// Optional WoodCost / StoneCost values loaded from
+// external original houses.dat.
+//
+// If external data is unavailable, existing values in
+// getBuildingWoodCost/getBuildingStoneCost remain fallback.
+void clearBuildingRuntimeCosts();
+
+bool setBuildingRuntimeCosts(
+    BuildingType type,
+    int woodCost,
+    int stoneCost
+);
+
+bool hasBuildingRuntimeCosts(
+    BuildingType type
+);
+
 int getBuildingWoodCost(BuildingType type);
 int getBuildingStoneCost(BuildingType type);
+
+// Optional WoodSteps / StoneSteps loaded from external
+// original houses.dat.
+//
+// Existing hardcoded values remain the fallback.
+void clearBuildingRuntimeSteps();
+
+bool setBuildingRuntimeSteps(
+    BuildingType type,
+    int woodSteps,
+    int stoneSteps
+);
+
+bool hasBuildingRuntimeSteps(
+    BuildingType type
+);
+
 int getBuildingWoodSteps(BuildingType type);
 int getBuildingStoneSteps(BuildingType type);
 
@@ -488,6 +522,23 @@ struct BuildingEntrance {
     int pixelOffsetX;
     int pixelOffsetY;
 };
+
+// Optional EntranceOffsetPx loaded from external
+// original houses.dat.
+//
+// Only pixel offsets are overridden. The logical
+// KaMVita entrance tile remains unchanged.
+void clearBuildingRuntimeEntrancePixels();
+
+bool setBuildingRuntimeEntrancePixels(
+    BuildingType type,
+    int pixelOffsetX,
+    int pixelOffsetY
+);
+
+bool hasBuildingRuntimeEntrancePixels(
+    BuildingType type
+);
 
 BuildingEntrance getBuildingEntrance(
     BuildingType type

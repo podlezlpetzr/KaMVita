@@ -1666,6 +1666,220 @@ int main(int argc, char* argv[])
     }
 
 
+    // =====================================================
+    // DAT-DRIVEN HOUSE COSTS ONLY
+    //
+    // Vita-verified DataRuntime 014 baseline plus one
+    // isolated metadata migration:
+    //
+    // WoodCost + StoneCost <- external houses.dat
+    //
+    // Construction steps, entrances and render geometry
+    // remain unchanged.
+    // =====================================================
+
+    clearBuildingRuntimeCosts();
+    clearBuildingRuntimeSteps();
+    clearBuildingRuntimeEntrancePixels();
+
+    int runtimeCostHouseCount = 0;
+    int runtimeStepHouseCount = 0;
+    int runtimeEntranceHouseCount = 0;
+
+    if (originalKaMReady) {
+        struct RuntimeCostEntry {
+            OriginalKaM::HouseType source;
+            BuildingType target;
+        };
+
+        const RuntimeCostEntry entries[] = {
+            {
+                OriginalKaM::HouseType::Store,
+                BuildingType::Store
+            },
+            {
+                OriginalKaM::HouseType::Bakery,
+                BuildingType::Bakery
+            },
+            {
+                OriginalKaM::HouseType::Farm,
+                BuildingType::Farm
+            },
+            {
+                OriginalKaM::HouseType::School,
+                BuildingType::School
+            },
+            {
+                OriginalKaM::HouseType::Quarry,
+                BuildingType::Quarry
+            },
+            {
+                OriginalKaM::HouseType::Mill,
+                BuildingType::Mill
+            }
+        };
+
+        const int entryCount =
+            static_cast<int>(
+                sizeof(entries) /
+                sizeof(entries[0])
+            );
+
+        for (
+            int index = 0;
+            index < entryCount;
+            ++index
+        ) {
+            OriginalKaM::HouseDatRecord record;
+
+            if (
+                !originalKaMResources
+                    .readHouseRecord(
+                        entries[index].source,
+                        &record
+                    )
+            ) {
+                continue;
+            }
+
+            if (
+                setBuildingRuntimeCosts(
+                    entries[index].target,
+                    record.woodCost,
+                    record.stoneCost
+                )
+            ) {
+                ++runtimeCostHouseCount;
+            }
+
+            if (
+                setBuildingRuntimeSteps(
+                    entries[index].target,
+                    record.woodSteps,
+                    record.stoneSteps
+                )
+            ) {
+                ++runtimeStepHouseCount;
+            }
+
+            if (
+                setBuildingRuntimeEntrancePixels(
+                    entries[index].target,
+                    record.entrancePixelX,
+                    record.entrancePixelY
+                )
+            ) {
+                ++runtimeEntranceHouseCount;
+            }
+        }
+    }
+
+    FILE* costDiagnostic =
+        fopen(
+            "ux0:data/kamvita_runtime/"
+            "original_cost_runtime.txt",
+            "w"
+        );
+
+    if (costDiagnostic) {
+        fprintf(
+            costDiagnostic,
+            "TITLE_ID=KAMV00002\n"
+        );
+
+        fprintf(
+            costDiagnostic,
+            "ORIGINAL_DATA_READY=%s\n",
+            originalKaMReady
+                ? "YES"
+                : "NO"
+        );
+
+        fprintf(
+            costDiagnostic,
+            "RUNTIME_COST_HOUSE_COUNT=%d\n",
+            runtimeCostHouseCount
+        );
+
+        fprintf(
+            costDiagnostic,
+            "EXPECTED_COST_HOUSE_COUNT=6\n"
+        );
+
+        fprintf(
+            costDiagnostic,
+            "COST_SOURCE=%s\n",
+            runtimeCostHouseCount == 6
+                ? "EXTERNAL_HOUSES_DAT"
+                : (
+                    runtimeCostHouseCount > 0
+                        ? "HYBRID"
+                        : "HARDCODED_FALLBACK"
+                )
+        );
+
+        fprintf(
+            costDiagnostic,
+            "RUNTIME_STEP_HOUSE_COUNT=%d\n",
+            runtimeStepHouseCount
+        );
+
+        fprintf(
+            costDiagnostic,
+            "EXPECTED_STEP_HOUSE_COUNT=6\n"
+        );
+
+        fprintf(
+            costDiagnostic,
+            "CONSTRUCTION_STEPS_SOURCE=%s\n",
+            runtimeStepHouseCount == 6
+                ? "EXTERNAL_HOUSES_DAT"
+                : (
+                    runtimeStepHouseCount > 0
+                        ? "HYBRID"
+                        : "HARDCODED_FALLBACK"
+                )
+        );
+
+        fprintf(
+            costDiagnostic,
+            "RUNTIME_ENTRANCE_HOUSE_COUNT=%d\n",
+            runtimeEntranceHouseCount
+        );
+
+        fprintf(
+            costDiagnostic,
+            "EXPECTED_ENTRANCE_HOUSE_COUNT=6\n"
+        );
+
+        fprintf(
+            costDiagnostic,
+            "ENTRANCE_PIXEL_SOURCE=%s\n",
+            runtimeEntranceHouseCount == 6
+                ? "EXTERNAL_HOUSES_DAT"
+                : (
+                    runtimeEntranceHouseCount > 0
+                        ? "HYBRID"
+                        : "HARDCODED_FALLBACK"
+                )
+        );
+
+        fprintf(
+            costDiagnostic,
+            "ENTRANCE_TILE_SOURCE="
+            "KAMVITA_EXISTING\n"
+        );
+
+        fprintf(
+            costDiagnostic,
+            "HOUSE_EDGE_BOUNDS_FIX="
+            "ACTIVE\n"
+        );
+
+        fclose(costDiagnostic);
+        costDiagnostic = nullptr;
+    }
+
     TerrainResources terrain = loadTerrainResources(renderer);
 
     KaMPlanResources kamPlanResources =
