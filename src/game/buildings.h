@@ -429,18 +429,17 @@ struct BuildingResources {
     SDL_Texture* quarryWoodAtlas;
     SDL_Texture* quarryStoneAtlas;
 
-    // Original Mill construction from houses.rx:
-    // Wood  RX 359 + mask 361, 21 steps.
-    // Stone RX 358 + mask 360, 31 steps.
-    SDL_Texture* millWoodAtlas;
-    SDL_Texture* millStoneAtlas;
+    // Original Mill construction is loaded directly
+    // from external original KaM data:
+    //
+    // Wood  RX359 + WoodMask RX361, 21 steps.
+    // Stone RX358 + StoneMask RX360, 31 steps.
+    //
+    // No packaged construction BMP atlas is required.
 
     // Optional completed Mill WoodPic loaded directly
     // from external original houses.rx, sprite selected
     // by the Mill houses.dat record, currently RX 359.
-    //
-    // If unavailable, millWoodAtlas remains the packaged
-    // construction fallback.
     SDL_Texture* millRuntimeWoodTexture;
 
     // Runtime Mill wooden construction generated directly
@@ -455,9 +454,6 @@ struct BuildingResources {
 
     // Optional completed Mill StonePic loaded directly
     // from external original houses.rx, sprite RX 358.
-    //
-    // If unavailable, the final frame of millStoneAtlas
-    // remains the complete packaged fallback.
     SDL_Texture* millRuntimeStoneTexture;
 
     // Runtime Mill stone construction generated directly

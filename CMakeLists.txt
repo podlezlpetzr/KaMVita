@@ -205,12 +205,6 @@ vita_create_vpk(
         assets/buildings/construction/quarry/stone_atlas.bmp
         assets/buildings/construction/quarry/stone_atlas.bmp
     FILE
-        assets/buildings/construction/mill/wood_atlas.bmp
-        assets/buildings/construction/mill/wood_atlas.bmp
-    FILE
-        assets/buildings/construction/mill/stone_atlas.bmp
-        assets/buildings/construction/mill/stone_atlas.bmp
-    FILE
         assets/buildings/mill/runtime/turbine_atlas.bmp
         assets/buildings/mill/runtime/turbine_atlas.bmp
     FILE

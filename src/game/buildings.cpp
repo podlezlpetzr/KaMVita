@@ -646,8 +646,8 @@ void renderBuildings(
                 stonePivotY = -61;
                 break;
             case BuildingType::Mill:
-                woodAtlas = resources.millWoodAtlas;
-                stoneAtlas = resources.millStoneAtlas;
+                // Mill construction is runtime-only.
+                // No packaged BMP construction atlas.
 
                 // Original houses.rx 359 + 361.
                 woodFrameWidth = 103;
@@ -999,7 +999,13 @@ void renderBuildings(
                 tileSize
             );
 
-        if (woodAtlas && renderedWoodStep > 0) {
+        if (
+            renderedWoodStep > 0 &&
+            (
+                woodAtlas != nullptr ||
+                building.type == BuildingType::Mill
+            )
+        ) {
             const bool useRuntimeMillWoodStep =
                 building.type == BuildingType::Mill &&
                 renderedWoodStep > 0 &&
@@ -1100,7 +1106,13 @@ void renderBuildings(
         }
 
         // Kamenna vrstva se vykresluje pres hotove drevo.
-        if (stoneAtlas && stoneStep > 0) {
+        if (
+            stoneStep > 0 &&
+            (
+                stoneAtlas != nullptr ||
+                building.type == BuildingType::Mill
+            )
+        ) {
             const bool useRuntimeMillStoneStep =
                 building.type == BuildingType::Mill &&
                 stoneStep > 0 &&
@@ -3117,15 +3129,8 @@ BuildingResources loadBuildingResources(
         "app0:assets/buildings/construction/quarry/stone_atlas.bmp"
     );
 
-    resources.millWoodAtlas = loadColorKeyTexture(
-        renderer,
-        "app0:assets/buildings/construction/mill/wood_atlas.bmp"
-    );
-
-    resources.millStoneAtlas = loadColorKeyTexture(
-        renderer,
-        "app0:assets/buildings/construction/mill/stone_atlas.bmp"
-    );
+    // Mill construction is generated entirely from
+    // external houses.dat + houses.rx + pal0.bbm.
 
     // main.cpp may replace the completed Mill sources with
     // textures decoded directly from external houses.rx.
@@ -3232,9 +3237,6 @@ void destroyBuildingResources(
     SDL_DestroyTexture(resources->quarryWoodAtlas);
     SDL_DestroyTexture(resources->quarryStoneAtlas);
 
-    SDL_DestroyTexture(resources->millWoodAtlas);
-    SDL_DestroyTexture(resources->millStoneAtlas);
-
     SDL_DestroyTexture(
         resources->millRuntimeWoodTexture
     );
@@ -3318,8 +3320,6 @@ void destroyBuildingResources(
     resources->quarryWoodAtlas = nullptr;
     resources->quarryStoneAtlas = nullptr;
 
-    resources->millWoodAtlas = nullptr;
-    resources->millStoneAtlas = nullptr;
     resources->millRuntimeWoodTexture = nullptr;
 
     for (int step = 0; step < 22; ++step) {
