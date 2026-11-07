@@ -2140,6 +2140,188 @@ int main(int argc, char* argv[])
         }
     }
 
+    // =====================================================
+    // MILL WOODMASK RUNTIME CONSTRUCTION
+    //
+    // Generate steps 1..20 completely at runtime from:
+    //
+    //   WoodPic  = houses.dat -> RX359
+    //   WoodMask = houses.dat -> RX361
+    //
+    // Original mask rule:
+    //
+    //   mask == 0    -> hidden
+    //   mask >= step -> hidden
+    //
+    // therefore:
+    //
+    //   visible = mask != 0 && mask < step
+    //
+    // Step 21 remains the direct full WoodPic RX359 texture
+    // introduced by DataRuntime 019.
+    // =====================================================
+
+    bool runtimeMillWoodMaskReady = false;
+    int runtimeMillWoodMaskRx = 0;
+    int runtimeMillWoodMaskWidth = 0;
+    int runtimeMillWoodMaskHeight = 0;
+    int runtimeMillWoodMaskPivotX = 0;
+    int runtimeMillWoodMaskPivotY = 0;
+    int runtimeMillWoodMaskFramesReady = 0;
+
+    if (originalKaMReady) {
+        OriginalKaM::HouseDatRecord runtimeMaskRecord;
+        OriginalKaM::RxSprite runtimeMaskWood;
+        OriginalKaM::RxSprite runtimeMask;
+
+        const bool runtimeMaskRecordReady =
+            originalKaMResources.readHouseRecord(
+                OriginalKaM::HouseType::Mill,
+                &runtimeMaskRecord
+            );
+
+        bool runtimeMaskWoodDecoded = false;
+        bool runtimeMaskDecoded = false;
+
+        if (runtimeMaskRecordReady) {
+            runtimeMillWoodMaskRx =
+                runtimeMaskRecord.woodPalRx;
+
+            runtimeMaskWoodDecoded =
+                originalKaMResources.loadRxSprite(
+                    runtimeMaskRecord.woodPicRx,
+                    &runtimeMaskWood
+                );
+
+            runtimeMaskDecoded =
+                originalKaMResources.loadRxSprite(
+                    runtimeMillWoodMaskRx,
+                    &runtimeMask
+                );
+        }
+
+        if (runtimeMaskDecoded) {
+            runtimeMillWoodMaskWidth =
+                runtimeMask.width;
+
+            runtimeMillWoodMaskHeight =
+                runtimeMask.height;
+
+            runtimeMillWoodMaskPivotX =
+                runtimeMask.pivotX;
+
+            runtimeMillWoodMaskPivotY =
+                runtimeMask.pivotY;
+        }
+
+        const bool runtimeMaskGeometryReady =
+            runtimeMaskWoodDecoded &&
+            runtimeMaskDecoded &&
+            runtimeMaskWood.width > 0 &&
+            runtimeMaskWood.height > 0 &&
+            runtimeMaskWood.width ==
+                runtimeMask.width &&
+            runtimeMaskWood.height ==
+                runtimeMask.height &&
+            runtimeMaskWood.pivotX ==
+                runtimeMask.pivotX &&
+            runtimeMaskWood.pivotY ==
+                runtimeMask.pivotY &&
+            runtimeMaskWood.indexedPixels.size() ==
+                runtimeMask.indexedPixels.size() &&
+            runtimeMaskWood.rgbaPixels.size() ==
+                runtimeMask.indexedPixels.size();
+
+        if (runtimeMaskGeometryReady) {
+            runtimeMillWoodMaskReady = true;
+
+            for (
+                int constructionStep = 1;
+                constructionStep < 21;
+                ++constructionStep
+            ) {
+                std::vector<std::uint32_t>
+                    runtimeStepPixels(
+                        runtimeMaskWood
+                            .rgbaPixels.size(),
+                        static_cast<std::uint32_t>(0)
+                    );
+
+                for (
+                    std::size_t pixelIndex = 0;
+                    pixelIndex <
+                        runtimeStepPixels.size();
+                    ++pixelIndex
+                ) {
+                    const std::uint8_t maskValue =
+                        runtimeMask.indexedPixels[
+                            pixelIndex
+                        ];
+
+                    if (
+                        maskValue != 0 &&
+                        maskValue <
+                            constructionStep
+                    ) {
+                        runtimeStepPixels[pixelIndex] =
+                            runtimeMaskWood
+                                .rgbaPixels[
+                                    pixelIndex
+                                ];
+                    }
+                }
+
+                SDL_Texture* runtimeStepTexture =
+                    SDL_CreateTexture(
+                        renderer,
+                        SDL_PIXELFORMAT_ABGR8888,
+                        SDL_TEXTUREACCESS_STATIC,
+                        runtimeMaskWood.width,
+                        runtimeMaskWood.height
+                    );
+
+                if (!runtimeStepTexture)
+                    continue;
+
+                const int runtimeStepPitch =
+                    runtimeMaskWood.width *
+                    static_cast<int>(
+                        sizeof(std::uint32_t)
+                    );
+
+                const int runtimeStepUpdate =
+                    SDL_UpdateTexture(
+                        runtimeStepTexture,
+                        nullptr,
+                        static_cast<const void*>(
+                            &runtimeStepPixels[0]
+                        ),
+                        runtimeStepPitch
+                    );
+
+                if (runtimeStepUpdate != 0) {
+                    SDL_DestroyTexture(
+                        runtimeStepTexture
+                    );
+                    continue;
+                }
+
+                SDL_SetTextureBlendMode(
+                    runtimeStepTexture,
+                    SDL_BLENDMODE_BLEND
+                );
+
+                buildingResources
+                    .millRuntimeWoodSteps[
+                        constructionStep
+                    ] =
+                        runtimeStepTexture;
+
+                ++runtimeMillWoodMaskFramesReady;
+            }
+        }
+    }
+
     UnitResources unitResources = loadUnitResources(renderer);
 
     FILE* runtimeTextureDiagnostic =

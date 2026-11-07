@@ -443,6 +443,16 @@ struct BuildingResources {
     // construction fallback.
     SDL_Texture* millRuntimeWoodTexture;
 
+    // Runtime Mill wooden construction generated directly
+    // from original WoodPic RX359 + WoodMask RX361.
+    //
+    // Mask rule from the original construction generator:
+    // mask != 0 && mask < construction step.
+    //
+    // Index 0 is unused by rendering. Steps 1..21 map
+    // directly to the original DAT WoodSteps progression.
+    SDL_Texture* millRuntimeWoodSteps[22];
+
     // Optional completed Mill StonePic loaded directly
     // from external original houses.rx, sprite RX 358.
     //

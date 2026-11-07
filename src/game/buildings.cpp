@@ -1000,6 +1000,15 @@ void renderBuildings(
             );
 
         if (woodAtlas && renderedWoodStep > 0) {
+            const bool useRuntimeMillWoodStep =
+                building.type == BuildingType::Mill &&
+                renderedWoodStep > 0 &&
+                renderedWoodStep < woodMaximumStep &&
+                renderedWoodStep < 22 &&
+                resources.millRuntimeWoodSteps[
+                    renderedWoodStep
+                ] != nullptr;
+
             const bool useRuntimeMillWood =
                 building.type == BuildingType::Mill &&
                 renderedWoodStep >= woodMaximumStep &&
@@ -1009,16 +1018,27 @@ void renderBuildings(
             SDL_Texture* renderedWoodTexture =
                 useRuntimeMillWood
                     ? resources.millRuntimeWoodTexture
-                    : woodAtlas;
+                    : (
+                        useRuntimeMillWoodStep
+                            ? resources
+                                .millRuntimeWoodSteps[
+                                    renderedWoodStep
+                                ]
+                            : woodAtlas
+                    );
 
             SDL_Rect source = {};
 
             int renderedWoodWidth = woodFrameWidth;
             int renderedWoodHeight = woodFrameHeight;
 
-            if (useRuntimeMillWood) {
-                // Direct external houses.rx WoodPic,
-                // selected by the Mill houses.dat record.
+            if (
+                useRuntimeMillWood ||
+                useRuntimeMillWoodStep
+            ) {
+                // Direct external houses.rx runtime texture.
+                // Final step uses WoodPic RX359 directly.
+                // Intermediate steps use RX359 + RX361.
                 SDL_QueryTexture(
                     renderedWoodTexture,
                     nullptr,
@@ -1051,13 +1071,19 @@ void renderBuildings(
             SDL_Rect destination = {
                 woodDestinationX,
                 woodDestinationY,
-                useRuntimeMillWood
+                (
+                    useRuntimeMillWood ||
+                    useRuntimeMillWoodStep
+                )
                     ? scaleKaMHousePixel(
                         renderedWoodWidth,
                         tileSize
                     )
                     : scaledWoodWidth,
-                useRuntimeMillWood
+                (
+                    useRuntimeMillWood ||
+                    useRuntimeMillWoodStep
+                )
                     ? scaleKaMHousePixel(
                         renderedWoodHeight,
                         tileSize
@@ -3075,6 +3101,11 @@ BuildingResources loadBuildingResources(
     // main.cpp may replace the completed Mill sources with
     // textures decoded directly from external houses.rx.
     resources.millRuntimeWoodTexture = nullptr;
+
+    for (int step = 0; step < 22; ++step) {
+        resources.millRuntimeWoodSteps[step] = nullptr;
+    }
+
     resources.millRuntimeStoneTexture = nullptr;
 
     resources.millTurbineAtlas =
@@ -3175,6 +3206,12 @@ void destroyBuildingResources(
         resources->millRuntimeWoodTexture
     );
 
+    for (int step = 0; step < 22; ++step) {
+        SDL_DestroyTexture(
+            resources->millRuntimeWoodSteps[step]
+        );
+    }
+
     SDL_DestroyTexture(
         resources->millRuntimeStoneTexture
     );
@@ -3245,6 +3282,11 @@ void destroyBuildingResources(
     resources->millWoodAtlas = nullptr;
     resources->millStoneAtlas = nullptr;
     resources->millRuntimeWoodTexture = nullptr;
+
+    for (int step = 0; step < 22; ++step) {
+        resources->millRuntimeWoodSteps[step] = nullptr;
+    }
+
     resources->millRuntimeStoneTexture = nullptr;
 
     resources->millTurbineAtlas = nullptr;
