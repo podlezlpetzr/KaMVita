@@ -435,6 +435,14 @@ struct BuildingResources {
     SDL_Texture* millWoodAtlas;
     SDL_Texture* millStoneAtlas;
 
+    // Optional completed Mill WoodPic loaded directly
+    // from external original houses.rx, sprite selected
+    // by the Mill houses.dat record, currently RX 359.
+    //
+    // If unavailable, millWoodAtlas remains the packaged
+    // construction fallback.
+    SDL_Texture* millRuntimeWoodTexture;
+
     // Optional completed Mill StonePic loaded directly
     // from external original houses.rx, sprite RX 358.
     //

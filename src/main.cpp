@@ -2018,6 +2018,128 @@ int main(int argc, char* argv[])
         }
     }
 
+    // =====================================================
+    // MILL WOODPIC SDL RUNTIME TEXTURE
+    //
+    // The final wooden construction phase is decoded
+    // directly from the WoodPic selected by houses.dat.
+    // The packaged BMP atlas remains the fallback.
+    // =====================================================
+
+    bool runtimeMillWoodTextureReady = false;
+
+    int runtimeMillWoodRx = 0;
+    int runtimeMillWoodWidth = 0;
+    int runtimeMillWoodHeight = 0;
+    int runtimeMillWoodPivotX = 0;
+    int runtimeMillWoodPivotY = 0;
+
+    if (originalKaMReady) {
+        OriginalKaM::HouseDatRecord runtimeMillRecord;
+        OriginalKaM::RxSprite runtimeMillWood;
+
+        const bool runtimeMillRecordReady =
+            originalKaMResources.readHouseRecord(
+                OriginalKaM::HouseType::Mill,
+                &runtimeMillRecord
+            );
+
+        bool runtimeMillWoodDecoded = false;
+
+        if (runtimeMillRecordReady) {
+            runtimeMillWoodRx =
+                runtimeMillRecord.woodPicRx;
+
+            runtimeMillWoodDecoded =
+                originalKaMResources.loadRxSprite(
+                    runtimeMillWoodRx,
+                    &runtimeMillWood
+                );
+        }
+
+        if (runtimeMillWoodDecoded) {
+            runtimeMillWoodWidth =
+                runtimeMillWood.width;
+
+            runtimeMillWoodHeight =
+                runtimeMillWood.height;
+
+            runtimeMillWoodPivotX =
+                runtimeMillWood.pivotX;
+
+            runtimeMillWoodPivotY =
+                runtimeMillWood.pivotY;
+        }
+
+        const std::size_t expectedWoodPixelCount =
+            runtimeMillWoodDecoded
+                ? static_cast<std::size_t>(
+                    runtimeMillWood.width
+                ) *
+                    static_cast<std::size_t>(
+                        runtimeMillWood.height
+                    )
+                : 0;
+
+        if (
+            runtimeMillWoodDecoded &&
+            runtimeMillWood.width > 0 &&
+            runtimeMillWood.height > 0 &&
+            runtimeMillWood.rgbaPixels.size() ==
+                expectedWoodPixelCount &&
+            !runtimeMillWood.rgbaPixels.empty()
+        ) {
+            SDL_Texture* runtimeWoodTexture =
+                SDL_CreateTexture(
+                    renderer,
+                    SDL_PIXELFORMAT_ABGR8888,
+                    SDL_TEXTUREACCESS_STATIC,
+                    runtimeMillWood.width,
+                    runtimeMillWood.height
+                );
+
+            if (runtimeWoodTexture) {
+                const int texturePitch =
+                    runtimeMillWood.width *
+                    static_cast<int>(
+                        sizeof(std::uint32_t)
+                    );
+
+                const void* runtimePixelData =
+                    static_cast<const void*>(
+                        &runtimeMillWood.rgbaPixels[0]
+                    );
+
+                const int updateResult =
+                    SDL_UpdateTexture(
+                        runtimeWoodTexture,
+                        nullptr,
+                        runtimePixelData,
+                        texturePitch
+                    );
+
+                if (updateResult == 0) {
+                    SDL_SetTextureBlendMode(
+                        runtimeWoodTexture,
+                        SDL_BLENDMODE_BLEND
+                    );
+
+                    buildingResources
+                        .millRuntimeWoodTexture =
+                            runtimeWoodTexture;
+
+                    runtimeMillWoodTextureReady = true;
+                } else {
+                    SDL_DestroyTexture(
+                        runtimeWoodTexture
+                    );
+
+                    runtimeWoodTexture = nullptr;
+                }
+            }
+        }
+    }
+
     UnitResources unitResources = loadUnitResources(renderer);
 
     FILE* runtimeTextureDiagnostic =
