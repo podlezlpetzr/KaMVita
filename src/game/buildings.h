@@ -460,6 +460,16 @@ struct BuildingResources {
     // remains the complete packaged fallback.
     SDL_Texture* millRuntimeStoneTexture;
 
+    // Runtime Mill stone construction generated directly
+    // from original StonePic RX358 + StoneMask RX360.
+    //
+    // Mask rule:
+    // mask != 0 && mask < construction step.
+    //
+    // Index 0 is unused. Steps 1..31 correspond to the
+    // original DAT StoneSteps progression.
+    SDL_Texture* millRuntimeStoneSteps[32];
+
     // Original Mill ha_Flagpole turbine:
     // RX 348..357, 10 frames.
     // cell   = 106x147

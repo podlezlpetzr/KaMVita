@@ -1101,6 +1101,15 @@ void renderBuildings(
 
         // Kamenna vrstva se vykresluje pres hotove drevo.
         if (stoneAtlas && stoneStep > 0) {
+            const bool useRuntimeMillStoneStep =
+                building.type == BuildingType::Mill &&
+                stoneStep > 0 &&
+                stoneStep < stoneMaximumStep &&
+                stoneStep < 32 &&
+                resources.millRuntimeStoneSteps[
+                    stoneStep
+                ] != nullptr;
+
             const bool useRuntimeMillStone =
                 building.type == BuildingType::Mill &&
                 stoneStep >= stoneMaximumStep &&
@@ -1110,16 +1119,36 @@ void renderBuildings(
             SDL_Texture* renderedStoneTexture =
                 useRuntimeMillStone
                     ? resources.millRuntimeStoneTexture
-                    : stoneAtlas;
+                    : (
+                        useRuntimeMillStoneStep
+                            ? resources
+                                .millRuntimeStoneSteps[
+                                    stoneStep
+                                ]
+                            : stoneAtlas
+                    );
 
             SDL_Rect source = {};
 
-            if (useRuntimeMillStone) {
-                // Direct external houses.rx sprite RX 358.
+            if (
+                useRuntimeMillStone ||
+                useRuntimeMillStoneStep
+            ) {
+                int runtimeStoneWidth = 0;
+                int runtimeStoneHeight = 0;
+
+                SDL_QueryTexture(
+                    renderedStoneTexture,
+                    nullptr,
+                    nullptr,
+                    &runtimeStoneWidth,
+                    &runtimeStoneHeight
+                );
+
                 source.x = 0;
                 source.y = 0;
-                source.w = stoneFrameWidth;
-                source.h = stoneFrameHeight;
+                source.w = runtimeStoneWidth;
+                source.h = runtimeStoneHeight;
             } else {
                 const int frameColumn =
                     stoneStep % stoneColumns;
@@ -3108,6 +3137,10 @@ BuildingResources loadBuildingResources(
 
     resources.millRuntimeStoneTexture = nullptr;
 
+    for (int step = 0; step < 32; ++step) {
+        resources.millRuntimeStoneSteps[step] = nullptr;
+    }
+
     resources.millTurbineAtlas =
         loadColorKeyTexture(
             renderer,
@@ -3216,6 +3249,12 @@ void destroyBuildingResources(
         resources->millRuntimeStoneTexture
     );
 
+    for (int step = 0; step < 32; ++step) {
+        SDL_DestroyTexture(
+            resources->millRuntimeStoneSteps[step]
+        );
+    }
+
     SDL_DestroyTexture(
         resources->millTurbineAtlas
     );
@@ -3288,6 +3327,10 @@ void destroyBuildingResources(
     }
 
     resources->millRuntimeStoneTexture = nullptr;
+
+    for (int step = 0; step < 32; ++step) {
+        resources->millRuntimeStoneSteps[step] = nullptr;
+    }
 
     resources->millTurbineAtlas = nullptr;
 

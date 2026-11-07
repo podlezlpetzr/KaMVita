@@ -2322,6 +2322,186 @@ int main(int argc, char* argv[])
         }
     }
 
+    // =====================================================
+    // MILL STONEMASK RUNTIME CONSTRUCTION
+    //
+    // Generate construction steps 1..30 directly from:
+    //
+    //   StonePic  = houses.dat -> RX358
+    //   StoneMask = houses.dat -> RX360
+    //
+    // Original construction mask rule:
+    //
+    //   mask == 0    -> hidden
+    //   mask >= step -> hidden
+    //
+    // visible = mask != 0 && mask < step
+    //
+    // Step 31 remains complete StonePic RX358.
+    // =====================================================
+
+    bool runtimeMillStoneMaskReady = false;
+
+    int runtimeMillStoneMaskRx = 0;
+    int runtimeMillStoneMaskWidth = 0;
+    int runtimeMillStoneMaskHeight = 0;
+    int runtimeMillStoneMaskPivotX = 0;
+    int runtimeMillStoneMaskPivotY = 0;
+    int runtimeMillStoneMaskFramesReady = 0;
+
+    if (originalKaMReady) {
+        OriginalKaM::HouseDatRecord runtimeStoneMaskRecord;
+        OriginalKaM::RxSprite runtimeMaskStone;
+        OriginalKaM::RxSprite runtimeStoneMask;
+
+        const bool runtimeStoneMaskRecordReady =
+            originalKaMResources.readHouseRecord(
+                OriginalKaM::HouseType::Mill,
+                &runtimeStoneMaskRecord
+            );
+
+        bool runtimeMaskStoneDecoded = false;
+        bool runtimeStoneMaskDecoded = false;
+
+        if (runtimeStoneMaskRecordReady) {
+            runtimeMillStoneMaskRx =
+                runtimeStoneMaskRecord.stonePalRx;
+
+            runtimeMaskStoneDecoded =
+                originalKaMResources.loadRxSprite(
+                    runtimeStoneMaskRecord.stonePicRx,
+                    &runtimeMaskStone
+                );
+
+            runtimeStoneMaskDecoded =
+                originalKaMResources.loadRxSprite(
+                    runtimeMillStoneMaskRx,
+                    &runtimeStoneMask
+                );
+        }
+
+        if (runtimeStoneMaskDecoded) {
+            runtimeMillStoneMaskWidth =
+                runtimeStoneMask.width;
+
+            runtimeMillStoneMaskHeight =
+                runtimeStoneMask.height;
+
+            runtimeMillStoneMaskPivotX =
+                runtimeStoneMask.pivotX;
+
+            runtimeMillStoneMaskPivotY =
+                runtimeStoneMask.pivotY;
+        }
+
+        const bool runtimeStoneMaskGeometryReady =
+            runtimeMaskStoneDecoded &&
+            runtimeStoneMaskDecoded &&
+            runtimeMaskStone.width > 0 &&
+            runtimeMaskStone.height > 0 &&
+            runtimeMaskStone.width ==
+                runtimeStoneMask.width &&
+            runtimeMaskStone.height ==
+                runtimeStoneMask.height &&
+            runtimeMaskStone.pivotX ==
+                runtimeStoneMask.pivotX &&
+            runtimeMaskStone.pivotY ==
+                runtimeStoneMask.pivotY &&
+            runtimeMaskStone.indexedPixels.size() ==
+                runtimeStoneMask.indexedPixels.size() &&
+            runtimeMaskStone.rgbaPixels.size() ==
+                runtimeStoneMask.indexedPixels.size() &&
+            !runtimeMaskStone.rgbaPixels.empty();
+
+        if (runtimeStoneMaskGeometryReady) {
+            runtimeMillStoneMaskReady = true;
+
+            for (
+                int constructionStep = 1;
+                constructionStep < 31;
+                ++constructionStep
+            ) {
+                std::vector<std::uint32_t>
+                    runtimeStoneStepPixels(
+                        runtimeMaskStone.rgbaPixels.size(),
+                        static_cast<std::uint32_t>(0)
+                    );
+
+                for (
+                    std::size_t pixelIndex = 0;
+                    pixelIndex <
+                        runtimeStoneStepPixels.size();
+                    ++pixelIndex
+                ) {
+                    const std::uint8_t maskValue =
+                        runtimeStoneMask.indexedPixels[
+                            pixelIndex
+                        ];
+
+                    if (
+                        maskValue != 0 &&
+                        maskValue < constructionStep
+                    ) {
+                        runtimeStoneStepPixels[
+                            pixelIndex
+                        ] =
+                            runtimeMaskStone.rgbaPixels[
+                                pixelIndex
+                            ];
+                    }
+                }
+
+                SDL_Texture* runtimeStoneStepTexture =
+                    SDL_CreateTexture(
+                        renderer,
+                        SDL_PIXELFORMAT_ABGR8888,
+                        SDL_TEXTUREACCESS_STATIC,
+                        runtimeMaskStone.width,
+                        runtimeMaskStone.height
+                    );
+
+                if (!runtimeStoneStepTexture)
+                    continue;
+
+                const int runtimeStoneStepPitch =
+                    runtimeMaskStone.width *
+                    static_cast<int>(
+                        sizeof(std::uint32_t)
+                    );
+
+                const int runtimeStoneStepUpdate =
+                    SDL_UpdateTexture(
+                        runtimeStoneStepTexture,
+                        nullptr,
+                        static_cast<const void*>(
+                            &runtimeStoneStepPixels[0]
+                        ),
+                        runtimeStoneStepPitch
+                    );
+
+                if (runtimeStoneStepUpdate != 0) {
+                    SDL_DestroyTexture(
+                        runtimeStoneStepTexture
+                    );
+                    continue;
+                }
+
+                SDL_SetTextureBlendMode(
+                    runtimeStoneStepTexture,
+                    SDL_BLENDMODE_BLEND
+                );
+
+                buildingResources
+                    .millRuntimeStoneSteps[
+                        constructionStep
+                    ] =
+                        runtimeStoneStepTexture;
+
+                ++runtimeMillStoneMaskFramesReady;
+            }
+        }
+    }
+
     UnitResources unitResources = loadUnitResources(renderer);
 
     FILE* runtimeTextureDiagnostic =
