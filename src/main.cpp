@@ -2005,6 +2005,22 @@ int main(int argc, char* argv[])
                         .millRuntimeStoneTexture =
                             runtimeTexture;
 
+                    buildingResources
+                        .millRuntimeStoneWidth =
+                            runtimeMillStone.width;
+
+                    buildingResources
+                        .millRuntimeStoneHeight =
+                            runtimeMillStone.height;
+
+                    buildingResources
+                        .millRuntimeStonePivotX =
+                            runtimeMillStone.pivotX;
+
+                    buildingResources
+                        .millRuntimeStonePivotY =
+                            runtimeMillStone.pivotY;
+
                     runtimeMillStoneTextureReady =
                         true;
                 } else {
@@ -2128,6 +2144,22 @@ int main(int argc, char* argv[])
                         .millRuntimeWoodTexture =
                             runtimeWoodTexture;
 
+                    buildingResources
+                        .millRuntimeWoodWidth =
+                            runtimeMillWood.width;
+
+                    buildingResources
+                        .millRuntimeWoodHeight =
+                            runtimeMillWood.height;
+
+                    buildingResources
+                        .millRuntimeWoodPivotX =
+                            runtimeMillWood.pivotX;
+
+                    buildingResources
+                        .millRuntimeWoodPivotY =
+                            runtimeMillWood.pivotY;
+
                     runtimeMillWoodTextureReady = true;
                 } else {
                     SDL_DestroyTexture(
@@ -2232,12 +2264,20 @@ int main(int argc, char* argv[])
             runtimeMaskWood.rgbaPixels.size() ==
                 runtimeMask.indexedPixels.size();
 
-        if (runtimeMaskGeometryReady) {
+        if (
+            runtimeMaskGeometryReady &&
+            runtimeMaskRecord.woodSteps > 0 &&
+            runtimeMaskRecord.woodSteps <= 21
+        ) {
             runtimeMillWoodMaskReady = true;
+
+            const int runtimeWoodStepCount =
+                runtimeMaskRecord.woodSteps;
 
             for (
                 int constructionStep = 1;
-                constructionStep < 21;
+                constructionStep <
+                    runtimeWoodStepCount;
                 ++constructionStep
             ) {
                 std::vector<std::uint32_t>
@@ -2413,12 +2453,20 @@ int main(int argc, char* argv[])
                 runtimeStoneMask.indexedPixels.size() &&
             !runtimeMaskStone.rgbaPixels.empty();
 
-        if (runtimeStoneMaskGeometryReady) {
+        if (
+            runtimeStoneMaskGeometryReady &&
+            runtimeStoneMaskRecord.stoneSteps > 0 &&
+            runtimeStoneMaskRecord.stoneSteps <= 31
+        ) {
             runtimeMillStoneMaskReady = true;
+
+            const int runtimeStoneStepCount =
+                runtimeStoneMaskRecord.stoneSteps;
 
             for (
                 int constructionStep = 1;
-                constructionStep < 31;
+                constructionStep <
+                    runtimeStoneStepCount;
                 ++constructionStep
             ) {
                 std::vector<std::uint32_t>

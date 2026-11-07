@@ -442,6 +442,13 @@ struct BuildingResources {
     // by the Mill houses.dat record, currently RX 359.
     SDL_Texture* millRuntimeWoodTexture;
 
+    // Geometry decoded directly from Mill WoodPic
+    // selected by houses.dat and loaded from houses.rx.
+    int millRuntimeWoodWidth;
+    int millRuntimeWoodHeight;
+    int millRuntimeWoodPivotX;
+    int millRuntimeWoodPivotY;
+
     // Runtime Mill wooden construction generated directly
     // from original WoodPic RX359 + WoodMask RX361.
     //
@@ -455,6 +462,13 @@ struct BuildingResources {
     // Optional completed Mill StonePic loaded directly
     // from external original houses.rx, sprite RX 358.
     SDL_Texture* millRuntimeStoneTexture;
+
+    // Geometry decoded directly from Mill StonePic
+    // selected by houses.dat and loaded from houses.rx.
+    int millRuntimeStoneWidth;
+    int millRuntimeStoneHeight;
+    int millRuntimeStonePivotX;
+    int millRuntimeStonePivotY;
 
     // Runtime Mill stone construction generated directly
     // from original StonePic RX358 + StoneMask RX360.

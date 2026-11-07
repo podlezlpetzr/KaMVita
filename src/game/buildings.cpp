@@ -649,22 +649,58 @@ void renderBuildings(
                 // Mill construction is runtime-only.
                 // No packaged BMP construction atlas.
 
-                // Original houses.rx 359 + 361.
-                woodFrameWidth = 103;
-                woodFrameHeight = 113;
-                woodColumns = 6;
-                woodMaximumStep = 21;
-                woodPivotX = -27;
-                woodPivotY = -85;
+                // WoodPic and StonePic geometry is
+                // decoded directly from houses.rx.
+                woodFrameWidth =
+                    resources.millRuntimeWoodWidth;
 
-                // Original houses.rx 358 + 360.
-                stoneFrameWidth = 111;
-                stoneFrameHeight = 113;
-                stoneColumns = 8;
-                stoneMaximumStep = 31;
-                stonePivotX = -35;
-                stonePivotY = -85;
+                woodFrameHeight =
+                    resources.millRuntimeWoodHeight;
+
+                woodColumns = 1;
+
+                woodMaximumStep =
+                    getBuildingWoodSteps(
+                        BuildingType::Mill
+                    );
+
+                woodPivotX =
+                    resources.millRuntimeWoodPivotX;
+
+                woodPivotY =
+                    resources.millRuntimeWoodPivotY;
+
+                stoneFrameWidth =
+                    resources.millRuntimeStoneWidth;
+
+                stoneFrameHeight =
+                    resources.millRuntimeStoneHeight;
+
+                stoneColumns = 1;
+
+                stoneMaximumStep =
+                    getBuildingStoneSteps(
+                        BuildingType::Mill
+                    );
+
+                stonePivotX =
+                    resources.millRuntimeStonePivotX;
+
+                stonePivotY =
+                    resources.millRuntimeStonePivotY;
                 break;
+        }
+
+        if (
+            building.type == BuildingType::Mill &&
+            (
+                woodFrameWidth <= 0 ||
+                woodFrameHeight <= 0 ||
+                stoneFrameWidth <= 0 ||
+                stoneFrameHeight <= 0
+            )
+        ) {
+            continue;
         }
 
         int woodStep = building.woodStep;
@@ -1010,7 +1046,10 @@ void renderBuildings(
                 building.type == BuildingType::Mill &&
                 renderedWoodStep > 0 &&
                 renderedWoodStep < woodMaximumStep &&
-                renderedWoodStep < 22 &&
+                renderedWoodStep <
+                    getBuildingWoodSteps(
+                        BuildingType::Mill
+                    ) &&
                 resources.millRuntimeWoodSteps[
                     renderedWoodStep
                 ] != nullptr;
@@ -1117,7 +1156,10 @@ void renderBuildings(
                 building.type == BuildingType::Mill &&
                 stoneStep > 0 &&
                 stoneStep < stoneMaximumStep &&
-                stoneStep < 32 &&
+                stoneStep <
+                    getBuildingStoneSteps(
+                        BuildingType::Mill
+                    ) &&
                 resources.millRuntimeStoneSteps[
                     stoneStep
                 ] != nullptr;
@@ -3135,12 +3177,20 @@ BuildingResources loadBuildingResources(
     // main.cpp may replace the completed Mill sources with
     // textures decoded directly from external houses.rx.
     resources.millRuntimeWoodTexture = nullptr;
+    resources.millRuntimeWoodWidth = 0;
+    resources.millRuntimeWoodHeight = 0;
+    resources.millRuntimeWoodPivotX = 0;
+    resources.millRuntimeWoodPivotY = 0;
 
     for (int step = 0; step < 22; ++step) {
         resources.millRuntimeWoodSteps[step] = nullptr;
     }
 
     resources.millRuntimeStoneTexture = nullptr;
+    resources.millRuntimeStoneWidth = 0;
+    resources.millRuntimeStoneHeight = 0;
+    resources.millRuntimeStonePivotX = 0;
+    resources.millRuntimeStonePivotY = 0;
 
     for (int step = 0; step < 32; ++step) {
         resources.millRuntimeStoneSteps[step] = nullptr;
@@ -3321,12 +3371,20 @@ void destroyBuildingResources(
     resources->quarryStoneAtlas = nullptr;
 
     resources->millRuntimeWoodTexture = nullptr;
+    resources->millRuntimeWoodWidth = 0;
+    resources->millRuntimeWoodHeight = 0;
+    resources->millRuntimeWoodPivotX = 0;
+    resources->millRuntimeWoodPivotY = 0;
 
     for (int step = 0; step < 22; ++step) {
         resources->millRuntimeWoodSteps[step] = nullptr;
     }
 
     resources->millRuntimeStoneTexture = nullptr;
+    resources->millRuntimeStoneWidth = 0;
+    resources->millRuntimeStoneHeight = 0;
+    resources->millRuntimeStonePivotX = 0;
+    resources->millRuntimeStonePivotY = 0;
 
     for (int step = 0; step < 32; ++step) {
         resources->millRuntimeStoneSteps[step] = nullptr;
