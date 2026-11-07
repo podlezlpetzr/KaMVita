@@ -480,13 +480,21 @@ struct BuildingResources {
     // original DAT StoneSteps progression.
     SDL_Texture* millRuntimeStoneSteps[32];
 
-    // Original Mill ha_Flagpole turbine:
-    // RX 348..357, 10 frames.
-    // cell   = 106x147
-    // grid   = 5x2
-    // anchor = (-35,-34)
-    // Move   = (-17,-80)
-    SDL_Texture* millTurbineAtlas;
+    // Original Mill ha_Flagpole turbine.
+    //
+    // Runtime frames are loaded directly from houses.rx:
+    // RX348..RX357.
+    //
+    // Every frame keeps its own width, height and pivot.
+    // No packaged turbine atlas is required.
+    SDL_Texture* millRuntimeTurbineFrames[10];
+
+    int millRuntimeTurbineWidths[10];
+    int millRuntimeTurbineHeights[10];
+    int millRuntimeTurbinePivotX[10];
+    int millRuntimeTurbinePivotY[10];
+
+    int millRuntimeTurbineFrameCount;
 
     // Original Mill ha_Idle:
     // RX 1095..1100 in original 30-frame sequence.

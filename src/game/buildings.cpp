@@ -1705,100 +1705,102 @@ void renderBuildings(
         // =================================================
         // MILL ORIGINAL TURBINE
         //
-        // Real Mill houses.dat record 22:
-        //
-        // ha_Flagpole
-        // RX sequence = 348..357
-        // count       = 10
-        // cell        = 106x147
-        // grid        = 5x2
-        // anchor      = (-35,-34)
-        // Move        = (-17,-80)
-        //
-        // Original House overlay alignment:
-        //
-        // stoneDestination +
-        // (overlay anchor + House Move - StonePic pivot)
-        //
-        // The turbine is part of the completed Mill House
-        // decoration and therefore rotates continuously.
+        // Runtime source: houses.rx RX348..RX357.
+        // Every frame uses its real RX geometry.
         // =================================================
 
         if (
             building.type == BuildingType::Mill &&
-            isBuildingComplete(building) &&
-            resources.millTurbineAtlas
+            isBuildingComplete(building)
         ) {
-            constexpr int turbineCellWidth = 106;
-            constexpr int turbineCellHeight = 147;
-
-            constexpr int turbineColumns = 5;
             constexpr int turbineFrameCount = 10;
-
-            constexpr int turbineAnchorX = -35;
-            constexpr int turbineAnchorY = -34;
-
             constexpr int turbineMoveX = -17;
             constexpr int turbineMoveY = -80;
 
-            // Original House flag/decorative cadence.
             const int turbineFrame =
                 (SDL_GetTicks() / 120) %
                 turbineFrameCount;
 
-            const int turbineColumn =
-                turbineFrame %
-                turbineColumns;
+            const bool useRuntimeTurbine =
+                resources.millRuntimeTurbineFrameCount ==
+                    turbineFrameCount &&
+                resources.millRuntimeTurbineFrames[
+                    turbineFrame
+                ] != nullptr;
 
-            const int turbineRow =
-                turbineFrame /
-                turbineColumns;
+            if (useRuntimeTurbine) {
+                SDL_Texture* turbineTexture =
+                    resources.millRuntimeTurbineFrames[
+                        turbineFrame
+                    ];
 
-            SDL_Rect turbineSource = {
-                turbineColumn *
-                    turbineCellWidth,
+                const int turbineWidth =
+                    resources.millRuntimeTurbineWidths[
+                        turbineFrame
+                    ];
 
-                turbineRow *
-                    turbineCellHeight,
+                const int turbineHeight =
+                    resources.millRuntimeTurbineHeights[
+                        turbineFrame
+                    ];
 
-                turbineCellWidth,
-                turbineCellHeight
-            };
+                const int turbinePivotX =
+                    resources.millRuntimeTurbinePivotX[
+                        turbineFrame
+                    ];
 
-            SDL_Rect turbineDestination = {
-                stoneDestinationX +
-                    scaleKaMHousePixel(
-                        turbineAnchorX +
-                            turbineMoveX -
-                            stonePivotX,
-                        tileSize
-                    ),
+                const int turbinePivotY =
+                    resources.millRuntimeTurbinePivotY[
+                        turbineFrame
+                    ];
 
-                stoneDestinationY +
-                    scaleKaMHousePixel(
-                        turbineAnchorY +
-                            turbineMoveY -
-                            stonePivotY,
-                        tileSize
-                    ),
+                if (
+                    turbineWidth > 0 &&
+                    turbineHeight > 0
+                ) {
+                    SDL_Rect turbineSource = {
+                        0,
+                        0,
+                        turbineWidth,
+                        turbineHeight
+                    };
 
-                scaleKaMHousePixel(
-                    turbineCellWidth,
-                    tileSize
-                ),
+                    SDL_Rect turbineDestination = {
+                        stoneDestinationX +
+                            scaleKaMHousePixel(
+                                turbinePivotX +
+                                    turbineMoveX -
+                                    stonePivotX,
+                                tileSize
+                            ),
 
-                scaleKaMHousePixel(
-                    turbineCellHeight,
-                    tileSize
-                )
-            };
+                        stoneDestinationY +
+                            scaleKaMHousePixel(
+                                turbinePivotY +
+                                    turbineMoveY -
+                                    stonePivotY,
+                                tileSize
+                            ),
 
-            SDL_RenderCopy(
-                renderer,
-                resources.millTurbineAtlas,
-                &turbineSource,
-                &turbineDestination
-            );
+                        scaleKaMHousePixel(
+                            turbineWidth,
+                            tileSize
+                        ),
+
+                        scaleKaMHousePixel(
+                            turbineHeight,
+                            tileSize
+                        )
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        turbineTexture,
+                        &turbineSource,
+                        &turbineDestination
+                    );
+                }
+            }
         }
 
 
@@ -3196,11 +3198,19 @@ BuildingResources loadBuildingResources(
         resources.millRuntimeStoneSteps[step] = nullptr;
     }
 
-    resources.millTurbineAtlas =
-        loadColorKeyTexture(
-            renderer,
-            "app0:assets/buildings/mill/runtime/turbine_atlas.bmp"
-        );
+    // Mill turbine is generated entirely from
+    // external houses.rx RX348..RX357.
+    resources.millRuntimeTurbineFrameCount = 0;
+
+    for (int frame = 0; frame < 10; ++frame) {
+        resources.millRuntimeTurbineFrames[frame] =
+            nullptr;
+
+        resources.millRuntimeTurbineWidths[frame] = 0;
+        resources.millRuntimeTurbineHeights[frame] = 0;
+        resources.millRuntimeTurbinePivotX[frame] = 0;
+        resources.millRuntimeTurbinePivotY[frame] = 0;
+    }
 
     resources.millIdleAtlas =
         loadColorKeyTexture(
@@ -3307,9 +3317,11 @@ void destroyBuildingResources(
         );
     }
 
-    SDL_DestroyTexture(
-        resources->millTurbineAtlas
-    );
+    for (int frame = 0; frame < 10; ++frame) {
+        SDL_DestroyTexture(
+            resources->millRuntimeTurbineFrames[frame]
+        );
+    }
 
     SDL_DestroyTexture(
         resources->millIdleAtlas
@@ -3390,7 +3402,17 @@ void destroyBuildingResources(
         resources->millRuntimeStoneSteps[step] = nullptr;
     }
 
-    resources->millTurbineAtlas = nullptr;
+    resources->millRuntimeTurbineFrameCount = 0;
+
+    for (int frame = 0; frame < 10; ++frame) {
+        resources->millRuntimeTurbineFrames[frame] =
+            nullptr;
+
+        resources->millRuntimeTurbineWidths[frame] = 0;
+        resources->millRuntimeTurbineHeights[frame] = 0;
+        resources->millRuntimeTurbinePivotX[frame] = 0;
+        resources->millRuntimeTurbinePivotY[frame] = 0;
+    }
 
     resources->millIdleAtlas = nullptr;
 }

@@ -2550,6 +2550,147 @@ int main(int argc, char* argv[])
         }
     }
 
+    // =====================================================
+    // MILL TURBINE RUNTIME FRAMES
+    //
+    // Original ha_Flagpole:
+    // frame 0..9 = houses.rx RX348..RX357.
+    //
+    // Each sprite keeps its own dimensions and pivot.
+    // =====================================================
+
+    bool runtimeMillTurbineReady = false;
+    int runtimeMillTurbineFramesReady = 0;
+
+    if (originalKaMReady) {
+        bool allRuntimeTurbineFramesReady = true;
+
+        for (
+            int turbineFrameIndex = 0;
+            turbineFrameIndex < 10;
+            ++turbineFrameIndex
+        ) {
+            const int turbineRx =
+                348 + turbineFrameIndex;
+
+            OriginalKaM::RxSprite turbineSprite;
+
+            const bool turbineDecoded =
+                originalKaMResources.loadRxSprite(
+                    turbineRx,
+                    &turbineSprite
+                );
+
+            const std::size_t expectedTurbinePixels =
+                turbineDecoded
+                    ? static_cast<std::size_t>(
+                        turbineSprite.width
+                    ) *
+                        static_cast<std::size_t>(
+                            turbineSprite.height
+                        )
+                    : 0;
+
+            if (
+                !turbineDecoded ||
+                turbineSprite.width <= 0 ||
+                turbineSprite.height <= 0 ||
+                turbineSprite.rgbaPixels.size() !=
+                    expectedTurbinePixels ||
+                turbineSprite.rgbaPixels.empty()
+            ) {
+                allRuntimeTurbineFramesReady = false;
+                continue;
+            }
+
+            SDL_Texture* turbineTexture =
+                SDL_CreateTexture(
+                    renderer,
+                    SDL_PIXELFORMAT_ABGR8888,
+                    SDL_TEXTUREACCESS_STATIC,
+                    turbineSprite.width,
+                    turbineSprite.height
+                );
+
+            if (!turbineTexture) {
+                allRuntimeTurbineFramesReady = false;
+                continue;
+            }
+
+            const int turbinePitch =
+                turbineSprite.width *
+                static_cast<int>(
+                    sizeof(std::uint32_t)
+                );
+
+            const int turbineUpdateResult =
+                SDL_UpdateTexture(
+                    turbineTexture,
+                    nullptr,
+                    static_cast<const void*>(
+                        &turbineSprite.rgbaPixels[0]
+                    ),
+                    turbinePitch
+                );
+
+            if (turbineUpdateResult != 0) {
+                SDL_DestroyTexture(
+                    turbineTexture
+                );
+
+                allRuntimeTurbineFramesReady = false;
+                continue;
+            }
+
+            SDL_SetTextureBlendMode(
+                turbineTexture,
+                SDL_BLENDMODE_BLEND
+            );
+
+            buildingResources
+                .millRuntimeTurbineFrames[
+                    turbineFrameIndex
+                ] =
+                    turbineTexture;
+
+            buildingResources
+                .millRuntimeTurbineWidths[
+                    turbineFrameIndex
+                ] =
+                    turbineSprite.width;
+
+            buildingResources
+                .millRuntimeTurbineHeights[
+                    turbineFrameIndex
+                ] =
+                    turbineSprite.height;
+
+            buildingResources
+                .millRuntimeTurbinePivotX[
+                    turbineFrameIndex
+                ] =
+                    turbineSprite.pivotX;
+
+            buildingResources
+                .millRuntimeTurbinePivotY[
+                    turbineFrameIndex
+                ] =
+                    turbineSprite.pivotY;
+
+            ++runtimeMillTurbineFramesReady;
+        }
+
+        if (
+            allRuntimeTurbineFramesReady &&
+            runtimeMillTurbineFramesReady == 10
+        ) {
+            buildingResources
+                .millRuntimeTurbineFrameCount = 10;
+
+            runtimeMillTurbineReady = true;
+        }
+    }
+
     UnitResources unitResources = loadUnitResources(renderer);
 
     FILE* runtimeTextureDiagnostic =
