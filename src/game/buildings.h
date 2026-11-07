@@ -496,12 +496,41 @@ struct BuildingResources {
 
     int millRuntimeTurbineFrameCount;
 
-    // Original Mill ha_Idle:
-    // RX 1095..1100 in original 30-frame sequence.
-    // cell   = 17x16
-    // anchor = (4,-52)
-    // Move   = (0,-1)
-    SDL_Texture* millIdleAtlas;
+    // Original Mill ha_Flag1 loaded directly from
+    // external houses.rx:
+    //
+    // RX1159..RX1163, 5 frames.
+    // Move = (54,-38).
+    //
+    // Every frame keeps its own width, height and pivot.
+    SDL_Texture* millRuntimeFlag1Frames[5];
+
+    int millRuntimeFlag1Widths[5];
+    int millRuntimeFlag1Heights[5];
+    int millRuntimeFlag1PivotX[5];
+    int millRuntimeFlag1PivotY[5];
+
+    int millRuntimeFlag1FrameCount;
+
+    // Original Mill ha_Idle.
+    //
+    // Runtime unique sprites loaded from houses.rx:
+    // RX1095..RX1100.
+    //
+    // The original 30-step houses.dat sequence is applied
+    // by the renderer. Every unique sprite keeps its own
+    // width, height and pivot.
+    //
+    // Runtime-only ha_Idle. No packaged Mill Idle
+    // BMP atlas is required.
+    SDL_Texture* millRuntimeIdleFrames[6];
+
+    int millRuntimeIdleWidths[6];
+    int millRuntimeIdleHeights[6];
+    int millRuntimeIdlePivotX[6];
+    int millRuntimeIdlePivotY[6];
+
+    int millRuntimeIdleFrameCount;
 };
 
 BuildingResources loadBuildingResources(

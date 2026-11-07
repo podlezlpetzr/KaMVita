@@ -2691,6 +2691,302 @@ int main(int argc, char* argv[])
         }
     }
 
+    // =====================================================
+    // MILL FLAG1 RUNTIME FRAMES
+    //
+    // houses.dat record 22:
+    //
+    // ha_Flag1
+    // Count = 5
+    // Move  = (54,-38)
+    //
+    // DAT sequence = 1158..1162
+    // RX sequence  = 1159..1163
+    //
+    // Every frame keeps its own width, height and pivot.
+    // =====================================================
+
+    bool runtimeMillFlag1Ready = false;
+    int runtimeMillFlag1FramesReady = 0;
+
+    if (originalKaMReady) {
+        bool allRuntimeFlag1FramesReady = true;
+
+        for (
+            int flagFrameIndex = 0;
+            flagFrameIndex < 5;
+            ++flagFrameIndex
+        ) {
+            const int flagRx =
+                1159 + flagFrameIndex;
+
+            OriginalKaM::RxSprite flagSprite;
+
+            const bool flagDecoded =
+                originalKaMResources.loadRxSprite(
+                    flagRx,
+                    &flagSprite
+                );
+
+            const std::size_t expectedFlagPixels =
+                flagDecoded
+                    ? static_cast<std::size_t>(
+                        flagSprite.width
+                    ) *
+                        static_cast<std::size_t>(
+                            flagSprite.height
+                        )
+                    : 0;
+
+            if (
+                !flagDecoded ||
+                flagSprite.width <= 0 ||
+                flagSprite.height <= 0 ||
+                flagSprite.rgbaPixels.size() !=
+                    expectedFlagPixels ||
+                flagSprite.rgbaPixels.empty()
+            ) {
+                allRuntimeFlag1FramesReady = false;
+                continue;
+            }
+
+            SDL_Texture* flagTexture =
+                SDL_CreateTexture(
+                    renderer,
+                    SDL_PIXELFORMAT_ABGR8888,
+                    SDL_TEXTUREACCESS_STATIC,
+                    flagSprite.width,
+                    flagSprite.height
+                );
+
+            if (!flagTexture) {
+                allRuntimeFlag1FramesReady = false;
+                continue;
+            }
+
+            const int flagPitch =
+                flagSprite.width *
+                static_cast<int>(
+                    sizeof(std::uint32_t)
+                );
+
+            const int flagUpdateResult =
+                SDL_UpdateTexture(
+                    flagTexture,
+                    nullptr,
+                    static_cast<const void*>(
+                        &flagSprite.rgbaPixels[0]
+                    ),
+                    flagPitch
+                );
+
+            if (flagUpdateResult != 0) {
+                SDL_DestroyTexture(
+                    flagTexture
+                );
+
+                allRuntimeFlag1FramesReady = false;
+                continue;
+            }
+
+            SDL_SetTextureBlendMode(
+                flagTexture,
+                SDL_BLENDMODE_BLEND
+            );
+
+            buildingResources
+                .millRuntimeFlag1Frames[
+                    flagFrameIndex
+                ] =
+                    flagTexture;
+
+            buildingResources
+                .millRuntimeFlag1Widths[
+                    flagFrameIndex
+                ] =
+                    flagSprite.width;
+
+            buildingResources
+                .millRuntimeFlag1Heights[
+                    flagFrameIndex
+                ] =
+                    flagSprite.height;
+
+            buildingResources
+                .millRuntimeFlag1PivotX[
+                    flagFrameIndex
+                ] =
+                    flagSprite.pivotX;
+
+            buildingResources
+                .millRuntimeFlag1PivotY[
+                    flagFrameIndex
+                ] =
+                    flagSprite.pivotY;
+
+            ++runtimeMillFlag1FramesReady;
+        }
+
+        if (
+            allRuntimeFlag1FramesReady &&
+            runtimeMillFlag1FramesReady == 5
+        ) {
+            buildingResources
+                .millRuntimeFlag1FrameCount = 5;
+
+            runtimeMillFlag1Ready = true;
+        }
+    }
+
+    // =====================================================
+    // MILL IDLE RUNTIME FRAMES
+    //
+    // houses.dat record 22:
+    //
+    // ha_Idle
+    // Count = 30
+    // Move  = (0,-1)
+    //
+    // The 30-step action references six unique sprites:
+    // RX1095..RX1100.
+    //
+    // Every unique RX sprite keeps its own width, height
+    // and pivot. The renderer applies the exact original
+    // 30-step sequence.
+    // =====================================================
+
+    bool runtimeMillIdleReady = false;
+    int runtimeMillIdleFramesReady = 0;
+
+    if (originalKaMReady) {
+        bool allRuntimeIdleFramesReady = true;
+
+        for (
+            int idleSpriteIndex = 0;
+            idleSpriteIndex < 6;
+            ++idleSpriteIndex
+        ) {
+            const int idleRx =
+                1095 + idleSpriteIndex;
+
+            OriginalKaM::RxSprite idleSprite;
+
+            const bool idleDecoded =
+                originalKaMResources.loadRxSprite(
+                    idleRx,
+                    &idleSprite
+                );
+
+            const std::size_t expectedIdlePixels =
+                idleDecoded
+                    ? static_cast<std::size_t>(
+                        idleSprite.width
+                    ) *
+                        static_cast<std::size_t>(
+                            idleSprite.height
+                        )
+                    : 0;
+
+            if (
+                !idleDecoded ||
+                idleSprite.width <= 0 ||
+                idleSprite.height <= 0 ||
+                idleSprite.rgbaPixels.size() !=
+                    expectedIdlePixels ||
+                idleSprite.rgbaPixels.empty()
+            ) {
+                allRuntimeIdleFramesReady = false;
+                continue;
+            }
+
+            SDL_Texture* idleTexture =
+                SDL_CreateTexture(
+                    renderer,
+                    SDL_PIXELFORMAT_ABGR8888,
+                    SDL_TEXTUREACCESS_STATIC,
+                    idleSprite.width,
+                    idleSprite.height
+                );
+
+            if (!idleTexture) {
+                allRuntimeIdleFramesReady = false;
+                continue;
+            }
+
+            const int idlePitch =
+                idleSprite.width *
+                static_cast<int>(
+                    sizeof(std::uint32_t)
+                );
+
+            const int idleUpdateResult =
+                SDL_UpdateTexture(
+                    idleTexture,
+                    nullptr,
+                    static_cast<const void*>(
+                        &idleSprite.rgbaPixels[0]
+                    ),
+                    idlePitch
+                );
+
+            if (idleUpdateResult != 0) {
+                SDL_DestroyTexture(
+                    idleTexture
+                );
+
+                allRuntimeIdleFramesReady = false;
+                continue;
+            }
+
+            SDL_SetTextureBlendMode(
+                idleTexture,
+                SDL_BLENDMODE_BLEND
+            );
+
+            buildingResources
+                .millRuntimeIdleFrames[
+                    idleSpriteIndex
+                ] =
+                    idleTexture;
+
+            buildingResources
+                .millRuntimeIdleWidths[
+                    idleSpriteIndex
+                ] =
+                    idleSprite.width;
+
+            buildingResources
+                .millRuntimeIdleHeights[
+                    idleSpriteIndex
+                ] =
+                    idleSprite.height;
+
+            buildingResources
+                .millRuntimeIdlePivotX[
+                    idleSpriteIndex
+                ] =
+                    idleSprite.pivotX;
+
+            buildingResources
+                .millRuntimeIdlePivotY[
+                    idleSpriteIndex
+                ] =
+                    idleSprite.pivotY;
+
+            ++runtimeMillIdleFramesReady;
+        }
+
+        if (
+            allRuntimeIdleFramesReady &&
+            runtimeMillIdleFramesReady == 6
+        ) {
+            buildingResources
+                .millRuntimeIdleFrameCount = 6;
+
+            runtimeMillIdleReady = true;
+        }
+    }
+
     UnitResources unitResources = loadUnitResources(renderer);
 
     FILE* runtimeTextureDiagnostic =

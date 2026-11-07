@@ -1805,464 +1805,230 @@ void renderBuildings(
 
 
         // =================================================
-        // MILL ORIGINAL IDLE OVERLAY
+        // MILL ORIGINAL FLAG1
         //
-        // Real Mill houses.dat record 22:
+        // Runtime source:
+        // houses.rx RX1159..RX1163.
         //
-        // ha_Idle
-        // count  = 30
-        // cell   = 17x16
-        // anchor = (4,-52)
-        // Move   = (0,-1)
+        // houses.dat:
+        // Count = 5
+        // Move  = (54,-38)
         //
-        // ha_Idle is visible only while a real Baker is
-        // physically hidden inside this specific Mill.
-        //
-        // Alignment:
-        //
-        // stoneDestination +
-        // (overlay anchor + House Move - StonePic pivot)
+        // The flag is visible on the completed Mill.
         // =================================================
 
         if (
             building.type == BuildingType::Mill &&
             isBuildingComplete(building) &&
-            millHasInsideBaker &&
-            resources.millIdleAtlas
+            resources.millRuntimeFlag1FrameCount == 5
         ) {
-            constexpr int idleCellWidth = 17;
-            constexpr int idleCellHeight = 16;
-            constexpr int idleFrameCount = 30;
+            constexpr int flagFrameCount = 5;
+            constexpr int flagMoveX = 54;
+            constexpr int flagMoveY = -38;
 
-            constexpr int idleAnchorX = 4;
-            constexpr int idleAnchorY = -52;
+            const int flagFrame =
+                (SDL_GetTicks() / 120) %
+                flagFrameCount;
 
-            constexpr int idleMoveX = 0;
-            constexpr int idleMoveY = -1;
+            SDL_Texture* flagTexture =
+                resources.millRuntimeFlag1Frames[
+                    flagFrame
+                ];
 
-            const int idleFrame =
-                (SDL_GetTicks() / 100) %
-                idleFrameCount;
+            const int flagWidth =
+                resources.millRuntimeFlag1Widths[
+                    flagFrame
+                ];
 
-            SDL_Rect idleSource = {
-                idleFrame * idleCellWidth,
-                0,
-                idleCellWidth,
-                idleCellHeight
-            };
+            const int flagHeight =
+                resources.millRuntimeFlag1Heights[
+                    flagFrame
+                ];
 
-            SDL_Rect idleDestination = {
-                stoneDestinationX +
-                    scaleKaMHousePixel(
-                        idleAnchorX +
-                            idleMoveX -
-                            stonePivotX,
-                        tileSize
-                    ),
+            const int flagPivotX =
+                resources.millRuntimeFlag1PivotX[
+                    flagFrame
+                ];
 
-                stoneDestinationY +
-                    scaleKaMHousePixel(
-                        idleAnchorY +
-                            idleMoveY -
-                            stonePivotY,
-                        tileSize
-                    ),
+            const int flagPivotY =
+                resources.millRuntimeFlag1PivotY[
+                    flagFrame
+                ];
 
-                scaleKaMHousePixel(
-                    idleCellWidth,
-                    tileSize
-                ),
-
-                scaleKaMHousePixel(
-                    idleCellHeight,
-                    tileSize
-                )
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                resources.millIdleAtlas,
-                &idleSource,
-                &idleDestination
-            );
-        }
-
-
-        // =================================================
-        // FARM ORIGINAL CORN SUPPLYOUT
-        //
-        // Original Remake AddHouseSupply:
-        //
-        // SupplyOut[
-        //     1,
-        //     Min(resourceOut[0], 5)
-        // ]
-        //
-        // Farm SupplyOut[1]:
-        //
-        // 1 -> RX 387
-        // 2 -> RX 388
-        // 3 -> RX 389
-        // 4 -> RX 390
-        // 5 -> RX 391
-        //
-        // Atlas geometry:
-        //
-        // cell   = 45x34
-        // anchor = (20,-3)
-        //
-        // resourceOut[0] remains the only authoritative
-        // physical Corn inventory.
-        // =================================================
-
-        if (
-            building.type == BuildingType::Farm &&
-            isBuildingComplete(building) &&
-            building.resourceOut[0] > 0 &&
-            resources.farmCornSupplyAtlas
-        ) {
-            constexpr int cornCellWidth = 45;
-            constexpr int cornCellHeight = 34;
-            constexpr int cornFrameCount = 5;
-
-            constexpr int cornAnchorX = 20;
-            constexpr int cornAnchorY = -3;
-
-            int cornCount =
-                building.resourceOut[0];
-
-            if (cornCount > cornFrameCount)
-                cornCount = cornFrameCount;
-
-            if (cornCount < 1)
-                cornCount = 1;
-
-            const int cornFrame =
-                cornCount - 1;
-
-            SDL_Rect cornSource = {
-                cornFrame * cornCellWidth,
-                0,
-                cornCellWidth,
-                cornCellHeight
-            };
-
-            SDL_Rect cornDestination = {
-                stoneDestinationX +
-                    scaleKaMHousePixel(
-                        cornAnchorX -
-                            stonePivotX,
-                        tileSize
-                    ),
-
-                stoneDestinationY +
-                    scaleKaMHousePixel(
-                        cornAnchorY -
-                            stonePivotY,
-                        tileSize
-                    ),
-
-                scaleKaMHousePixel(
-                    cornCellWidth,
-                    tileSize
-                ),
-
-                scaleKaMHousePixel(
-                    cornCellHeight,
-                    tileSize
-                )
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                resources.farmCornSupplyAtlas,
-                &cornSource,
-                &cornDestination
-            );
-        }
-
-
-        // =================================================
-        // FARM ORIGINAL OCCUPIED IDLE OVERLAY
-        //
-        // Originalni Farm ha_Idle:
-        //
-        // count  = 30
-        // cell   = 18x17
-        // anchor = (8,-6)
-        // move   = (-16,-11)
-        //
-        // RX sequence uses 1083..1088.
-        //
-        // Overlay is active only while a real Farmer is
-        // physically hidden inside this completed Farm.
-        // =================================================
-
-        if (
-            building.type == BuildingType::Farm &&
-            isBuildingComplete(building) &&
-            farmHasInsideFarmer &&
-            resources.farmIdleAtlas
-        ) {
-            constexpr int idleCellWidth = 18;
-            constexpr int idleCellHeight = 17;
-            constexpr int idleFrameCount = 30;
-
-            constexpr int idleAnchorX = 8;
-            constexpr int idleAnchorY = -6;
-
-            constexpr int idleMoveX = -16;
-            constexpr int idleMoveY = -11;
-
-            // Same 100 ms House cadence as Bakery idle.
-            const int idleFrame =
-                (SDL_GetTicks() / 100) %
-                idleFrameCount;
-
-            SDL_Rect idleSource = {
-                idleFrame * idleCellWidth,
-                0,
-                idleCellWidth,
-                idleCellHeight
-            };
-
-            SDL_Rect idleDestination = {
-                stoneDestinationX +
-                    scaleKaMHousePixel(
-                        idleAnchorX +
-                            idleMoveX -
-                            stonePivotX,
-                        tileSize
-                    ),
-
-                stoneDestinationY +
-                    scaleKaMHousePixel(
-                        idleAnchorY +
-                            idleMoveY -
-                            stonePivotY,
-                        tileSize
-                    ),
-
-                scaleKaMHousePixel(
-                    idleCellWidth,
-                    tileSize
-                ),
-
-                scaleKaMHousePixel(
-                    idleCellHeight,
-                    tileSize
-                )
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                resources.farmIdleAtlas,
-                &idleSource,
-                &idleDestination
-            );
-        }
-
-
-        // =================================================
-        // BAKERY ORIGINAL OCCUPIED IDLE OVERLAY
-        //
-        // Originalni Bakery ha_Idle:
-        //
-        // count  = 30
-        // cell   = 16x37
-        // anchor = (-8,-12)
-        // move   = (18,5)
-        //
-        // RX sekvence pouziva 1077..1082.
-        //
-        // Vykresluje se pouze pokud je skutecny Baker
-        // fyzicky uvnitr teto Bakery a House prave nevyrabi.
-        //
-        // Baker unit zustava uvnitr invisible.
-        // =================================================
-
-        if (
-            building.type == BuildingType::Bakery &&
-            isBuildingComplete(building) &&
-            bakeryHasInsideBaker &&
-            !building.bakeryProductionActive &&
-            resources.bakeryIdleAtlas
-        ) {
-            constexpr int idleCellWidth = 16;
-            constexpr int idleCellHeight = 37;
-
-            constexpr int idleFrameCount = 30;
-
-            constexpr int idleAnchorX = -8;
-            constexpr int idleAnchorY = -12;
-
-            constexpr int idleMoveX = 18;
-            constexpr int idleMoveY = 5;
-
-            // House production tick pouziva 100 ms.
-            // Idle zachovava stejnou 100ms House cadence.
-            const int idleFrame =
-                (SDL_GetTicks() / 100) %
-                idleFrameCount;
-
-            SDL_Rect idleSource = {
-                idleFrame * idleCellWidth,
-                0,
-                idleCellWidth,
-                idleCellHeight
-            };
-
-            SDL_Rect idleDestination = {
-                stoneDestinationX +
-                    scaleKaMHousePixel(
-                        idleAnchorX +
-                            idleMoveX -
-                            stonePivotX,
-                        tileSize
-                    ),
-
-                stoneDestinationY +
-                    scaleKaMHousePixel(
-                        idleAnchorY +
-                            idleMoveY -
-                            stonePivotY,
-                        tileSize
-                    ),
-
-                scaleKaMHousePixel(
-                    idleCellWidth,
-                    tileSize
-                ),
-
-                scaleKaMHousePixel(
-                    idleCellHeight,
-                    tileSize
-                )
-            };
-
-            SDL_RenderCopy(
-                renderer,
-                resources.bakeryIdleAtlas,
-                &idleSource,
-                &idleDestination
-            );
-        }
-
-
-        // =================================================
-        // BAKERY ORIGINAL WORK2 WORK3 OVERLAY
-        //
-        // Originalni houses.dat workplan:
-        //   7x Work2(24) + Work3(30)
-        //   378 kroku celkem.
-        //
-        // Tick v jednom paru:
-        //   0..23  = Work2 frame 0..23
-        //   24..53 = Work3 frame 0..29
-        //
-        // House overlay se zarovnava stejnym vzorcem
-        // jako School:
-        //
-        // stoneDestination +
-        // (overlay anchor + House Move - stone pivot)
-        //
-        // Work2 i Work3 maji spolecny pivotovy prostor:
-        //   cell   = 18x27
-        //   anchor = (-10,-13)
-        //   move   = (18,5)
-        //
-        // Zadna temporary nebo nahradni animace.
-        // =================================================
-
-        if (
-            building.type == BuildingType::Bakery &&
-            isBuildingComplete(building) &&
-            building.bakeryProductionActive &&
-            building.bakeryProductionTick >= 0 &&
-            building.bakeryProductionTick < 378
-        ) {
-            const int workCellWidth = 18;
-            const int workCellHeight = 27;
-
-            const int work2FrameCount = 24;
-            const int work3FrameCount = 30;
-            const int workPairLength =
-                work2FrameCount +
-                work3FrameCount;
-
-            const int workAnchorX = -10;
-            const int workAnchorY = -13;
-            const int workMoveX = 18;
-            const int workMoveY = 5;
-
-            const int pairTick =
-                building.bakeryProductionTick %
-                    workPairLength;
-
-            SDL_Texture* workTexture = nullptr;
-            int workFrame = 0;
-
-            if (pairTick < work2FrameCount) {
-                workTexture =
-                    resources.bakeryWork2Atlas;
-
-                workFrame = pairTick;
-            } else {
-                workTexture =
-                    resources.bakeryWork3Atlas;
-
-                workFrame =
-                    pairTick -
-                    work2FrameCount;
-            }
-
-            if (workTexture) {
-                SDL_Rect workSource = {
-                    workFrame * workCellWidth,
+            if (
+                flagTexture &&
+                flagWidth > 0 &&
+                flagHeight > 0
+            ) {
+                SDL_Rect flagSource = {
                     0,
-                    workCellWidth,
-                    workCellHeight
+                    0,
+                    flagWidth,
+                    flagHeight
                 };
 
-                const int workX =
+                SDL_Rect flagDestination = {
                     stoneDestinationX +
-                    scaleKaMHousePixel(
-                        workAnchorX +
-                            workMoveX -
-                            stonePivotX,
-                        tileSize
-                    );
+                        scaleKaMHousePixel(
+                            flagPivotX +
+                                flagMoveX -
+                                stonePivotX,
+                            tileSize
+                        ),
 
-                const int workY =
                     stoneDestinationY +
-                    scaleKaMHousePixel(
-                        workAnchorY +
-                            workMoveY -
-                            stonePivotY,
-                        tileSize
-                    );
-
-                SDL_Rect workDestination = {
-                    workX,
-                    workY,
+                        scaleKaMHousePixel(
+                            flagPivotY +
+                                flagMoveY -
+                                stonePivotY,
+                            tileSize
+                        ),
 
                     scaleKaMHousePixel(
-                        workCellWidth,
+                        flagWidth,
                         tileSize
                     ),
 
                     scaleKaMHousePixel(
-                        workCellHeight,
+                        flagHeight,
                         tileSize
                     )
                 };
 
                 SDL_RenderCopy(
                     renderer,
-                    workTexture,
-                    &workSource,
-                    &workDestination
+                    flagTexture,
+                    &flagSource,
+                    &flagDestination
                 );
+            }
+        }
+
+
+        // =================================================
+        // MILL ORIGINAL IDLE OVERLAY
+        //
+        // Runtime unique sprites:
+        // houses.rx RX1095..RX1100.
+        //
+        // Original houses.dat action:
+        // Count = 30
+        // Move  = (0,-1)
+        //
+        // The overlay is visible only while a real Baker
+        // is physically hidden inside this specific Mill.
+        // =================================================
+
+        if (
+            building.type == BuildingType::Mill &&
+            isBuildingComplete(building) &&
+            millHasInsideBaker
+        ) {
+            constexpr int idleActionFrameCount = 30;
+            constexpr int idleMoveX = 0;
+            constexpr int idleMoveY = -1;
+
+            static const int idleSpriteSequence[
+                idleActionFrameCount
+            ] = {
+                0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+                0,
+                1, 2, 3, 4,
+                5, 5, 5, 5, 5, 5,
+                4, 3, 2, 1,
+                0, 0, 0, 0, 0
+            };
+
+            const int idleActionFrame =
+                (SDL_GetTicks() / 100) %
+                idleActionFrameCount;
+
+            const int idleSpriteIndex =
+                idleSpriteSequence[
+                    idleActionFrame
+                ];
+
+            const bool useRuntimeIdle =
+                resources.millRuntimeIdleFrameCount == 6 &&
+                idleSpriteIndex >= 0 &&
+                idleSpriteIndex < 6 &&
+                resources.millRuntimeIdleFrames[
+                    idleSpriteIndex
+                ] != nullptr;
+
+            if (useRuntimeIdle) {
+                SDL_Texture* idleTexture =
+                    resources.millRuntimeIdleFrames[
+                        idleSpriteIndex
+                    ];
+
+                const int idleWidth =
+                    resources.millRuntimeIdleWidths[
+                        idleSpriteIndex
+                    ];
+
+                const int idleHeight =
+                    resources.millRuntimeIdleHeights[
+                        idleSpriteIndex
+                    ];
+
+                const int idlePivotX =
+                    resources.millRuntimeIdlePivotX[
+                        idleSpriteIndex
+                    ];
+
+                const int idlePivotY =
+                    resources.millRuntimeIdlePivotY[
+                        idleSpriteIndex
+                    ];
+
+                if (
+                    idleWidth > 0 &&
+                    idleHeight > 0
+                ) {
+                    SDL_Rect idleSource = {
+                        0,
+                        0,
+                        idleWidth,
+                        idleHeight
+                    };
+
+                    SDL_Rect idleDestination = {
+                        stoneDestinationX +
+                            scaleKaMHousePixel(
+                                idlePivotX +
+                                    idleMoveX -
+                                    stonePivotX,
+                                tileSize
+                            ),
+
+                        stoneDestinationY +
+                            scaleKaMHousePixel(
+                                idlePivotY +
+                                    idleMoveY -
+                                    stonePivotY,
+                                tileSize
+                            ),
+
+                        scaleKaMHousePixel(
+                            idleWidth,
+                            tileSize
+                        ),
+
+                        scaleKaMHousePixel(
+                            idleHeight,
+                            tileSize
+                        )
+                    };
+
+                    SDL_RenderCopy(
+                        renderer,
+                        idleTexture,
+                        &idleSource,
+                        &idleDestination
+                    );
+                }
             }
         }
 
@@ -3212,11 +2978,31 @@ BuildingResources loadBuildingResources(
         resources.millRuntimeTurbinePivotY[frame] = 0;
     }
 
-    resources.millIdleAtlas =
-        loadColorKeyTexture(
-            renderer,
-            "app0:assets/buildings/mill/runtime/idle_atlas.bmp"
-        );
+    resources.millRuntimeFlag1FrameCount = 0;
+
+    for (int frame = 0; frame < 5; ++frame) {
+        resources.millRuntimeFlag1Frames[frame] =
+            nullptr;
+
+        resources.millRuntimeFlag1Widths[frame] = 0;
+        resources.millRuntimeFlag1Heights[frame] = 0;
+        resources.millRuntimeFlag1PivotX[frame] = 0;
+        resources.millRuntimeFlag1PivotY[frame] = 0;
+    }
+
+    // Mill ha_Idle is generated entirely from
+    // external houses.rx RX1095..RX1100.
+    resources.millRuntimeIdleFrameCount = 0;
+
+    for (int frame = 0; frame < 6; ++frame) {
+        resources.millRuntimeIdleFrames[frame] =
+            nullptr;
+
+        resources.millRuntimeIdleWidths[frame] = 0;
+        resources.millRuntimeIdleHeights[frame] = 0;
+        resources.millRuntimeIdlePivotX[frame] = 0;
+        resources.millRuntimeIdlePivotY[frame] = 0;
+    }
 
     return resources;
 }
@@ -3323,9 +3109,17 @@ void destroyBuildingResources(
         );
     }
 
-    SDL_DestroyTexture(
-        resources->millIdleAtlas
-    );
+    for (int frame = 0; frame < 5; ++frame) {
+        SDL_DestroyTexture(
+            resources->millRuntimeFlag1Frames[frame]
+        );
+    }
+
+    for (int frame = 0; frame < 6; ++frame) {
+        SDL_DestroyTexture(
+            resources->millRuntimeIdleFrames[frame]
+        );
+    }
 
     resources->store = nullptr;
     resources->bakery = nullptr;
@@ -3414,7 +3208,29 @@ void destroyBuildingResources(
         resources->millRuntimeTurbinePivotY[frame] = 0;
     }
 
-    resources->millIdleAtlas = nullptr;
+    resources->millRuntimeFlag1FrameCount = 0;
+
+    for (int frame = 0; frame < 5; ++frame) {
+        resources->millRuntimeFlag1Frames[frame] =
+            nullptr;
+
+        resources->millRuntimeFlag1Widths[frame] = 0;
+        resources->millRuntimeFlag1Heights[frame] = 0;
+        resources->millRuntimeFlag1PivotX[frame] = 0;
+        resources->millRuntimeFlag1PivotY[frame] = 0;
+    }
+
+    resources->millRuntimeIdleFrameCount = 0;
+
+    for (int frame = 0; frame < 6; ++frame) {
+        resources->millRuntimeIdleFrames[frame] =
+            nullptr;
+
+        resources->millRuntimeIdleWidths[frame] = 0;
+        resources->millRuntimeIdleHeights[frame] = 0;
+        resources->millRuntimeIdlePivotX[frame] = 0;
+        resources->millRuntimeIdlePivotY[frame] = 0;
+    }
 }
 
 int getBuildingWidth(BuildingType type)
